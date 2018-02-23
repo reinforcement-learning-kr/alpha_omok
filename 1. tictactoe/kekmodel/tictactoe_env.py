@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import gym   # 환경 제공 모듈
 
-import numpy as np   # 배열 제공 모듈
+import numpy as np
 
 
 PLAYER = 0  # 플레이어 식별 상수
 OPPONENT = 1  # 상대 식별 상수
 USER_TYPE = 0  # action tuple의 0번 요소
-MARK_O = 0
-MARK_X = 1
+MARK_O = 0  # 선공 의미 (흑)
+MARK_X = 1  # 후공 의미 (백)
 
 
 class TicTacToeEnv(gym.Env):
@@ -50,8 +50,8 @@ class TicTacToeEnv(gym.Env):
 
 
     action
-    ---------------
-    tuple(피아식별, 좌표행, 좌표열).
+    -------
+    tuple(유저 타입, 좌표행, 좌표열).
 
         action = (0, 1, 1) -> step(action) -> state[0][1][1] = 1
 
@@ -70,22 +70,22 @@ class TicTacToeEnv(gym.Env):
 
     =============================================================
     """
-    # _render()의 리턴 타입 구분
+    # render()의 리턴 타입 구분
     metadata = {'render.modes': ['human', 'rgb_array']}
     reward = (-1, 0, 1)  # 보상의 범위 참고: 패배:-1, 무승부:0, 승리:1
 
     def __init__(self):
         self.state = None
         self.viewer = None  # 뷰어
-        self.player_color = None  # player의 "OX"
+        self.player_color = None
         self.reset()
 
     def reset(self, state=None):
         """state 리셋 함수.
 
-        state 초기화: 3x3 배열 3장: 2진으로만 해결하기 위함.
+        state 초기화
         """
-        # input이 없으면 초기 보드
+        # input이 없으면 빈 보드
         if state is None:
             self.state = np.zeros((3, 3, 3), 'int')
         # 있으면 그걸로 초기화
@@ -166,15 +166,15 @@ class TicTacToeEnv(gym.Env):
                         info = {}
                         print('## You Lose! ##')  # 너 짐
                         return self.state, reward, done, info  # 필수 요소 리턴!
-        
-        # 다 돌려봤는데 승부난게 없더라 근데 "O"식별용 2번보드에 들어있는게 5개면? 비김
+
+        # 다 돌려봤는데 승부난게 없더라 근데 MARK_O 식별용 2번보드에 들어있는게 5개면? 비김
         if np.count_nonzero(self.state[2]) == 5:
             reward = 0  # 보상 0
             done = True  # 게임 끝
             info = {}
             print('##  Draw! ##')  # 비김
             return self.state, reward, done, info
-        
+
         # 이거 다~~~ 아니면 다음 수 둬야지
         else:
             reward = 0
@@ -183,7 +183,12 @@ class TicTacToeEnv(gym.Env):
             return self.state, reward, done, info
 
     def render(self, mode='human', close=False):
-        """현재 state를 그려주는 함수."""
+        """현재 state를 그려주는 함수. render모드시에만 사용.
+
+            >> state, reward, done, _ = env.step(action)
+            >> env.render()
+
+        """
         if close:  # 클로즈값이 참인데
             if self.viewer is not None:  # 뷰어가 비어있지 않으면
                 self.viewer.close()   # 뷰어를 닫고
@@ -215,7 +220,7 @@ class TicTacToeEnv(gym.Env):
             self.viewer.add_geom(line_a)
             self.viewer.add_geom(line_b)
 
-            # ----------- OX 마크 이미지 생성 및 위치 지정 -------------- #
+            # ----------- O, X 마크 이미지 생성 및 위치 지정 ----------- #
             # 9개의 위치에 O,X 모두 위치지정해 놓음 (18장)
             # 그림파일 위치는 이 파일이 있는 폴더 내부의 img 폴더
 
@@ -296,8 +301,8 @@ class TicTacToeEnv(gym.Env):
             self.image_X9.add_attr(trans_X9)
 
         # ------------ state 정보에 맞는 이미지를 뷰어에 붙이는 과정 ------------- #
-        # 좌표번호마다 "OX"가 있는지 확인하여 해당하는 이미지를 뷰어에 붙임 (렌더링 때 보임)
-        # "OX"의 정체성 설정!
+        # 좌표번호마다 O, X 가 있는지 확인하여 해당하는 이미지를 뷰어에 붙임 (렌더링 때 보임)
+        # O, X 의 정체성 설정!
         render_O = None
         render_X = None
         if self.player_color == MARK_O:
