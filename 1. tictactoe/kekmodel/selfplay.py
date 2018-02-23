@@ -43,7 +43,7 @@ class MCTS(object):
     type: 3x3x4 numpy array
 
         9개 좌표에 4개의 정보 N, W, Q, P 매칭
-        N: edge 방문횟수, W: 보상누적값, Q: 보상평균값(W/N), P: 선택 확률 추정치
+        N: edge 방문횟수, W: 보상누적값, Q: 보상평균값(W/N), P: 신경망이 추정한 확률
         edge[좌표행][좌표열][번호]로 접근
 
     Warning: action의 현재 주체인 current_user를 step마다 제공해야 함.
@@ -130,7 +130,7 @@ class MCTS(object):
         state_new -> node & state_variable
 
             state_new: 9x3x3 numpy array.
-                유저별 최근 4-histroy 저장하여 재구성. (저장용)
+                유저별 최근 4-histroy 저장하여 재구성.
 
             state_variable: 1x9x3x3 torch.autograd.Variable.
                 신경망의 인수로 넣을 수 있게 조정. (학습용)
@@ -222,8 +222,9 @@ class MCTS(object):
             self.total_visit = np.sum(edge_n)
             self.done = False
 
-        else:  # 없으면 child node 이므로 edge 초기화하여 달아 주기
+        else:  # 없으면 child node 이므로 edge 달아 주기
             self._expand(node)
+
         # edge의 총 방문횟수 출력
         print('(visit count: {:0.0f})'.format(self.total_visit))
 
@@ -238,16 +239,16 @@ class MCTS(object):
             for move in self.legal_move:
                 self.edge[tuple(move)][P] = self.pr[tuple(move)]
 
-        # Q, P값을 배치한 edge를 백업 전 까지 저장
+        # Q, P값을 배치한 edge 백업을 위해 저장
         self.edge_memory.appendleft(self.edge)
 
     def _puct(self, edge):
         # 모든 edge의 PUCT 계산
         puct = np.zeros((3, 3), 'float')
         for move in self.legal_move:
-                puct[tuple(move)] = edge[tuple(move)][Q] + \
-                    self.c_puct * edge[tuple(move)][P] * \
-                    np.sqrt(self.total_visit) / (1 + edge[tuple(move)][N])
+            puct[tuple(move)] = edge[tuple(move)][Q] + \
+                self.c_puct * edge[tuple(move)][P] * \
+                np.sqrt(self.total_visit) / (1 + edge[tuple(move)][N])
 
         # 착수 불가능한 곳엔 PUCT에 -inf를 넣어 최댓값 되는 것 방지
         for move in self.no_legal_move:
@@ -298,7 +299,7 @@ class MCTS(object):
                 self.edge_memory[i][tuple(
                     self.action_memory[i][1:])][
                     W] -= reward
-            # N 배치 후 Q 배치
+            # N 배치 후 Q 계산하여 배치
             self.edge_memory[i][tuple(self.action_memory[i][1:])][N] += 1
             self.edge_memory[i][tuple(
                 self.action_memory[i][1:])][Q] = self.edge_memory[i][tuple(
