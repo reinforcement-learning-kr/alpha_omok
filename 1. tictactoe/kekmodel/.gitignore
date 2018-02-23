@@ -1,8 +1,9 @@
-data/.DS_Store
-data/.ipynb_checkpoints
-/__pycache__
-/.idea
-/.DS_Store
-/.ipynb_checkpoints
+1. tictactoe/kekmodel/data/.DS_Store
+1. tictactoe/kekmodel/data/.ipynb_checkpoints
+1. tictactoe/kekmodel/__pycache__
+1. tictactoe/kekmodel/.DS_Store
+1. tictactoe/.DS_Store
+.DS_Store
+
 
 
