@@ -18,7 +18,7 @@ class Node(object):
 
 class Edge(object):
 
-    def __init__(self, parent_node, child_node, p_theta, action):
+    def __init__(self, parent_node, child_node, action):
         self.id = parent_node.state.id + '|' + child_node.state.id
         self.parent_node = parent_node
         self.child_node = child_node
@@ -28,8 +28,7 @@ class Edge(object):
         self.stat = {
             'N': 0,
             'W': 0,
-            'Q': 0,
-            'P': p_theta,
+            'Q': 0
         }
 
 
@@ -38,11 +37,6 @@ class MCTS(object):
     def __init__(self, root):
         self.root = root
         self.tree = {}
-
-        # hyperparameter
-        self.c_puct = 5
-        self.epsilon = 0.25
-        self.alpha = 0.7
 
         self.expand(root)
 
@@ -54,19 +48,12 @@ class MCTS(object):
         trajectory = []
         current_node = self.root
 
-        done = 0
-        value = 0
+        done = False
+        reward = 0
 
         while not current_node.is_leaf():
 
-            puct = -np.inf
-
-            if current_node == self.root:
-                epsilon = self.epsilon
-                noise = np.random.dirichlet(self.alpha * len(current_node.edges))
-            else:
-                epsilon = 0
-                noise = [0] * len(current_node.edges)
+            uct_max = -np.inf
 
             total_visit = 0
             for action, edge in current_node.edges:
@@ -74,25 +61,20 @@ class MCTS(object):
 
             for i, (action, edge) in enumerate(current_node.edges):
 
-                U = self.c_puct * \
-                    ((1 - epsilon) * edge.stat['P'] + epsilon * noise[i]) * \
-                    np.sqrt(total_visit) / (1 + edge.stat['N'])
+                uct = edge.stat['Q'] + np.sqrt(2 * np.log(total_visit) / (1 + edge.stat['N']))
 
-                Q = edge.stat['Q']
-
-                if Q + U > puct:
-                    puct = Q + U
+                if uct > uct_max:
+                    uct_max = uct
                     simulation_action = action
                     simulation_edge = edge
 
-            # the value of the new_state from the POV of the new player_turn
-            new_state, value, done = current_node.state.action(simulation_action)
+            new_state, reward, done = current_node.state.action(simulation_action)
             current_node = simulation_edge.child_node
             trajectory.append(simulation_edge)
 
-        return current_node, value, done, trajectory
+        return current_node, reward, done, trajectory
 
-    def backup(self, leaf, value, trajectory):
+    def backup(self, leaf, reward, trajectory):
 
         current_player = leaf.state.player_turn
 
@@ -104,7 +86,7 @@ class MCTS(object):
                 correction = -1
 
             edge.stat['N'] = edge.stat['N'] + 1
-            edge.stat['W'] = edge.stat['W'] + value * correction
+            edge.stat['W'] = edge.stat['W'] + reward * correction
             edge.stat['Q'] = edge.stat['W'] / edge.stat['N']
 
     def expand(self, node):
