@@ -6,7 +6,7 @@ import numpy as np   # 배열 제공 모듈
 
 PLAYER = 0  # 플레이어 식별 상수
 OPPONENT = 1  # 상대 식별 상수
-USER_TYPE = 0  # action tuple의 0번 요소
+USER_TYPE = 0  # action 의 0번 요소
 MARK_O = 0
 MARK_X = 1
 
@@ -22,7 +22,7 @@ class TicTacToeEnv(gym.Env):
 
         0번 평면을 기준으로 승패체크. 보상 (승:1, 무:0, 패:-1)
         O 인 유저의 정보를 받아 2번 평면에 동기화 함
-        현재 self-play만 지원
+        현재 selfplay만 지원
 
     observation
     ----------
@@ -57,8 +57,8 @@ class TicTacToeEnv(gym.Env):
     Warning
     ----------
     reset()시 plyer_color 를 반드시 설정해야 함.
-        >> MARK_O = 0
         >> env = TicTacToeEnv()
+        >> MARK_O = 0
         >> observation = env.reset(player_color=MARK_O)
 
     gym.Env
@@ -101,7 +101,7 @@ class TicTacToeEnv(gym.Env):
     def step(self, action):
         """한번의 action에 observation가 어떻게 변하는지 정하는 메소드.
 
-        승부가 나면 에이전트가 reset()을 호출하여 환경을 초기화 해야 함.
+        승부가 나면 외부에서 reset()을 호출하여 환경을 초기화 해야 함.
         action을 받아서 (observation, reward, done, info)인 튜플 리턴 함.
 
         """
