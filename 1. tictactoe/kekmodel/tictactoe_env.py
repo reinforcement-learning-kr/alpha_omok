@@ -58,7 +58,8 @@ class TicTacToeEnv(gym.Env):
     ----------
     reset()시 plyer_color 를 반드시 설정해야 함.
         >> MARK_O = 0
-        >> env = TicTacToeEnv(player_color=MARK_O)
+        >> env = TicTacToeEnv()
+        >> observation = env.reset(player_color=MARK_O)
 
     gym.Env
     ----------
@@ -90,6 +91,8 @@ class TicTacToeEnv(gym.Env):
         # 있으면 그걸로 초기화
         else:
             self.observation = observation
+
+        # 플레이어 컬러 설정
         self.player_color = player_color
         self.viewer = None   # 뷰어 리셋
         # observation 리턴
@@ -140,7 +143,7 @@ class TicTacToeEnv(gym.Env):
         return self._check_win()  # 승패 체크해서 결과 리턴
 
     def _check_win(self):
-        """observation 승패체크용 내부 함수."""
+        """observation 승패체크용 내부 메소드."""
 
         # 승리패턴 8가지 구성 (1:돌이 있는 곳, 0: 돌이 없는 곳)
         win_pattern = np.array([[[1, 1, 1], [0, 0, 0], [0, 0, 0]],
