@@ -10,7 +10,7 @@ from torch.autograd import Variable
 
 import slackweb
 import xxhash
-import dill as pickle
+import pickle
 import numpy as np
 np.set_printoptions(suppress=True)
 
@@ -20,8 +20,8 @@ N, W, Q, P = 0, 1, 2, 3
 PLANE = np.zeros((3, 3), 'int').flatten()
 
 NUM_CHANNEL = 128
-GAME = 3
-SIMULATION = 200
+GAME = 10
+SIMULATION = 20
 
 
 class MCTS(object):
@@ -340,9 +340,6 @@ class MCTS(object):
             for j in range(3):
                 pi[i][j] = edge[i][j][N] / total_visit
 
-        print('=*=*=*=   Pi   =*=*=*=')
-        print(pi.round(decimals=2), '\n')
-
         pi_max = np.argwhere(pi == pi.max())
         final_move = pi_max[np.random.choice(len(pi_max))]
         action = np.r_[self.current_user, final_move]
@@ -352,6 +349,8 @@ class MCTS(object):
 
 if __name__ == "__main__":
     start = time.time()
+
+    train_date_store = deque(maxlen=4096)
 
     env_game = tictactoe_env.TicTacToeEnv()
     env_simul = tictactoe_env.TicTacToeEnv()
@@ -370,6 +369,7 @@ if __name__ == "__main__":
         root_state = None
         done_game = False
         step_play = 0
+        data_collector = deque(maxlen=18)
 
         while not done_game:
             print("=" * 27, " Simulation Start ", "=" * 27, '\n')
@@ -437,20 +437,34 @@ if __name__ == "__main__":
 
             mcts.reset_step(current_user_play)
             action_game, pi = mcts.play(root_state)
-
+            data_collector.appendleft(pi)
+            data_collector.appendleft(root_state)
             observation_game, z, done_game, _ = env_game.step(action_game)
             step_play += 1
             step_game += 1
 
+            print('=*=*=*=   Pi   =*=*=*=')
+            print(pi.reshape(3, 3).round(decimals=2), '\n')
             print('`*`*` PLAY `*`*`')
             print(observation_game[PLAYER] + observation_game[OPPONENT] * 2.0, '\n')
 
         if done_game:
             print("(z: {})\n".format(z))
             result_game[z] += 1
+            for i, v in enumerate(data_collector):
+                s = np.zeros(81)
+                pi = np.zeros(9)
+                if i % 2 == 0:
+                    s = v
+                elif i % 2 == 1:
+                    pi = v
+                train_date_store.appendleft((s, pi, z))
             if z == 1:
                 if env_game.player_color == MARK_O:
                     win_mark_o += 1
+
+    with open('data/train_dataset_{}.pkl'.format(game + 1), 'wb') as f:
+        pickle.dump(train_date_store, f)
 
     finish_game = round(float(time.time() - start))
 
