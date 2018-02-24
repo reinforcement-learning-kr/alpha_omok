@@ -20,8 +20,9 @@ N, W, Q, P = 0, 1, 2, 3
 PLANE = np.zeros((3, 3), 'int').flatten()
 
 NUM_CHANNEL = 128
-GAME = 10
-SIMULATION = 20
+
+GAME = 100
+SIMULATION = 200
 
 
 class MCTS(object):
@@ -90,7 +91,7 @@ class MCTS(object):
         self.p_theta = None
         self.v_theta = None
 
-        # member init
+        # init
         self.reset_step()
         self._reset_episode()
 
@@ -323,7 +324,7 @@ class MCTS(object):
 
         self._reset_episode()
 
-    def play(self, root_state):
+    def play(self, root_state, tau):
         """root node의 pi를 계산하고 최댓값을 찾아 action을 return함."""
 
         root_node = xxhash.xxh64(root_state.tostring()).hexdigest()
@@ -331,17 +332,22 @@ class MCTS(object):
 
         pi = np.zeros((3, 3), 'float')
         total_visit = 0
+        action_space = []
 
         for i in range(3):
             for j in range(3):
                 total_visit += edge[i][j][N]
+                action_space.append([i, j])
 
         for i in range(3):
             for j in range(3):
                 pi[i][j] = edge[i][j][N] / total_visit
-
-        pi_max = np.argwhere(pi == pi.max())
-        final_move = pi_max[np.random.choice(len(pi_max))]
+        if tau == 0:
+            deterministic = np.argwhere(pi == pi.max())
+            final_move = deterministic[np.random.choice(len(deterministic))]
+        else:
+            stochactic = np.random.choice(9, p=pi.flatten())
+            final_move = action_space[stochactic]
         action = np.r_[self.current_user, final_move]
 
         return tuple(action), pi.flatten()
@@ -436,7 +442,13 @@ if __name__ == "__main__":
             print(observation_game[PLAYER] + observation_game[OPPONENT] * 2.0, '\n')
 
             mcts.reset_step(current_user_play)
-            action_game, pi = mcts.play(root_state)
+
+            if step_play < 2:
+                tau = 1
+            else:
+                tau = 0
+
+            action_game, pi = mcts.play(root_state, tau)
             data_collector.appendleft(pi)
             data_collector.appendleft(root_state)
             observation_game, z, done_game, _ = env_game.step(action_game)
@@ -463,7 +475,7 @@ if __name__ == "__main__":
                 if env_game.player_color == MARK_O:
                     win_mark_o += 1
 
-    with open('data/train_dataset_{}.pkl'.format(game + 1), 'wb') as f:
+    with open('data/train_dataset_s{}_g{}.pkl'.format(simul + 1, game + 1), 'wb') as f:
         pickle.dump(train_date_store, f)
 
     finish_game = round(float(time.time() - start))
