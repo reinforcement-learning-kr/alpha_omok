@@ -86,7 +86,7 @@ class PolicyValueNet(nn.Module):
         self.value_scalar = nn.Linear(num_channel, 1)
         self.value_out = nn.Tanh()
 
-        # weight 초기화 (xavier)
+        """# weight 초기화 (xavier)
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
@@ -99,6 +99,7 @@ class PolicyValueNet(nn.Module):
             elif isinstance(m, nn.Linear):
                 m.weight.data.normal_(0, 0.01)
                 m.bias.data.zero_()
+        """
 
     def forward(self, state):
         # convolutional layer
