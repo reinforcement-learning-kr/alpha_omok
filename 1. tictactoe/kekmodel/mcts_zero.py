@@ -21,13 +21,13 @@ PLANE = np.zeros((3, 3), 'int').flatten()
 
 NUM_CHANNEL = 128
 GAME = 10
-SIMULATION = 200
+SIMULATION = 60
 
 
 class MCTS(object):
     """몬테카를로 트리 탐색 클래스.
 
-    셀프플레이를 통해 train 데이터 생성
+    셀프플레이를 통해 train 데이터 생성 (s, pi, z)
 
     state
     ------
@@ -81,6 +81,7 @@ class MCTS(object):
         self.state_tensor = None
         self.state_variable = None
         self.prob = None
+        self.value = None
         self.current_user = None
 
         # reset_episode member
@@ -107,6 +108,7 @@ class MCTS(object):
         self.state_tensor = None
         self.state_variable = None
         self.prob = np.zeros((3, 3), 'float')
+        self.value = None
         self.current_user = current_user
 
     def _reset_episode(self):
@@ -395,7 +397,7 @@ if __name__ == "__main__":
                     current_user_mcts = (current_user_play + step_mcts) % 2
                     mcts.reset_step(current_user_mcts)
                     action_simul = mcts.select_action(observation_simul)
-                    observation_env, z_env, done_env, _ = env_simul.step(action_simul)
+                    observation_simul, z_env, done_env, _ = env_simul.step(action_simul)
                     step_mcts += 1
                     step_simul += 1
                     step_total_simul += 1
@@ -425,7 +427,7 @@ if __name__ == "__main__":
                         print('(v: {})'.format(v))
                         print('')
 
-                        mcts.backup(v)
+                        mcts.backup(z_env)
                         result_simul[z_env] += 1
                         terminal_n += 1
 
@@ -460,7 +462,7 @@ if __name__ == "__main__":
 
     finish_game = round(float(time.time() - start))
 
-    print("=" * 28, " {} Game End ".format(game + 1), "=" * 28)
+    print("=" * 27, " {}  Game End  ".format(game + 1), "=" * 27)
     stat_game = ('[GAME] Win: {}  Lose: {}  Draw: {}  Winrate: {:0.1f}%  WinMarkO: {}'.format(
         result_game[1], result_game[-1], result_game[0],
         1 / (1 + np.exp(result_game[-1] / (game + 1)) / np.exp(result_game[1] / (game + 1))) * 100,
