@@ -1,3 +1,4 @@
+import tictactoe_env
 import numpy as np
 
 

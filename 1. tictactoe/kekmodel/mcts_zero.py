@@ -20,8 +20,8 @@ N, W, Q, P = 0, 1, 2, 3
 PLANE = np.zeros((3, 3), 'int').flatten()
 
 NUM_CHANNEL = 128
-GAME = 10
-SIMULATION = 60
+GAME = 3
+SIMULATION = 200
 
 
 class MCTS(object):
@@ -49,19 +49,15 @@ class MCTS(object):
 
     """
 
-    def __init__(self, tree=None, model=None):
+    def __init__(self, model_path=None):
         # tree
-        if tree is None:
-            self.tree = defaultdict(lambda: np.zeros((3, 3, 4), 'float'))
-        else:
-            with open(tree, 'rb') as f:
-                self.tree = pickle.load(f)
+        self.tree = defaultdict(lambda: np.zeros((3, 3, 4), 'float'))
 
         # model
-        if model is None:
+        if model_path is None:
             self.pv_net = neural_network.PolicyValueNet(NUM_CHANNEL)
         else:
-            self.pv_net = torch.load(self.pv_net.state_dict(), model)
+            self.pv_net = torch.load(self.pv_net.state_dict(), model_path)
 
         # hyperparameter
         self.c_puct = 5
@@ -173,6 +169,7 @@ class MCTS(object):
 
         # PUCT가 최댓값인 곳 찾기
         puct_max = np.argwhere(puct == puct.max())
+
         # 동점 처리
         move_target = puct_max[np.random.choice(len(puct_max))]
 
@@ -214,8 +211,11 @@ class MCTS(object):
         # tree에서 현재 node를 검색하여 존재하면 해당 edge 불러오기
         if node in self.tree:
             self.edge = self.tree[node]
+
             print('"Select"\n')
+
             edge_n = np.zeros((3, 3), 'float')
+
             for i in range(3):
                 for j in range(3):
                     self.prob[i][j] = self.edge[i][j][P]
@@ -226,12 +226,14 @@ class MCTS(object):
 
         else:  # 없으면 child node 이므로 edge 초기화하여 달아 주기
             self._expand(node)
+
         # edge의 총 방문횟수 출력
         print('(visit count: {:0.0f})\n'.format(self.total_visit))
 
         # root node면 edge의 P에 노이즈
         if self.action_count == 1:
             print('(root node noise)\n')
+
             for i, move in enumerate(self.legal_move):
                 self.edge[tuple(move)][P] = (1 - self.epsilon) * self.prob[tuple(move)] + \
                     self.epsilon * np.random.dirichlet(
@@ -257,8 +259,7 @@ class MCTS(object):
 
         # 보정한 PUCT 점수 출력
         print('***  PUCT SCORE  ***')
-        print(puct.round(decimals=2))
-        print('')
+        print(puct.round(decimals=2), '\n')
 
         return puct
 
@@ -274,6 +275,7 @@ class MCTS(object):
 
         # edge를 생성
         self.edge = self.tree[node]
+
         print('"Expand"')
 
         # state에 Variable 씌워서 신경망에 넣기
@@ -282,6 +284,7 @@ class MCTS(object):
         self.p_theta, self.v_theta = self.pv_net(self.state_variable)
         self.prob = self.p_theta.data.numpy().reshape(3, 3)
         self.value = self.v_theta.data.numpy()[0]
+
         print('"Evaluate"\n')
 
         # 이번 액션 후 백업할 것 알림
@@ -338,8 +341,7 @@ class MCTS(object):
                 pi[i][j] = edge[i][j][N] / total_visit
 
         print('=*=*=*=   Pi   =*=*=*=')
-        print(pi.round(decimals=2))
-        print('')
+        print(pi.round(decimals=2), '\n')
 
         pi_max = np.argwhere(pi == pi.max())
         final_move = pi_max[np.random.choice(len(pi_max))]
@@ -349,7 +351,6 @@ class MCTS(object):
 
 
 if __name__ == "__main__":
-
     start = time.time()
 
     env_game = tictactoe_env.TicTacToeEnv()
@@ -360,8 +361,8 @@ if __name__ == "__main__":
     step_game = 0
     step_total_simul = 0
 
-    print("=" * 30, " Game Start ", "=" * 30)
-    print('')
+    print("=" * 30, " Game Start ", "=" * 30, '\n')
+
     for game in range(GAME):
         player_color = (MARK_O + game) % 2
         observation_game = env_game.reset(player_color=player_color)
@@ -371,8 +372,7 @@ if __name__ == "__main__":
         step_play = 0
 
         while not done_game:
-            print("=" * 27, " Simulation Start ", "=" * 27)
-            print('')
+            print("=" * 27, " Simulation Start ", "=" * 27, '\n')
 
             current_user_play = ((PLAYER if player_color == MARK_O else OPPONENT) + step_play) % 2
             result_simul = {-1: 0, 0: 0, 1: 0}
@@ -381,8 +381,7 @@ if __name__ == "__main__":
             step_simul = 0
 
             for simul in range(SIMULATION):
-                print('#######   Simulation: {}   #######'.format(simul + 1))
-                print('')
+                print('#######   Simulation: {}   #######\n'.format(simul + 1))
 
                 observation_simul = env_simul.reset(
                     observation_game.copy(), player_color=player_color)
@@ -391,8 +390,7 @@ if __name__ == "__main__":
 
                 while not done_simul:
                     print('---- BOARD ----')
-                    print(observation_simul[PLAYER] + observation_simul[OPPONENT] * 2.0)
-                    print('')
+                    print(observation_simul[PLAYER] + observation_simul[OPPONENT] * 2.0, '\n')
 
                     current_user_mcts = (current_user_play + step_mcts) % 2
                     mcts.reset_step(current_user_mcts)
@@ -412,20 +410,16 @@ if __name__ == "__main__":
                 if done_simul:
                     if done_mcts:
                         print('==== BACKUP ====')
-                        print(observation_simul[PLAYER] + observation_simul[OPPONENT] * 2.0)
-                        print('')
-                        print('(v: {})'.format(v))
-                        print('')
+                        print(observation_simul[PLAYER] + observation_simul[OPPONENT] * 2.0, '\n')
+                        print('(v: {:0.4f})\n'.format(v[0]))
 
-                        mcts.backup(v)
+                        mcts.backup(v[0])
                         backup_n += 1
 
                     else:
                         print('=== TERMINAL ===')
-                        print(observation_simul[PLAYER] + observation_simul[OPPONENT] * 2.0)
-                        print('')
-                        print('(v: {})'.format(v))
-                        print('')
+                        print(observation_simul[PLAYER] + observation_simul[OPPONENT] * 2.0, '\n')
+                        print("(z': {})\n".format(z_env))
 
                         mcts.backup(z_env)
                         result_simul[z_env] += 1
@@ -437,11 +431,9 @@ if __name__ == "__main__":
             print('Win: {}  Lose: {}  Draw: {}  Backup: {}  Terminal: {}  Step: {}\n'.format(
                 result_simul[1], result_simul[-1], result_simul[0], backup_n, terminal_n,
                 step_simul))
-            print('##########    Game: {}    ##########'.format(game + 1))
-            print('')
+            print('##########    Game: {}    ##########\n'.format(game + 1))
             print('`*`*` ROOT `*`*`')
-            print(observation_game[PLAYER] + observation_game[OPPONENT] * 2.0)
-            print('')
+            print(observation_game[PLAYER] + observation_game[OPPONENT] * 2.0, '\n')
 
             mcts.reset_step(current_user_play)
             action_game, pi = mcts.play(root_state)
@@ -451,10 +443,10 @@ if __name__ == "__main__":
             step_game += 1
 
             print('`*`*` PLAY `*`*`')
-            print(observation_game[PLAYER] + observation_game[OPPONENT] * 2.0)
-            print('')
+            print(observation_game[PLAYER] + observation_game[OPPONENT] * 2.0, '\n')
 
         if done_game:
+            print("(z: {})\n".format(z))
             result_game[z] += 1
             if z == 1:
                 if env_game.player_color == MARK_O:
