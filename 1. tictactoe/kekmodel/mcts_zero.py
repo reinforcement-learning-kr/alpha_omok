@@ -21,8 +21,8 @@ PLANE = np.zeros((3, 3), 'int').flatten()
 
 NUM_CHANNEL = 128
 
-GAME = 10
-SIMULATION = 400
+GAME = 20
+SIMULATION = 40
 
 
 class MCTS(object):
@@ -150,7 +150,6 @@ class MCTS(object):
             self.root = state
 
         self.state = state
-        print(state.reshape(9, 3, 3))
 
         # state -> 문자열 -> hash로 변환 (state 대신 tree dict의 key로 사용)
         node = xxhash.xxh64(self.state.tostring()).hexdigest()
@@ -193,7 +192,6 @@ class MCTS(object):
             puct: 3x3 numpy array. (float)
 
         """
-
         # tree에서 현재 node를 검색하여 존재하면 해당 edge 불러오기
         if node in self.tree:
             self.edge = self.tree[node]
@@ -258,7 +256,6 @@ class MCTS(object):
         select에서 edge 중 하나를 선택한 후 v로 백업하도록 알림.
 
         """
-
         # edge를 생성
         self.edge = self.tree[node]
 
@@ -311,7 +308,6 @@ class MCTS(object):
 
     def play(self, tau):
         """root node의 pi를 계산하고 최댓값을 찾아 action을 return함."""
-        print(self.root.reshape(9, 3, 3))
         root_node = xxhash.xxh64(self.root.tostring()).hexdigest()
         edge = self.tree[root_node]
 
@@ -334,6 +330,9 @@ class MCTS(object):
             stochactic = np.random.choice(9, p=pi.flatten())
             final_move = action_space[stochactic]
         action = np.r_[self.current_user, final_move]
+
+        print('=*=*=*=   Pi   =*=*=*=')
+        print(pi.reshape(3, 3).round(decimals=2), '\n')
 
         return tuple(action), pi.flatten()
 
@@ -385,18 +384,18 @@ if __name__ == '__main__':
 
                     current_user_mcts = (current_user_play + step_mcts) % 2
                     mcts.reset_step(current_user_mcts)
-                    action_simul=mcts.select_action(state_simul)
-                    state_simul, z_env, done_env, _=env_simul.step(action_simul)
+                    action_simul = mcts.select_action(state_simul)
+                    state_simul, z_env, done_env, _ = env_simul.step(action_simul)
                     step_mcts += 1
                     step_simul += 1
                     step_total_simul += 1
 
                     if step_mcts == 1:
-                        root_state=mcts.state
+                        root_state = mcts.state
 
-                    done_mcts=mcts.done
-                    v=mcts.value
-                    done_simul=done_mcts or done_env
+                    done_mcts = mcts.done
+                    v = mcts.value
+                    done_simul = done_mcts or done_env
 
                 if done_simul:
                     if done_mcts:
@@ -427,18 +426,17 @@ if __name__ == '__main__':
             mcts.reset_step(current_user_play)
 
             if step_play < 2:
-                tau=1
+                tau = 1
             else:
-                tau=0
+                tau = 0
 
-            action_game, pi=mcts.play(tau)
+            action_game, pi = mcts.play(tau)
             data_collector.appendleft(pi)
             data_collector.appendleft(mcts.root)
-            state_game, z, done_game, _=env_game.step(action_game)
+            state_game, z, done_game, _ = env_game.step(action_game)
             step_play += 1
             step_game += 1
-            print('=*=*=*=   Pi   =*=*=*=')
-            print(pi.reshape(3, 3).round(decimals=2), '\n')
+
             print('`*`*` PLAY `*`*`')
             print(env_game.board[PLAYER] + env_game.board[OPPONENT] * 2.0, '\n')
             print('tau: {}\n'.format(tau))
@@ -447,12 +445,12 @@ if __name__ == '__main__':
             print("(z: {})\n".format(z))
             result_game[z] += 1
             for i, v in enumerate(data_collector):
-                s=np.zeros(81)
-                pi=np.zeros(9)
+                s = np.zeros(81)
+                pi = np.zeros(9)
                 if i % 2 == 0:
-                    s=v
+                    s = v
                 elif i % 2 == 1:
-                    pi=v
+                    pi = v
                 train_date_store.appendleft((s, pi, z))
             if z == 1:
                 if env_game.player_color == MARK_O:
@@ -461,18 +459,18 @@ if __name__ == '__main__':
     with open('data/train_dataset_s{}_g{}.pkl'.format(simul + 1, game + 1), 'wb') as f:
         pickle.dump(train_date_store, f)
 
-    finish_game=round(float(time.time() - start))
+    finish_game = round(float(time.time() - start))
 
     print("=" * 27, " {}  Game End  ".format(game + 1), "=" * 27)
-    stat_game=('[GAME] Win: {}  Lose: {}  Draw: {}  Winrate: {:0.1f}%  WinMarkO: {}'.format(
+    stat_game = ('[GAME] Win: {}  Lose: {}  Draw: {}  Winrate: {:0.1f}%  WinMarkO: {}'.format(
         result_game[1], result_game[-1], result_game[0],
         1 / (1 + np.exp(result_game[-1] / (game + 1)) / np.exp(result_game[1] / (game + 1))) * 100,
         win_mark_o))
     print(stat_game)
 
-    slack=slackweb.Slack(
-        url = "https://hooks.slack.com/services/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")
+    slack = slackweb.Slack(
+        url="https://hooks.slack.com/services/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")
     slack.notify(
-        text = "Finished: [{} Game/{} Step] in {}s [Mac]".format(
+        text="Finished: [{} Game/{} Step] in {}s [Mac]".format(
             game + 1, step_game + step_total_simul, finish_game))
-    slack.notify(text = stat_game)
+    slack.notify(text=stat_game)
