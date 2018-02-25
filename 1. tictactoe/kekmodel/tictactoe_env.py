@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import gym   # 환경 제공 모듈
 
+from collections import deque
 import numpy as np   # 배열 제공 모듈
 
 
@@ -9,6 +10,7 @@ OPPONENT = 1  # 상대 식별 상수
 USER_TYPE = 0  # action 의 0번 요소
 MARK_O = 0
 MARK_X = 1
+PLANE = np.zeros((3, 3), 'int').flatten()
 
 
 class TicTacToeEnv(gym.Env):
@@ -24,42 +26,27 @@ class TicTacToeEnv(gym.Env):
         O 인 유저의 정보를 받아 2번 평면에 동기화 함
         현재 selfplay만 지원
 
-    observation
+    state
     ----------
-    3x3x3 numpy 배열: 3x3 평면 3장.
+    9x3x3 numpy 배열: 3x3 평면 9장.
 
-        0번 평면: 나의 표시만 1로 체크
-        1번 평면: 상대 표시만 1로 체크
-        2번 평면: O만 1로 체크 (누가 O, X 인지 구별 용)
-
-    example:
-
-        [
-        [[0, 0, 0]
-         [0, 0, 0]
-         [0, 0, 0]]  0번 평면
-
-        [[0, 0, 0]
-         [0, 0, 0]
-         [0, 0, 0]]  1번 평면
-
-        [[0, 0, 0]
-         [0, 0, 0]
-         [0, 0, 0]]  2번 평면
-        ]
+        0 ~3 번 평면: 나의 표시만 1로 체크하며 4수까지 저장
+        4 ~7 번 평면: 상대 표시만 1로 체크하며 4수까지 저장
+        8번 평면: O만 1로 체크 (누가 O, X 인지 구별 용)
 
     action
     ----------
     tuple(유저타입, 좌표행, 좌표열).
 
-        action = (0, 1, 1) -> step(action) -> observation[0][1][1] = 1
+        state가 board 상황과 다르므로 (0번, 4번, 8번)을 모아 3x3x3 board 를 다시구성 함.
+        action = (0, 1, 1) -> step(action) -> state.appendleft(board(action))
 
     Warning
     ----------
     reset()시 plyer_color 를 반드시 설정해야 함.
         >> env = TicTacToeEnv()
         >> MARK_O = 0
-        >> observation = env.reset(player_color=MARK_O)
+        >> board = env.reset(player_color=MARK_O)
 
     gym.Env
     ----------
@@ -73,39 +60,55 @@ class TicTacToeEnv(gym.Env):
     reward = (-1, 0, 1)  # 보상의 범위 참고: 패배:-1, 무승부:0, 승리:1
 
     def __init__(self):
-        self.observation = None
+        self.state = None
+        self.board = None
         self.viewer = None  # 뷰어
         self.player_color = None  # player의 O, X
+        self.player_history = None
+        self.opponent_history = None
         self.reset()
 
-    def reset(self, observation=None, player_color=None):
-        """observation 리셋 함수.
+    def reset(self, state=None, player_color=None):
+        """리셋 함수.
 
-        observation 초기화: 3x3 배열 3장.
+        state 초기화: 3x3 배열 3장.
 
         """
-
-        # input이 없으면 초기 보드
-        if observation is None:
-            self.observation = np.zeros((3, 3, 3), 'int')
+        # input이 없으면 초기 state
+        if state is None:
+            self.state = np.zeros((9, 3, 3), 'int').flatten()
+            # 보드
+            self.board = np.zeros((3, 3, 3), 'int')
+            self.player_history = deque([PLANE] * 4, maxlen=4)
+            self.opponent_history = deque([PLANE] * 4, maxlen=4)
         # 있으면 그걸로 초기화
         else:
-            self.observation = observation
+            self.state = state.copy()
+            origin_state = state.reshape(9, 3, 3)
+            self.board = np.zeros((3, 3, 3), 'int')
+            self.board[PLAYER] = origin_state[0]
+            self.board[OPPONENT] = origin_state[4]
+            self.board[2] = origin_state[8]
+            self.player_history = deque(
+                [origin_state[0].flatten(), origin_state[1].flatten(),
+                 origin_state[2].flatten(), origin_state[3].flatten()], maxlen=4)
+            self.opponent_history = deque(
+                [origin_state[4].flatten(), origin_state[5].flatten(),
+                 origin_state[6].flatten(), origin_state[7].flatten()], maxlen=4)
 
         # 플레이어 컬러 설정
         self.player_color = player_color
         self.viewer = None   # 뷰어 리셋
-        # observation 리턴
-        return self.observation
+        # board 리턴
+        return self.state
 
     def step(self, action):
-        """한번의 action에 observation가 어떻게 변하는지 정하는 메소드.
+        """한번의 action에 board가 어떻게 변하는지 정하는 메소드.
 
         승부가 나면 외부에서 reset()을 호출하여 환경을 초기화 해야 함.
-        action을 받아서 (observation, reward, done, info)인 튜플 리턴 함.
+        action을 받아서 (board, reward, done, info)인 튜플 리턴 함.
 
         """
-
         # 사전 규칙 위반 필터링
         # player color 미지정
         if self.player_color is None:
@@ -114,36 +117,44 @@ class TicTacToeEnv(gym.Env):
         # 착수 금지: action 자리에 이미 자리가 차있으면 중단
         pure_action = action[1:]
         for i in range(2):
-            if self.observation[i][pure_action] == 1:
+            if self.board[i][pure_action] == 1:
                 raise NotImplementedError("No Legal Move!")
 
         # "O"가 아닌 유저가 처음에 하면 중단
         if self.player_color != MARK_O:
-            if np.sum(self.observation) == 1 and action[USER_TYPE] == PLAYER:
+            if np.sum(self.board) == 1 and action[USER_TYPE] == PLAYER:
                 raise NotImplementedError("Not Your Turn!")
         else:
-            if np.sum(self.observation) == 1 and action[USER_TYPE] == OPPONENT:
+            if np.sum(self.board) == 1 and action[USER_TYPE] == OPPONENT:
                 raise NotImplementedError("Not Your Turn!")
 
         # 규칙 위반 아닐시 action 적용
-        self.observation[action] = 1
+        self.board[action] = 1
 
         # 사후 규칙 위반 필터링
         # 같은 주체가연속 두번 하면 오류 발생
-        redupl = np.sum(self.observation[PLAYER]) - np.sum(self.observation[OPPONENT])
+        redupl = np.sum(self.board[PLAYER]) - np.sum(self.board[OPPONENT])
         if abs(redupl) > 1:
             raise NotImplementedError("No Place Twice!")
 
         # 2번 보드에 Mark_O 동기화
         if self.player_color == MARK_O:
-            self.observation[2] = self.observation[PLAYER]
+            self.board[2] = self.board[PLAYER]
         else:
-            self.observation[2] = self.observation[OPPONENT]
+            self.board[2] = self.board[OPPONENT]
+
+        if action[USER_TYPE] == PLAYER:
+            self.player_history.appendleft(self.board[PLAYER].flatten())
+        else:
+            self.opponent_history.appendleft(self.board[OPPONENT].flatten())
+        self.state = np.r_[np.asarray(self.player_history).flatten(),
+                           np.asarray(self.opponent_history).flatten(),
+                           np.asarray(self.board[2]).flatten()]
 
         return self._check_win()  # 승패 체크해서 결과 리턴
 
     def _check_win(self):
-        """observation 승패체크용 내부 메소드."""
+        """board 승패체크용 내부 메소드."""
 
         # 승리패턴 8가지 구성 (1:돌이 있는 곳, 0: 돌이 없는 곳)
         win_pattern = np.array([[[1, 1, 1], [0, 0, 0], [0, 0, 0]],
@@ -159,37 +170,37 @@ class TicTacToeEnv(gym.Env):
             for k in range(8):
                 # 2진 배열은 패턴을 포함할때 서로 곱(행렬곱 아님)하면 패턴 자신이 나옴
                 if np.array_equal(
-                        self.observation[i] * win_pattern[k], win_pattern[k]):
+                        self.board[i] * win_pattern[k], win_pattern[k]):
                     if i == PLAYER:  # i가 플레이어면 승리
                         reward = 1  # 보상 1
                         done = True  # 게임 끝
                         info = {}
                         print('## You Win! ##')  # 승리 메세지 출력
-                        return self.observation, reward, done, info  # 필수 요소 리턴!
+                        return self.state, reward, done, info  # 필수 요소 리턴!
                     else:  # i가 상대면 패배
                         reward = -1  # 보상 -1
                         done = True  # 게임 끝
                         info = {}
                         print('## You Lose! ##')  # 너 짐
-                        return self.observation, reward, done, info  # 필수 요소 리턴!
+                        return self.state, reward, done, info  # 필수 요소 리턴!
 
         # 다 돌려봤는데 승부난게 없더라 근데 "O"식별용 2번보드에 들어있는게 5개면? 비김
-        if np.count_nonzero(self.observation[2]) == 5:
+        if np.count_nonzero(self.board[2]) == 5:
             reward = 0  # 보상 0
             done = True  # 게임 끝
             info = {}
             print('##  Draw! ##')  # 비김
-            return self.observation, reward, done, info
+            return self.state, reward, done, info
 
         # 이거 다~~~ 아니면 다음 수 둬야지
         else:
             reward = 0
             done = False  # 안 끝남!
             info = {}
-            return self.observation, reward, done, info
+            return self.state, reward, done, info
 
     def render(self, mode='human', close=False):
-        """현재 observation를 그려주는 함수."""
+        """현재 board를 그려주는 함수."""
 
         if close:  # 클로즈값이 참인데
             if self.viewer is not None:  # 뷰어가 비어있지 않으면
@@ -303,7 +314,7 @@ class TicTacToeEnv(gym.Env):
             trans_X9 = rendering.Transform(render_loc[8])
             self.image_X9.add_attr(trans_X9)
 
-        # observation 정보에 맞는 이미지를 뷰어에 붙이는 과정
+        # board 정보에 맞는 이미지를 뷰어에 붙이는 과정
         # 좌표번호마다 O, X 가 있는지 확인하여 해당하는 이미지를 뷰어에 붙임 (렌더링 때 보임)
         # O, X 의 정체성 설정
         render_O = None
@@ -315,50 +326,61 @@ class TicTacToeEnv(gym.Env):
             render_O = OPPONENT
             render_X = PLAYER
 
-        if self.observation[render_O][0][0] == 1:
+        if self.board[render_O][0][0] == 1:
             self.viewer.add_geom(self.image_O1)
-        elif self.observation[render_X][0][0] == 1:
+        elif self.board[render_X][0][0] == 1:
             self.viewer.add_geom(self.image_X1)
 
-        if self.observation[render_O][0][1] == 1:
+        if self.board[render_O][0][1] == 1:
             self.viewer.add_geom(self.image_O2)
-        elif self.observation[render_X][0][1] == 1:
+        elif self.board[render_X][0][1] == 1:
             self.viewer.add_geom(self.image_X2)
 
-        if self.observation[render_O][0][2] == 1:
+        if self.board[render_O][0][2] == 1:
             self.viewer.add_geom(self.image_O3)
-        elif self.observation[render_X][0][2] == 1:
+        elif self.board[render_X][0][2] == 1:
             self.viewer.add_geom(self.image_X3)
 
-        if self.observation[render_O][1][0] == 1:
+        if self.board[render_O][1][0] == 1:
             self.viewer.add_geom(self.image_O4)
-        elif self.observation[render_X][1][0] == 1:
+        elif self.board[render_X][1][0] == 1:
             self.viewer.add_geom(self.image_X4)
 
-        if self.observation[render_O][1][1] == 1:
+        if self.board[render_O][1][1] == 1:
             self.viewer.add_geom(self.image_O5)
-        elif self.observation[render_X][1][1] == 1:
+        elif self.board[render_X][1][1] == 1:
             self.viewer.add_geom(self.image_X5)
 
-        if self.observation[render_O][1][2] == 1:
+        if self.board[render_O][1][2] == 1:
             self.viewer.add_geom(self.image_O6)
-        elif self.observation[render_X][1][2] == 1:
+        elif self.board[render_X][1][2] == 1:
             self.viewer.add_geom(self.image_X6)
 
-        if self.observation[render_O][2][0] == 1:
+        if self.board[render_O][2][0] == 1:
             self.viewer.add_geom(self.image_O7)
-        elif self.observation[render_X][2][0] == 1:
+        elif self.board[render_X][2][0] == 1:
             self.viewer.add_geom(self.image_X7)
 
-        if self.observation[render_O][2][1] == 1:
+        if self.board[render_O][2][1] == 1:
             self.viewer.add_geom(self.image_O8)
-        elif self.observation[render_X][2][1] == 1:
+        elif self.board[render_X][2][1] == 1:
             self.viewer.add_geom(self.image_X8)
 
-        if self.observation[render_O][2][2] == 1:
+        if self.board[render_O][2][2] == 1:
             self.viewer.add_geom(self.image_O9)
-        elif self.observation[render_X][2][2] == 1:
+        elif self.board[render_X][2][2] == 1:
             self.viewer.add_geom(self.image_X9)
 
         # rgb 모드면 뷰어를 렌더링해서 리턴
         return self.viewer.render(return_rgb_array=mode == 'rgb_array')
+
+
+if __name__ == '__main__':
+    env = TicTacToeEnv()
+    env.reset(player_color=MARK_O)
+    action = (0, 1, 1)
+    state, reward, done, _ = env.step(action)
+    env.render()
+    action = (1, 1, 2)
+    env.step(action)
+    env.render()

@@ -21,8 +21,8 @@ PLANE = np.zeros((3, 3), 'int').flatten()
 
 NUM_CHANNEL = 128
 
-GAME = 100
-SIMULATION = 200
+GAME = 10
+SIMULATION = 400
 
 
 class MCTS(object):
@@ -32,13 +32,13 @@ class MCTS(object):
 
     state
     ------
-    observation에서 각 주체당 4수까지 저장해서 state로 만듦
+    state에서 각 주체당 4수까지 저장해서 state로 만듦
 
         9x3x3 numpy array -> 1x81 tuple
 
     edge
     -----
-    현재 observation에서 착수 가능한 모든 action자리에 4개의 정보 저장
+    현재 state에서 착수 가능한 모든 action자리에 4개의 정보 저장
 
     type: 3x3x4 numpy array
 
@@ -73,7 +73,6 @@ class MCTS(object):
         self.edge = None
         self.legal_move = None
         self.no_legal_move = None
-        self.observation = None
         self.state = None
         self.state_tensor = None
         self.state_variable = None
@@ -100,7 +99,6 @@ class MCTS(object):
         self.total_visit = 0
         self.legal_move = None
         self.no_legal_move = None
-        self.observation = None
         self.state = None
         self.state_tensor = None
         self.state_variable = None
@@ -118,12 +116,12 @@ class MCTS(object):
         self.v_theta = None
         self.action_count = 0
 
-    def select_action(self, observation):
-        """observation을 받아 변환 및 저장 후 action을 리턴하는 외부 메소드.
+    def select_action(self, state):
+        """state을 받아 변환 및 저장 후 action을 리턴하는 외부 메소드.
 
-        observation 변환
+        state 변환
         ----------
-        observation -> state -> node & state_variable
+        state -> state -> node & state_variable
 
             state: 9x3x3 numpy array.
                 유저별 최근 4-histroy 저장하여 재구성.
@@ -148,9 +146,11 @@ class MCTS(object):
 
         self.action_count += 1
 
-        # observation 변환
-        self.observation = observation
-        self.state = self._generate_state(observation)
+        if self.action_count == 1:
+            self.root = state
+
+        self.state = state
+        print(state.reshape(9, 3, 3))
 
         # state -> 문자열 -> hash로 변환 (state 대신 tree dict의 key로 사용)
         node = xxhash.xxh64(self.state.tostring()).hexdigest()
@@ -158,7 +158,8 @@ class MCTS(object):
         self.node_memory.appendleft(node)
 
         # 현재 보드에서 착수가능한 곳 검색
-        board_fill = self.observation[PLAYER] + self.observation[OPPONENT]
+        origin_state = state.reshape(9, 3, 3)
+        board_fill = origin_state[0] + origin_state[4]
         self.legal_move = np.argwhere(board_fill == 0)
         self.no_legal_move = np.argwhere(board_fill != 0)
 
@@ -183,22 +184,6 @@ class MCTS(object):
         # tuple로 action 리턴
         return tuple(action)
 
-    def _generate_state(self, observation):
-        """observation 변환 메소드: action 주체별 최대 4수까지 history를 저장하여 state로 생성.
-
-            observation -> state
-
-        """
-
-        if self.current_user == OPPONENT:
-            self.player_history.appendleft(observation[PLAYER].flatten())
-        else:
-            self.opponent_history.appendleft(observation[OPPONENT].flatten())
-        state = np.r_[np.array(self.player_history).flatten(),
-                      np.array(self.opponent_history).flatten(),
-                      self.observation[2].flatten()]
-        return state
-
     def _tree_search(self, node):
         """tree search를 통해 선택, 확장을 진행하는 메소드.
 
@@ -219,8 +204,8 @@ class MCTS(object):
 
             for i in range(3):
                 for j in range(3):
-                    self.prob[i][j] = self.edge[i][j][P]
-                    edge_n[i][j] = self.edge[i][j][N]
+                    self.prob[i, j] = self.edge[i, j][P]
+                    edge_n[i, j] = self.edge[i, j][N]
             self.total_visit = np.sum(edge_n)
             # 계속 진행
             self.done = False
@@ -324,10 +309,10 @@ class MCTS(object):
 
         self._reset_episode()
 
-    def play(self, root_state, tau):
+    def play(self, tau):
         """root node의 pi를 계산하고 최댓값을 찾아 action을 return함."""
-
-        root_node = xxhash.xxh64(root_state.tostring()).hexdigest()
+        print(self.root.reshape(9, 3, 3))
+        root_node = xxhash.xxh64(self.root.tostring()).hexdigest()
         edge = self.tree[root_node]
 
         pi = np.zeros((3, 3), 'float')
@@ -341,7 +326,7 @@ class MCTS(object):
 
         for i in range(3):
             for j in range(3):
-                pi[i][j] = edge[i][j][N] / total_visit
+                pi[i, j] = edge[i, j][N] / total_visit
         if tau == 0:
             deterministic = np.argwhere(pi == pi.max())
             final_move = deterministic[np.random.choice(len(deterministic))]
@@ -353,7 +338,7 @@ class MCTS(object):
         return tuple(action), pi.flatten()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     start = time.time()
 
     train_date_store = deque(maxlen=4096)
@@ -370,7 +355,7 @@ if __name__ == "__main__":
 
     for game in range(GAME):
         player_color = (MARK_O + game) % 2
-        observation_game = env_game.reset(player_color=player_color)
+        state_game = env_game.reset(player_color=player_color)
         mcts = MCTS()
         root_state = None
         done_game = False
@@ -389,34 +374,34 @@ if __name__ == "__main__":
             for simul in range(SIMULATION):
                 print('#######   Simulation: {}   #######\n'.format(simul + 1))
 
-                observation_simul = env_simul.reset(
-                    observation_game.copy(), player_color=player_color)
+                state_simul = env_simul.reset(
+                    state_game.copy(), player_color=player_color)
                 done_simul = False
                 step_mcts = 0
 
                 while not done_simul:
                     print('---- BOARD ----')
-                    print(observation_simul[PLAYER] + observation_simul[OPPONENT] * 2.0, '\n')
+                    print(env_simul.board[PLAYER] + env_simul.board[OPPONENT] * 2.0, '\n')
 
                     current_user_mcts = (current_user_play + step_mcts) % 2
                     mcts.reset_step(current_user_mcts)
-                    action_simul = mcts.select_action(observation_simul)
-                    observation_simul, z_env, done_env, _ = env_simul.step(action_simul)
+                    action_simul=mcts.select_action(state_simul)
+                    state_simul, z_env, done_env, _=env_simul.step(action_simul)
                     step_mcts += 1
                     step_simul += 1
                     step_total_simul += 1
 
                     if step_mcts == 1:
-                        root_state = mcts.state
+                        root_state=mcts.state
 
-                    done_mcts = mcts.done
-                    v = mcts.value
-                    done_simul = done_mcts or done_env
+                    done_mcts=mcts.done
+                    v=mcts.value
+                    done_simul=done_mcts or done_env
 
                 if done_simul:
                     if done_mcts:
                         print('==== BACKUP ====')
-                        print(observation_simul[PLAYER] + observation_simul[OPPONENT] * 2.0, '\n')
+                        print(env_simul.board[PLAYER] + env_simul.board[OPPONENT] * 2.0, '\n')
                         print('(v: {:0.4f})\n'.format(v[0]))
 
                         mcts.backup(v[0])
@@ -424,14 +409,12 @@ if __name__ == "__main__":
 
                     else:
                         print('=== TERMINAL ===')
-                        print(observation_simul[PLAYER] + observation_simul[OPPONENT] * 2.0, '\n')
+                        print(env_simul.board[PLAYER] + env_simul.board[OPPONENT] * 2.0, '\n')
                         print("(z': {})\n".format(z_env))
 
                         mcts.backup(z_env)
                         result_simul[z_env] += 1
                         terminal_n += 1
-
-            finish_simul = round(float(time.time() - start))
 
             print("=" * 25, " {} Simulations End ".format(simul + 1), "=" * 25)
             print('Win: {}  Lose: {}  Draw: {}  Backup: {}  Terminal: {}  Step: {}\n'.format(
@@ -439,37 +422,37 @@ if __name__ == "__main__":
                 step_simul))
             print('##########    Game: {}    ##########\n'.format(game + 1))
             print('`*`*` ROOT `*`*`')
-            print(observation_game[PLAYER] + observation_game[OPPONENT] * 2.0, '\n')
+            print(env_game.board[PLAYER] + env_game.board[OPPONENT] * 2.0, '\n')
 
             mcts.reset_step(current_user_play)
 
             if step_play < 2:
-                tau = 1
+                tau=1
             else:
-                tau = 0
+                tau=0
 
-            action_game, pi = mcts.play(root_state, tau)
+            action_game, pi=mcts.play(tau)
             data_collector.appendleft(pi)
-            data_collector.appendleft(root_state)
-            observation_game, z, done_game, _ = env_game.step(action_game)
+            data_collector.appendleft(mcts.root)
+            state_game, z, done_game, _=env_game.step(action_game)
             step_play += 1
             step_game += 1
-
             print('=*=*=*=   Pi   =*=*=*=')
             print(pi.reshape(3, 3).round(decimals=2), '\n')
             print('`*`*` PLAY `*`*`')
-            print(observation_game[PLAYER] + observation_game[OPPONENT] * 2.0, '\n')
+            print(env_game.board[PLAYER] + env_game.board[OPPONENT] * 2.0, '\n')
+            print('tau: {}\n'.format(tau))
 
         if done_game:
             print("(z: {})\n".format(z))
             result_game[z] += 1
             for i, v in enumerate(data_collector):
-                s = np.zeros(81)
-                pi = np.zeros(9)
+                s=np.zeros(81)
+                pi=np.zeros(9)
                 if i % 2 == 0:
-                    s = v
+                    s=v
                 elif i % 2 == 1:
-                    pi = v
+                    pi=v
                 train_date_store.appendleft((s, pi, z))
             if z == 1:
                 if env_game.player_color == MARK_O:
@@ -478,18 +461,18 @@ if __name__ == "__main__":
     with open('data/train_dataset_s{}_g{}.pkl'.format(simul + 1, game + 1), 'wb') as f:
         pickle.dump(train_date_store, f)
 
-    finish_game = round(float(time.time() - start))
+    finish_game=round(float(time.time() - start))
 
     print("=" * 27, " {}  Game End  ".format(game + 1), "=" * 27)
-    stat_game = ('[GAME] Win: {}  Lose: {}  Draw: {}  Winrate: {:0.1f}%  WinMarkO: {}'.format(
+    stat_game=('[GAME] Win: {}  Lose: {}  Draw: {}  Winrate: {:0.1f}%  WinMarkO: {}'.format(
         result_game[1], result_game[-1], result_game[0],
         1 / (1 + np.exp(result_game[-1] / (game + 1)) / np.exp(result_game[1] / (game + 1))) * 100,
         win_mark_o))
     print(stat_game)
 
-    slack = slackweb.Slack(
-        url="https://hooks.slack.com/services/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")
+    slack=slackweb.Slack(
+        url = "https://hooks.slack.com/services/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")
     slack.notify(
-        text="Finished: [{} Game/{} Step] in {}s [Mac]".format(
+        text = "Finished: [{} Game/{} Step] in {}s [Mac]".format(
             game + 1, step_game + step_total_simul, finish_game))
-    slack.notify(text=stat_game)
+    slack.notify(text = stat_game)
