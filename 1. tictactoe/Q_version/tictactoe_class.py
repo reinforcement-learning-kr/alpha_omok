@@ -266,10 +266,6 @@ class GameState:
 
     # Check win
     def check_win(self):
-        # Draw (board is full)
-        if self.num_mark == GAMEBOARD_SIZE * GAMEBOARD_SIZE:
-            return 3
-
         # Check four stones in a row (Horizontal)
         for row in range(GAMEBOARD_SIZE):
             for col in range(GAMEBOARD_SIZE - WIN_MARK + 1):
@@ -325,6 +321,10 @@ class GameState:
                 if count_sum == -WIN_MARK:
                     return 2
 
+        # Draw (board is full)
+        if self.num_mark == GAMEBOARD_SIZE * GAMEBOARD_SIZE:
+            return 3
+            
         return 0
 
     # Display Win

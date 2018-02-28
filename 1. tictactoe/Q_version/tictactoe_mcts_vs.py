@@ -234,10 +234,6 @@ class self_demo:
 
 	# Check win
 	def check_win(self, gameboard, num_mark):
-		# Draw (board is full)
-		if num_mark == self.GAMEBOARD_SIZE  * self.GAMEBOARD_SIZE :
-		    return 3
-
 		# Check four stones in a row (Horizontal)
 		for row in range(self.GAMEBOARD_SIZE ):
 		    for col in range(self.GAMEBOARD_SIZE  - self.WIN_MARK + 1):
@@ -293,6 +289,10 @@ class self_demo:
 		        if count_sum == -self.WIN_MARK:
 		            return 2
 
+		# Draw (board is full)
+		if num_mark == self.GAMEBOARD_SIZE  * self.GAMEBOARD_SIZE :
+		    return 3
+			
 		# If No winner or no draw
 		return 0
 
