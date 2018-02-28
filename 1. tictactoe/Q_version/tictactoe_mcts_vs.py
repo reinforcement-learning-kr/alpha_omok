@@ -1,4 +1,4 @@
-# TicTacToe Guide version
+# TicTacToe Versus version
 
 # Import modules
 import pygame
@@ -33,7 +33,7 @@ class self_demo:
 
 		####################### Parameters for MCTS (Monte Carlo Tree Search) #######################
 		# Start mcts or not
-		self.do_mcts = True
+		self.do_mcts = False
 
 		# Number of iteration for each move
 		self.num_MCTS_iteration = 1000
@@ -83,7 +83,11 @@ class self_demo:
 				# Find Max Action
 				max_action = max(Q_list, key = Q_list.get)[1]
 				print('\nMax Action: ' + str(max_action + 1))
+
 				self.do_mcts = False
+				action = np.zeros([self.GAMEBOARD_SIZE * self.GAMEBOARD_SIZE])
+				action[max_action] = 1
+
 				print('MCTS Calculation time: ' + str(time.time() - start_time))
 
 			################################################################################################
@@ -92,12 +96,11 @@ class self_demo:
 			self.gameboard, self.check_valid_pos, self.win_index, self.turn = game_state.frame_step(action)
 
 			# If one move is done
-			if self.check_valid_pos:
+			if self.turn == 1:
 				self.do_mcts = True
 
 			# If game is finished
 			if self.win_index != 0:
-				self.do_mcts = True
 				self.gameboard = np.zeros([self.Num_spot, self.Num_spot])
 
 			# Delay for visualization
