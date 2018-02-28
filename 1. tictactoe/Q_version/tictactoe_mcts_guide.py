@@ -231,7 +231,7 @@ def MCTS_expand(MCTS_node, MCTS_edge, leafnode_id):
     current_board = copy.deepcopy(MCTS_node[leafnode_id]['state'])
     is_terminal = check_win(current_board, np.count_nonzero(current_board))
     legal_moves = find_legal_moves(current_board)
-    expand_count = 30
+    expand_count = 25
 
     if leafnode_id == (0,) or MCTS_node[leafnode_id]['total_n'] > expand_count:
         is_expand = True
@@ -262,7 +262,7 @@ def MCTS_expand(MCTS_node, MCTS_edge, leafnode_id):
                                         'parent': leafnode_id,
                                         'total_n': 0}
 
-            MCTS_edge[child_node_id] = {'N': 0, 'W': 0, 'Q': 0, 'parent_node': leafnode_id}
+            MCTS_edge[child_node_id] = {'N': 0, 'W': 0, 'Q': 0, 'count_w': 0, 'count_d': 0, 'count_l': 0, 'parent_node': leafnode_id}
 
             MCTS_node[leafnode_id]['child'].append(chosen_index)
 
@@ -302,10 +302,13 @@ def MCTS_backup(MCTS_node, MCTS_edge, update_node_id, sim_result):
 
     if sim_result == 3:
         value = 0
+        MCTS_edge[current_id]['count_d'] += 1
     elif sim_result-1 == current_player:
         value = 1
+        MCTS_edge[current_id]['count_w'] += 1
     else:
         value = -1
+        MCTS_edge[current_id]['count_l'] += 1
 
     while True:
         MCTS_edge[current_id]['N'] += 1
