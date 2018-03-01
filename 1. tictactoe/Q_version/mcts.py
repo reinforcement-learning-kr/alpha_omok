@@ -98,9 +98,9 @@ class MCTS:
             # If leaf node is terminal state, just return MCTS tree and True
             return tree, edges, leaf_id
 
-    def simulation(self, MCTS_node, MCTS_edge, update_node_id):
-        current_board = copy.deepcopy(MCTS_node[update_node_id]['state'])
-        current_player = copy.deepcopy(MCTS_node[update_node_id]['player'])
+    def simulation(self, tree, edges, child_id):
+        current_board = copy.deepcopy(tree[child_id]['state'])
+        current_player = copy.deepcopy(tree[child_id]['player'])
         while True:
             if self.check_win(current_board,
                               np.count_nonzero(current_board)) != 0:
@@ -120,9 +120,9 @@ class MCTS:
                     current_player = 0
                     current_board[chosen_coord[0]][chosen_coord[1]] = -1
 
-    def backup(self, MCTS_node, MCTS_edge, update_node_id, sim_result):
-        current_player = copy.deepcopy(MCTS_node[(0,)]['player'])
-        current_id = update_node_id
+    def backup(self, tree, edges, child_id, sim_result):
+        current_player = copy.deepcopy(tree[(0,)]['player'])
+        current_id = child_id
 
         if sim_result == 3:
             value = 0.7
@@ -132,16 +132,16 @@ class MCTS:
             value = -1
 
         while True:
-            MCTS_edge[current_id]['N'] += 1
-            MCTS_edge[current_id]['W'] += value
-            MCTS_edge[current_id]['Q'] = MCTS_edge[current_id]['W'] / \
-                                         MCTS_edge[current_id]['N']
-            MCTS_node[MCTS_edge[current_id]['parent_node']]['total_n'] += 1
+            edges[current_id]['N'] += 1
+            edges[current_id]['W'] += value
+            edges[current_id]['Q'] = edges[current_id]['W'] / \
+                                        edges[current_id]['N']
+            tree[edges[current_id]['parent_node']]['total_n'] += 1
 
-            if MCTS_node[current_id]['parent'] == (0,):
-                return MCTS_node, MCTS_edge
+            if tree[current_id]['parent'] == (0,):
+                return tree, edges
             else:
-                current_id = MCTS_node[current_id]['parent']
+                current_id = tree[current_id]['parent']
 
     def find_legal_moves(self, game_board):
         legal_moves = []
@@ -171,11 +171,11 @@ class MCTS:
         for row in range(self.state_size - self.win_mark + 1):
             for col in range(self.state_size):
                 # Black win!
-                if np.sum(gameboard[row: row + self.win_mark,
+                if np.sum(game_board[row: row + self.win_mark,
                           col]) == self.win_mark:
                     return 1
                 # White win!
-                if np.sum(gameboard[row: row + self.win_mark,
+                if np.sum(game_board[row: row + self.win_mark,
                           col]) == -self.win_mark:
                     return 2
 
@@ -184,9 +184,9 @@ class MCTS:
             for col in range(self.state_size - self.win_mark + 1):
                 count_sum = 0
                 for i in range(self.win_mark):
-                    if gameboard[row + i, col + i] == 1:
+                    if game_board[row + i, col + i] == 1:
                         count_sum += 1
-                    if gameboard[row + i, col + i] == -1:
+                    if game_board[row + i, col + i] == -1:
                         count_sum -= 1
 
                 # Black Win!
@@ -201,9 +201,9 @@ class MCTS:
             for col in range(self.state_size - self.win_mark + 1):
                 count_sum = 0
                 for i in range(self.win_mark):
-                    if gameboard[row - i, col + i] == 1:
+                    if game_board[row - i, col + i] == 1:
                         count_sum += 1
-                    if gameboard[row - i, col + i] == -1:
+                    if game_board[row - i, col + i] == -1:
                         count_sum -= 1
 
                 # Black Win!
@@ -258,8 +258,6 @@ if __name__ == '__main__':
                 count += 1
 
             print('=================================')
-            for i in range(3):
-                print(tree[(0,)]['state'][i, :])
             print(tree[(0,)]['state'])
 
             print(
@@ -280,7 +278,7 @@ if __name__ == '__main__':
             print('MCTS Calculation time: ' + str(time.time() - start_time))
 
         # Take action and get info. for update
-        gameboard, agent.check_valid_pos, agent.win_index, agent.turn = \
+        game_board, agent.check_valid_pos, agent.win_index, agent.turn = \
             game_state.frame_step(action)
 
         # If one move is done
