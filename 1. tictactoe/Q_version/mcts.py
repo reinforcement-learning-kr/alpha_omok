@@ -1,4 +1,4 @@
-import tictactoe_class as game
+import tictactoe as game
 import numpy as np
 import random
 import time
@@ -6,9 +6,10 @@ import copy
 
 
 class MCTS:
-    def __init__(self, env):
+    def __init__(self, env, state_size, action_size, win_mark):
         # Get parameters
-        self.action_size = env.Return_Num_Action()
+        self.state_size = state_size
+        self.action_size = action_size
 
         # Initialize Parameters
         self.step = 1
@@ -17,35 +18,27 @@ class MCTS:
 
         # Turn = 0: Black, 1: White
         self.turn = 0
-
-        self.board_size = int(np.sqrt(self.action_size))
-        self.gameboard = np.zeros([self.board_size, self.board_size])
         self.check_valid_pos = 0
         self.win_index = 0
 
-        # Parameters for MCTS (Monte Carlo Tree Search)
-        # Number of iteration for each move
-        self.num_MCTS_iteration = 1000
+        self.win_mark = win_mark
 
-        self.GAMEBOARD_SIZE, self.WIN_MARK = game.Return_BoardParams()
-
-    # Search (MCTS)
-    def selection(self, MCTS_node, MCTS_edge):
+    def selection(self, node, edge):
         node_id = (0,)
         # Loop until finding leaf node
         while True:
             # Check if current node is leaf node
-            if len(MCTS_node[node_id]['child']) == 0:
+            if len(node[node_id]['child']) == 0:
                 # Leaf node!
                 return node_id
             else:
                 Max_QU = -100
                 parent_id = node_id
-                for i in range(len(MCTS_node[node_id]['child'])):
-                    id_temp = parent_id + (MCTS_node[parent_id]['child'][i],)
-                    current_w = MCTS_edge[id_temp]['W']
-                    current_n = copy.deepcopy(MCTS_edge[id_temp]['N'])
-                    parent_n = MCTS_node[MCTS_edge[id_temp]['parent_node']][
+                for i in range(len(node[node_id]['child'])):
+                    id_temp = parent_id + (node[parent_id]['child'][i],)
+                    current_w = edge[id_temp]['W']
+                    current_n = copy.deepcopy(edge[id_temp]['N'])
+                    parent_n = MCTS_node[edge[id_temp]['parent_node']][
                         'total_n']
 
                     if current_n == 0:
@@ -58,9 +51,9 @@ class MCTS:
                         Max_QU = Q + U
                         node_id = id_temp
 
-    def expansion(self, MCTS_node, MCTS_edge, leafnode_id):
+    def expansion(self, node, edge, leafnode_id):
         # Find legal move
-        current_board = copy.deepcopy(MCTS_node[leafnode_id]['state'])
+        current_board = copy.deepcopy(node[leafnode_id]['state'])
         is_terminal = self.check_win(current_board,
                                      np.count_nonzero(current_board))
         legal_moves = self.find_legal_moves(current_board)
@@ -151,12 +144,12 @@ class MCTS:
             else:
                 current_id = MCTS_node[current_id]['parent']
 
-    def find_legal_moves(self, gameboard):
+    def find_legal_moves(self, game_board):
         legal_moves = []
         count_moves = 0
-        for i in range(self.GAMEBOARD_SIZE):
-            for j in range(self.GAMEBOARD_SIZE):
-                if gameboard[i][j] == 0:
+        for i in range(self.state_size):
+            for j in range(self.state_size):
+                if game_board[i][j] == 0:
                     legal_moves.append([(i, j), count_moves])
                 count_moves += 1
         return legal_moves
@@ -164,66 +157,66 @@ class MCTS:
     # Check win
     def check_win(self, gameboard, num_mark):
         # Check four stones in a row (Horizontal)
-        for row in range(self.GAMEBOARD_SIZE):
-            for col in range(self.GAMEBOARD_SIZE - self.WIN_MARK + 1):
+        for row in range(self.state_size):
+            for col in range(self.state_size - self.win_mark + 1):
                 # Black win!
                 if np.sum(gameboard[row,
-                          col:col + self.WIN_MARK]) == self.WIN_MARK:
+                          col:col + self.win_mark]) == self.win_mark:
                     return 1
                 # White win!
                 if np.sum(gameboard[row,
-                          col:col + self.WIN_MARK]) == -self.WIN_MARK:
+                          col:col + self.win_mark]) == -self.win_mark:
                     return 2
 
         # Check four stones in a colum (Vertical)
-        for row in range(self.GAMEBOARD_SIZE - self.WIN_MARK + 1):
-            for col in range(self.GAMEBOARD_SIZE):
+        for row in range(self.state_size - self.win_mark + 1):
+            for col in range(self.state_size):
                 # Black win!
-                if np.sum(gameboard[row: row + self.WIN_MARK,
-                          col]) == self.WIN_MARK:
+                if np.sum(gameboard[row: row + self.win_mark,
+                          col]) == self.win_mark:
                     return 1
                 # White win!
-                if np.sum(gameboard[row: row + self.WIN_MARK,
-                          col]) == -self.WIN_MARK:
+                if np.sum(gameboard[row: row + self.win_mark,
+                          col]) == -self.win_mark:
                     return 2
 
         # Check four stones in diagonal (Diagonal)
-        for row in range(self.GAMEBOARD_SIZE - self.WIN_MARK + 1):
-            for col in range(self.GAMEBOARD_SIZE - self.WIN_MARK + 1):
+        for row in range(self.state_size - self.win_mark + 1):
+            for col in range(self.state_size - self.win_mark + 1):
                 count_sum = 0
-                for i in range(self.WIN_MARK):
+                for i in range(self.win_mark):
                     if gameboard[row + i, col + i] == 1:
                         count_sum += 1
                     if gameboard[row + i, col + i] == -1:
                         count_sum -= 1
 
                 # Black Win!
-                if count_sum == self.WIN_MARK:
+                if count_sum == self.win_mark:
                     return 1
 
                 # White WIN!
-                if count_sum == -self.WIN_MARK:
+                if count_sum == -self.win_mark:
                     return 2
 
-        for row in range(self.WIN_MARK - 1, self.GAMEBOARD_SIZE):
-            for col in range(self.GAMEBOARD_SIZE - self.WIN_MARK + 1):
+        for row in range(self.win_mark - 1, self.state_size):
+            for col in range(self.state_size - self.win_mark + 1):
                 count_sum = 0
-                for i in range(self.WIN_MARK):
+                for i in range(self.win_mark):
                     if gameboard[row - i, col + i] == 1:
                         count_sum += 1
                     if gameboard[row - i, col + i] == -1:
                         count_sum -= 1
 
                 # Black Win!
-                if count_sum == self.WIN_MARK:
+                if count_sum == self.win_mark:
                     return 1
 
                 # White WIN!
-                if count_sum == -self.WIN_MARK:
+                if count_sum == -self.win_mark:
                     return 2
 
         # Draw (board is full)
-        if num_mark == self.GAMEBOARD_SIZE * self.GAMEBOARD_SIZE:
+        if num_mark == self.state_size * self.state_size:
             return 3
 
         # If No winner or no draw
@@ -232,27 +225,35 @@ class MCTS:
 
 if __name__ == '__main__':
     env = game
-    agent = MCTS(env)
+    state_size, win_mark = game.Return_BoardParams()
+    action_size = env.Return_Num_Action()
+
+    agent = MCTS(env, state_size, action_size, win_mark)
     # Define game state
     game_state = env.GameState()
+    board_shape = [state_size, state_size]
+    game_board = np.zeros(board_shape)
 
-    # Game Loop
+    do_mcts = True
+    num_mcts = 1000
+
     while True:
         # Select action
         action = 0
 
         # MCTS
-        if agent.do_mcts:
+        if do_mcts:
             start_time = time.time()
             # Initialize Tree
-            MCTS_node = {
-                (0,): {'state': agent.gameboard, 'player': agent.turn,
-                       'child': [], 'parent': None, 'total_n': 0}}
-            MCTS_edge = {}
+            node = {(0,): {'state': game_board, 'player': agent.turn,
+                        'child': [], 'parent': None, 'total_n': 0}}
+            print(node[(0,)])
+            asdf
+            edges = {}
 
             count = 0
-            for i in range(agent.num_MCTS_iteration):
-                leafnode_id = agent.selection(MCTS_node, MCTS_edge)
+            for i in range(num_mcts):
+                leafnode_id = agent.selection(node, edges)
                 MCTS_node, MCTS_edge, update_node_id = agent.expansion(
                     MCTS_node, MCTS_edge, leafnode_id)
                 # sim_result: 1 = O win, 2 = X win, 3 = Draw
@@ -282,21 +283,21 @@ if __name__ == '__main__':
             # Find Max Action
             max_action = max(Q_list, key=Q_list.get)[1]
             print('\nMax Action: ' + str(max_action + 1))
-            agent.do_mcts = False
+            do_mcts = False
             print('MCTS Calculation time: ' + str(time.time() - start_time))
 
         # Take action and get info. for update
-        agent.gameboard, agent.check_valid_pos, agent.win_index, agent.turn = \
+        gameboard, agent.check_valid_pos, agent.win_index, agent.turn = \
             game_state.frame_step(action)
 
         # If one move is done
         if agent.check_valid_pos:
-            agent.do_mcts = True
+            do_mcts = True
 
         # If game is finished
         if agent.win_index != 0:
-            agent.do_mcts = True
-            agent.gameboard = np.zeros([agent.board_size, agent.board_size])
+            do_mcts = True
+            game_board = np.zeros(board_shape)
 
         # Delay for visualization
         time.sleep(0.01)
