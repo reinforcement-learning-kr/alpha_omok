@@ -27,26 +27,30 @@ HALF_WINDOW_HEIGHT = int(WINDOW_HEIGHT / 2)
 
 # Colors
 #				 R    G    B
-WHITE        = (255, 255, 255)
-BLACK		 = (  0,   0,   0)
-RED 		 = (200,  72,  72)
-LIGHT_ORANGE = (198, 108,  58)
-ORANGE       = (180, 122,  48)
-GREEN		 = ( 72, 160,  72)
-BLUE 		 = ( 66,  72, 200)
-YELLOW 		 = (162, 162,  42)
-NAVY         = ( 75,   0, 130)
-PURPLE       = (143,   0, 255)
-BADUK        = (220, 179,  92)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (200, 72, 72)
+LIGHT_ORANGE = (198, 108, 58)
+ORANGE = (180, 122, 48)
+GREEN = (72, 160, 72)
+BLUE = (66, 72, 200)
+YELLOW = (162, 162, 42)
+NAVY = (75, 0, 130)
+PURPLE = (143, 0, 255)
+BADUK = (220, 179, 92)
+
 
 def ReturnName():
     return 'tictactoe'
 
+
 def Return_Num_Action():
     return GAMEBOARD_SIZE * GAMEBOARD_SIZE
 
+
 def Return_BoardParams():
     return GAMEBOARD_SIZE, WIN_MARK
+
 
 class GameState:
     def __init__(self):
@@ -85,10 +89,14 @@ class GameState:
         self.Y_coord = []
 
         for i in range(GAMEBOARD_SIZE):
-            self.X_coord.append(MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE)) + int(GRID_SIZE/(GAMEBOARD_SIZE * 2)))
-            self.Y_coord.append(TOP_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE)) + int(GRID_SIZE/(GAMEBOARD_SIZE * 2)))
+            self.X_coord.append(
+                MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE)) + int(
+                    GRID_SIZE / (GAMEBOARD_SIZE * 2)))
+            self.Y_coord.append(
+                TOP_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE)) + int(
+                    GRID_SIZE / (GAMEBOARD_SIZE * 2)))
 
-    def frame_step(self, input_): # Game loop
+    def frame_step(self, input_):  # Game loop
         # Initial settings
         if self.init == True:
             self.num_mark = 0
@@ -113,7 +121,7 @@ class GameState:
         mouse_pos = 0
         if np.all(input_) == 0 or self.turn == 0:
             # If guide mode of O's turn
-            for event in pygame.event.get(): # event loop
+            for event in pygame.event.get():  # event loop
                 if event.type == QUIT:
                     self.terminate()
 
@@ -128,13 +136,16 @@ class GameState:
         if mouse_pos != 0:
             for i in range(len(self.X_coord)):
                 for j in range(len(self.Y_coord)):
-                    if (self.X_coord[i] - 30 < mouse_pos[0] < self.X_coord[i] + 30) and (self.Y_coord[j] - 30 < mouse_pos[1] < self.Y_coord[j] + 30):
+                    if (self.X_coord[i] - 30 < mouse_pos[0] < self.X_coord[
+                        i] + 30) and (self.Y_coord[j] - 30 < mouse_pos[1] <
+                                              self.Y_coord[j] + 30):
                         check_valid_pos = True
                         x_index = i
                         y_index = j
 
                         # If selected spot is already occupied, it is not valid move!
-                        if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
+                        if self.gameboard[y_index, x_index] == 1 or \
+                                        self.gameboard[y_index, x_index] == -1:
                             check_valid_pos = False
 
         # If vs mode and MCTS works
@@ -179,8 +190,8 @@ class GameState:
 
     # Exit the game
     def terminate(self):
-    	pygame.quit()
-    	sys.exit()
+        pygame.quit()
+        sys.exit()
 
     # Draw main board
     def draw_main_board(self):
@@ -190,44 +201,62 @@ class GameState:
         # pygame.draw.rect(DISPLAYSURF, BADUK, mainboard_rect)
 
         # Horizontal Lines
-        for i in range(GAMEBOARD_SIZE+1):
-            pygame.draw.line(DISPLAYSURF, WHITE, (MARGIN, TOP_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE))), (WINDOW_WIDTH - (MARGIN), TOP_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE))), 1)
+        for i in range(GAMEBOARD_SIZE + 1):
+            pygame.draw.line(DISPLAYSURF, WHITE, (
+            MARGIN, TOP_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE))), (
+                             WINDOW_WIDTH - (MARGIN), TOP_MARGIN + i * int(
+                                 GRID_SIZE / (GAMEBOARD_SIZE))), 1)
 
         # Vertical Lines
-        for i in range(GAMEBOARD_SIZE+1):
-            pygame.draw.line(DISPLAYSURF, WHITE, (MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE)), TOP_MARGIN), (MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE)), TOP_MARGIN + GRID_SIZE), 1)
+        for i in range(GAMEBOARD_SIZE + 1):
+            pygame.draw.line(DISPLAYSURF, WHITE, (
+            MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE)), TOP_MARGIN), (
+                             MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE)),
+                             TOP_MARGIN + GRID_SIZE), 1)
 
         # Draw center circle
-        pygame.draw.circle(DISPLAYSURF, WHITE, (MARGIN + 4 * int(GRID_SIZE/(GAMEBOARD_SIZE)), TOP_MARGIN + 4 * int(GRID_SIZE/(GAMEBOARD_SIZE))), 5, 0)
+        pygame.draw.circle(DISPLAYSURF, WHITE, (
+        MARGIN + 4 * int(GRID_SIZE / (GAMEBOARD_SIZE)),
+        TOP_MARGIN + 4 * int(GRID_SIZE / (GAMEBOARD_SIZE))), 5, 0)
 
         # Draw marks
         for i in range(self.gameboard.shape[0]):
             for j in range(self.gameboard.shape[1]):
-                if self.gameboard[i,j] == 1:
-                    pygame.draw.circle(DISPLAYSURF, WHITE, (self.X_coord[j], self.Y_coord[i]), 30, 0)
+                if self.gameboard[i, j] == 1:
+                    pygame.draw.circle(DISPLAYSURF, WHITE,
+                                       (self.X_coord[j], self.Y_coord[i]), 30,
+                                       0)
 
-                if self.gameboard[i,j] == -1:
-                    pygame.draw.line(DISPLAYSURF, WHITE, (self.X_coord[j] - 30, self.Y_coord[i] - 30), (self.X_coord[j] + 30, self.Y_coord[i] + 30), 10)
-                    pygame.draw.line(DISPLAYSURF, WHITE, (self.X_coord[j] - 30, self.Y_coord[i] + 30), (self.X_coord[j] + 30, self.Y_coord[i] - 30), 10)
+                if self.gameboard[i, j] == -1:
+                    pygame.draw.line(DISPLAYSURF, WHITE, (
+                    self.X_coord[j] - 30, self.Y_coord[i] - 30), (
+                                     self.X_coord[j] + 30,
+                                     self.Y_coord[i] + 30), 10)
+                    pygame.draw.line(DISPLAYSURF, WHITE, (
+                    self.X_coord[j] - 30, self.Y_coord[i] + 30), (
+                                     self.X_coord[j] + 30,
+                                     self.Y_coord[i] - 30), 10)
 
     # Display title
     def title_msg(self):
-    	titleSurf = TITLE_FONT.render('TicTacToe', True, WHITE)
-    	titleRect = titleSurf.get_rect()
-    	titleRect.topleft = (MARGIN, 10)
-    	DISPLAYSURF.blit(titleSurf, titleRect)
+        titleSurf = TITLE_FONT.render('TicTacToe', True, WHITE)
+        titleRect = titleSurf.get_rect()
+        titleRect.topleft = (MARGIN, 10)
+        DISPLAYSURF.blit(titleSurf, titleRect)
 
     # Display rule
     def rule_msg(self):
-    	ruleSurf1 = BASIC_FONT.render('Win: O or X mark has to be 3 in a row', True, WHITE)
-    	ruleRect1 = ruleSurf1.get_rect()
-    	ruleRect1.topleft = (MARGIN, 50)
-    	DISPLAYSURF.blit(ruleSurf1, ruleRect1)
+        ruleSurf1 = BASIC_FONT.render('Win: O or X mark has to be 3 in a row',
+                                      True, WHITE)
+        ruleRect1 = ruleSurf1.get_rect()
+        ruleRect1.topleft = (MARGIN, 50)
+        DISPLAYSURF.blit(ruleSurf1, ruleRect1)
 
-    	ruleSurf2 = BASIC_FONT.render('(horizontal, vertical, diagonal)', True, WHITE)
-    	ruleRect2 = ruleSurf1.get_rect()
-    	ruleRect2.topleft = (MARGIN, 70)
-    	DISPLAYSURF.blit(ruleSurf2, ruleRect2)
+        ruleSurf2 = BASIC_FONT.render('(horizontal, vertical, diagonal)', True,
+                                      WHITE)
+        ruleRect2 = ruleSurf1.get_rect()
+        ruleRect2.topleft = (MARGIN, 70)
+        DISPLAYSURF.blit(ruleSurf2, ruleRect2)
 
     # Display scores
     def score_msg(self):
@@ -236,17 +265,20 @@ class GameState:
         scoreRect1.topleft = (MARGIN, 105)
         DISPLAYSURF.blit(scoreSurf1, scoreRect1)
 
-        scoreSurf2 = BASIC_FONT.render('O = ' + str(self.o_win) + '  vs  ', True, WHITE)
+        scoreSurf2 = BASIC_FONT.render('O = ' + str(self.o_win) + '  vs  ',
+                                       True, WHITE)
         scoreRect2 = scoreSurf2.get_rect()
         scoreRect2.topleft = (scoreRect1.midright[0], 105)
         DISPLAYSURF.blit(scoreSurf2, scoreRect2)
 
-        scoreSurf3 = BASIC_FONT.render('X = ' + str(self.x_win) + '  vs  ', True, WHITE)
+        scoreSurf3 = BASIC_FONT.render('X = ' + str(self.x_win) + '  vs  ',
+                                       True, WHITE)
         scoreRect3 = scoreSurf3.get_rect()
         scoreRect3.topleft = (scoreRect2.midright[0], 105)
         DISPLAYSURF.blit(scoreSurf3, scoreRect3)
 
-        scoreSurf4 = BASIC_FONT.render('Draw = ' + str(self.count_draw), True, WHITE)
+        scoreSurf4 = BASIC_FONT.render('Draw = ' + str(self.count_draw), True,
+                                       WHITE)
         scoreRect4 = scoreSurf4.get_rect()
         scoreRect4.topleft = (scoreRect3.midright[0], 105)
         DISPLAYSURF.blit(scoreSurf4, scoreRect4)
@@ -280,10 +312,11 @@ class GameState:
         for row in range(GAMEBOARD_SIZE - WIN_MARK + 1):
             for col in range(GAMEBOARD_SIZE):
                 # Black win!
-                if np.sum(self.gameboard[row : row + WIN_MARK, col]) == WIN_MARK:
+                if np.sum(self.gameboard[row: row + WIN_MARK, col]) == WIN_MARK:
                     return 1
                 # White win!
-                if np.sum(self.gameboard[row : row + WIN_MARK, col]) == -WIN_MARK:
+                if np.sum(
+                        self.gameboard[row: row + WIN_MARK, col]) == -WIN_MARK:
                     return 2
 
         # Check four stones in diagonal (Diagonal)
@@ -304,7 +337,7 @@ class GameState:
                 if count_sum == -WIN_MARK:
                     return 2
 
-        for row in range(WIN_MARK-1, GAMEBOARD_SIZE):
+        for row in range(WIN_MARK - 1, GAMEBOARD_SIZE):
             for col in range(GAMEBOARD_SIZE - WIN_MARK + 1):
                 count_sum = 0
                 for i in range(WIN_MARK):
@@ -324,7 +357,7 @@ class GameState:
         # Draw (board is full)
         if self.num_mark == GAMEBOARD_SIZE * GAMEBOARD_SIZE:
             return 3
-            
+
         return 0
 
     # Display Win
@@ -339,7 +372,7 @@ class GameState:
 
             winSurf = GAMEOVER_FONT.render("O Win!", True, BLACK)
             winRect = winSurf.get_rect()
-            winRect.midtop = (WINDOW_WIDTH/2, WINDOW_HEIGHT/2 - 50)
+            winRect.midtop = (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 50)
             DISPLAYSURF.blit(winSurf, winRect)
             pygame.display.update()
             time.sleep(wait_time)
@@ -354,7 +387,7 @@ class GameState:
 
             winSurf = GAMEOVER_FONT.render("X Win!", True, WHITE)
             winRect = winSurf.get_rect()
-            winRect.midtop = (WINDOW_WIDTH/2, WINDOW_HEIGHT/2 - 50)
+            winRect.midtop = (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 50)
             DISPLAYSURF.blit(winSurf, winRect)
             pygame.display.update()
             time.sleep(wait_time)
@@ -369,7 +402,7 @@ class GameState:
 
             winSurf = GAMEOVER_FONT.render("DRAW!", True, BLACK)
             winRect = winSurf.get_rect()
-            winRect.midtop = (WINDOW_WIDTH/2, WINDOW_HEIGHT/2 - 50)
+            winRect.midtop = (WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2 - 50)
             DISPLAYSURF.blit(winSurf, winRect)
             pygame.display.update()
             time.sleep(wait_time)
@@ -377,5 +410,6 @@ class GameState:
             self.init = True
             self.count_draw += 1
 
+
 if __name__ == '__main__':
-	main()
+    main()

@@ -1,18 +1,14 @@
 import tictactoe_class as game
 import numpy as np
-import pygame
 import random
 import time
 import copy
 
 
 class MCTS:
-    def __init__(self):
-        # Game Information
-        self.game_name = game.ReturnName()
-
+    def __init__(self, env):
         # Get parameters
-        self.Num_action = game.Return_Num_Action()
+        self.action_size = env.Return_Num_Action()
 
         # Initialize Parameters
         self.step = 1
@@ -22,22 +18,19 @@ class MCTS:
         # Turn = 0: Black, 1: White
         self.turn = 0
 
-        self.Num_spot = int(np.sqrt(self.Num_action))
-        self.gameboard = np.zeros([self.Num_spot, self.Num_spot])
+        self.board_size = int(np.sqrt(self.action_size))
+        self.gameboard = np.zeros([self.board_size, self.board_size])
         self.check_valid_pos = 0
         self.win_index = 0
 
         # Parameters for MCTS (Monte Carlo Tree Search)
-        # Start mcts or not
-        self.do_mcts = True
-
         # Number of iteration for each move
         self.num_MCTS_iteration = 1000
 
         self.GAMEBOARD_SIZE, self.WIN_MARK = game.Return_BoardParams()
 
     # Search (MCTS)
-    def MCTS_search(self, MCTS_node, MCTS_edge):
+    def selection(self, MCTS_node, MCTS_edge):
         node_id = (0,)
         # Loop until finding leaf node
         while True:
@@ -65,7 +58,7 @@ class MCTS:
                         Max_QU = Q + U
                         node_id = id_temp
 
-    def MCTS_expand(self, MCTS_node, MCTS_edge, leafnode_id):
+    def expansion(self, MCTS_node, MCTS_edge, leafnode_id):
         # Find legal move
         current_board = copy.deepcopy(MCTS_node[leafnode_id]['state'])
         is_terminal = self.check_win(current_board,
@@ -113,7 +106,7 @@ class MCTS:
             # If leaf node is terminal state, just return MCTS tree and True
             return MCTS_node, MCTS_edge, leafnode_id
 
-    def MCTS_simulation(self, MCTS_node, MCTS_edge, update_node_id):
+    def simulation(self, MCTS_node, MCTS_edge, update_node_id):
         current_board = copy.deepcopy(MCTS_node[update_node_id]['state'])
         current_player = copy.deepcopy(MCTS_node[update_node_id]['player'])
         while True:
@@ -135,7 +128,7 @@ class MCTS:
                     current_player = 0
                     current_board[chosen_coord[0]][chosen_coord[1]] = -1
 
-    def MCTS_backup(self, MCTS_node, MCTS_edge, update_node_id, sim_result):
+    def backup(self, MCTS_node, MCTS_edge, update_node_id, sim_result):
         current_player = copy.deepcopy(MCTS_node[(0,)]['player'])
         current_id = update_node_id
 
@@ -238,73 +231,72 @@ class MCTS:
 
 
 if __name__ == '__main__':
-    agent = MCTS()
-    
-    def main(self):
-        # Define game state
-        game_state = game.GameState()
+    env = game
+    agent = MCTS(env)
+    # Define game state
+    game_state = env.GameState()
 
-        # Game Loop
-        while True:
-            # Select action
-            action = 0
+    # Game Loop
+    while True:
+        # Select action
+        action = 0
 
-            # MCTS
-            if self.do_mcts:
-                start_time = time.time()
-                # Initialize Tree
-                MCTS_node = {
-                    (0,): {'state': self.gameboard, 'player': self.turn,
-                           'child': [], 'parent': None, 'total_n': 0}}
-                MCTS_edge = {}
+        # MCTS
+        if agent.do_mcts:
+            start_time = time.time()
+            # Initialize Tree
+            MCTS_node = {
+                (0,): {'state': agent.gameboard, 'player': agent.turn,
+                       'child': [], 'parent': None, 'total_n': 0}}
+            MCTS_edge = {}
 
-                count = 0
-                for i in range(self.num_MCTS_iteration):
-                    leafnode_id = self.MCTS_search(MCTS_node, MCTS_edge)
-                    MCTS_node, MCTS_edge, update_node_id = self.MCTS_expand(
-                        MCTS_node, MCTS_edge, leafnode_id)
-                    # sim_result: 1 = O win, 2 = X win, 3 = Draw
-                    sim_result = self.MCTS_simulation(MCTS_node, MCTS_edge,
-                                                      update_node_id)
-                    MCTS_node, MCTS_edge = self.MCTS_backup(MCTS_node,
-                                                            MCTS_edge,
-                                                            update_node_id,
-                                                            sim_result)
-                    count += 1
+            count = 0
+            for i in range(agent.num_MCTS_iteration):
+                leafnode_id = agent.selection(MCTS_node, MCTS_edge)
+                MCTS_node, MCTS_edge, update_node_id = agent.expansion(
+                    MCTS_node, MCTS_edge, leafnode_id)
+                # sim_result: 1 = O win, 2 = X win, 3 = Draw
+                sim_result = agent.simulation(MCTS_node, MCTS_edge,
+                                                  update_node_id)
+                MCTS_node, MCTS_edge = agent.backup(MCTS_node,
+                                                        MCTS_edge,
+                                                        update_node_id,
+                                                        sim_result)
+                count += 1
 
-                print('=================================')
-                for i in range(3):
-                    print(MCTS_node[(0,)]['state'][i, :])
+            print('=================================')
+            for i in range(3):
+                print(MCTS_node[(0,)]['state'][i, :])
 
-                print(
-                    '======================== Root Node ========================')
-                print(MCTS_node[(0,)])
+            print(
+                '======================== Root Node ========================')
+            print(MCTS_node[(0,)])
 
-                print('======================== Edge ========================')
-                Q_list = {}
-                for i in MCTS_node[(0,)]['child']:
-                    print('Edge_id: ' + str([0, i]))
-                    print('Edge Value: ' + str(MCTS_edge[(0, i)]))
-                    Q_list[(0, i)] = MCTS_edge[(0, i)]['Q']
+            print('======================== Edge ========================')
+            Q_list = {}
+            for i in MCTS_node[(0,)]['child']:
+                print('Edge_id: ' + str([0, i]))
+                print('Edge Value: ' + str(MCTS_edge[(0, i)]))
+                Q_list[(0, i)] = MCTS_edge[(0, i)]['Q']
 
-                # Find Max Action
-                max_action = max(Q_list, key=Q_list.get)[1]
-                print('\nMax Action: ' + str(max_action + 1))
-                self.do_mcts = False
-                print('MCTS Calculation time: ' + str(time.time() - start_time))
+            # Find Max Action
+            max_action = max(Q_list, key=Q_list.get)[1]
+            print('\nMax Action: ' + str(max_action + 1))
+            agent.do_mcts = False
+            print('MCTS Calculation time: ' + str(time.time() - start_time))
 
-            # Take action and get info. for update
-            self.gameboard, self.check_valid_pos, self.win_index, self.turn = \
-                game_state.frame_step(action)
+        # Take action and get info. for update
+        agent.gameboard, agent.check_valid_pos, agent.win_index, agent.turn = \
+            game_state.frame_step(action)
 
-            # If one move is done
-            if self.check_valid_pos:
-                self.do_mcts = True
+        # If one move is done
+        if agent.check_valid_pos:
+            agent.do_mcts = True
 
-            # If game is finished
-            if self.win_index != 0:
-                self.do_mcts = True
-                self.gameboard = np.zeros([self.Num_spot, self.Num_spot])
+        # If game is finished
+        if agent.win_index != 0:
+            agent.do_mcts = True
+            agent.gameboard = np.zeros([agent.board_size, agent.board_size])
 
-            # Delay for visualization
-            time.sleep(0.01)
+        # Delay for visualization
+        time.sleep(0.01)
