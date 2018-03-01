@@ -57,7 +57,7 @@ class MCTS:
         # model
         self.pv_net = neural_net_5block.PolicyValueNet(CHANNEL)
         if model_path is not None:
-            print('#######  Model is loaded  #######')
+            print(' #######  Model is loaded  ####### ')
             self.pv_net.load_state_dict(torch.load(model_path))
 
         # hyperparameter
