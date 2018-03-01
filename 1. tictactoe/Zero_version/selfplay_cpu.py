@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import tictactoe_env
-import neural_network
+import neural_net_5block
 
 import time
 from collections import deque, defaultdict
@@ -19,26 +19,26 @@ MARK_O, MARK_X = 0, 1
 N, W, Q, P = 0, 1, 2, 3
 PLANE = np.zeros((3, 3), 'int').flatten()
 
-NUM_CHANNEL = 128
+CHANNEL = 128
 
-GAME = 200
-SIMULATION = 400
+GAMES = 1
+SIMULATION = 800
 
 
-class MCTS(object):
+class MCTS:
     """몬테카를로 트리 탐색 클래스.
 
     셀프플레이를 통해 train 데이터 생성 (s, pi, z)
 
     state
     ------
-    state에서 각 주체당 4수까지 저장해서 state로 만듦
+    각 주체당 4수까지 저장한 8장, OX 구분 1장 총 9장.
 
-        9x3x3 numpy array -> 1x81 tuple
+        9x3x3 numpy array -> 1x81 numpy array
 
     edge
     -----
-    현재 state에서 착수 가능한 모든 action자리에 4개의 정보 저장
+    현재 state의 현재 보드에서 착수 가능한 모든 action자리에 4개의 정보 저장.
 
     type: 3x3x4 numpy array
 
@@ -55,10 +55,10 @@ class MCTS(object):
         self.tree = defaultdict(lambda: np.zeros((3, 3, 4), 'float'))
 
         # model
-        if model_path is None:
-            self.pv_net = neural_network.PolicyValueNet(NUM_CHANNEL)
-        else:
-            self.pv_net = torch.load(self.pv_net.state_dict(), model_path)
+        self.pv_net = neural_net_5block.PolicyValueNet(CHANNEL)
+        if model_path is not None:
+            print('#######  Model is loaded  #######')
+            self.pv_net.load_state_dict(torch.load(model_path))
 
         # hyperparameter
         self.c_puct = 5
@@ -66,29 +66,23 @@ class MCTS(object):
         self.alpha = 0.7
 
         # loop controller
-        self.done = None
+        self.done = False
 
         # reset_step member
-        self.total_visit = None
         self.edge = None
+        self.total_visit = None
         self.legal_move = None
         self.no_legal_move = None
         self.state = None
-        self.state_tensor = None
-        self.state_variable = None
         self.prob = None
         self.value = None
         self.current_user = None
 
         # reset_episode member
-        self.player_history = None
-        self.opponent_history = None
         self.node_memory = None
         self.edge_memory = None
         self.action_memory = None
         self.action_count = None
-        self.p_theta = None
-        self.v_theta = None
 
         # init
         self.reset_step()
@@ -100,20 +94,14 @@ class MCTS(object):
         self.legal_move = None
         self.no_legal_move = None
         self.state = None
-        self.state_tensor = None
-        self.state_variable = None
         self.prob = np.zeros((3, 3), 'float')
         self.value = None
         self.current_user = current_user
 
     def _reset_episode(self):
-        self.player_history = deque([PLANE] * 4, maxlen=4)
-        self.opponent_history = deque([PLANE] * 4, maxlen=4)
         self.node_memory = deque(maxlen=9)
         self.edge_memory = deque(maxlen=9)
         self.action_memory = deque(maxlen=9)
-        self.p_theta = None
-        self.v_theta = None
         self.action_count = 0
 
     def select_action(self, state):
@@ -121,10 +109,9 @@ class MCTS(object):
 
         state 변환
         ----------
-        state -> state -> node & state_variable
+        state --> node & state_variable
 
-            state: 9x3x3 numpy array.
-                유저별 최근 4-histroy 저장하여 재구성.
+            state: 1x81 numpy array.
 
             state_variable: 1x9x3x3 torch.autograd.Variable.
                 신경망의 인수로 넣을 수 있게 조정. (학습용)
@@ -137,7 +124,7 @@ class MCTS(object):
         puct 값이 가장 높은 곳을 선택함, 동점이면 랜덤 선택.
 
             action: 1x3 tuple.
-            action = (유저타입, 보드의 좌표행, 보드의 좌표열)
+            action = (현재 유저 타입, 보드의 좌표행, 보드의 좌표열)
 
         """
         # 현재 주체 설정 여부 필터링
@@ -226,6 +213,8 @@ class MCTS(object):
             for move in self.legal_move:
                 self.edge[tuple(move)][P] = self.prob[tuple(move)]
 
+        print('###  Piror Prob  ###\n', self.prob.round(decimals=2), '\n')
+
         # Q, P값을 배치한 edge를 담아둠. 백업할 때 사용
         self.edge_memory.appendleft(self.edge)
 
@@ -250,7 +239,7 @@ class MCTS(object):
     def _expand(self, node):
         """ 기존 tree에 없는 노드가 선택됐을때 사용되는 메소드.
 
-        현재 node의 모든 좌표의 edge를 생성.
+        모든 좌표의 edge를 생성.
         state 텐서화 하여 신경망에 넣고 p_theta, v_theta 얻음.
         edge의 P에 p_theta를 넣어 초기화.
         select에서 edge 중 하나를 선택한 후 v로 백업하도록 알림.
@@ -262,11 +251,11 @@ class MCTS(object):
         print('"Expand"')
 
         # state에 Variable 씌워서 신경망에 넣기
-        self.state_tensor = torch.from_numpy(self.state)
-        self.state_variable = Variable(self.state_tensor.view(9, 3, 3).float().unsqueeze(0))
-        self.p_theta, self.v_theta = self.pv_net(self.state_variable)
-        self.prob = self.p_theta.data.numpy().reshape(3, 3)
-        self.value = self.v_theta.data.numpy()[0]
+        state_tensor = torch.from_numpy(self.state).float()
+        state_variable = Variable(state_tensor.view(9, 3, 3).unsqueeze(0))
+        p_theta, v_theta = self.pv_net(state_variable)
+        self.prob = p_theta.data.numpy()[0].reshape(3, 3)
+        self.value = v_theta.data.numpy()[0]
 
         print('"Evaluate"\n')
 
@@ -317,7 +306,7 @@ class MCTS(object):
 
         for i in range(3):
             for j in range(3):
-                total_visit += edge[i][j][N]
+                total_visit += edge[i, j][N]
                 action_space.append([i, j])
 
         for i in range(3):
@@ -344,9 +333,9 @@ if __name__ == '__main__':
     start = time.time()
 
     train_dataset_store = []
-    state_memory = deque(maxlen=4096)
-    pi_memory = deque(maxlen=4096)
-    z_memory = deque(maxlen=4096)
+    state_memory = deque(maxlen=102400)
+    pi_memory = deque(maxlen=102400)
+    z_memory = deque(maxlen=102400)
 
     env_game = tictactoe_env.TicTacToeEnv()
     env_simul = tictactoe_env.TicTacToeEnv()
@@ -358,7 +347,7 @@ if __name__ == '__main__':
 
     print("=" * 30, " Game Start ", "=" * 30, '\n')
 
-    for game in range(GAME):
+    for game in range(GAMES):
         player_color = (MARK_O + game) % 2
         state_game = env_game.reset(player_color=player_color)
         mcts = MCTS()
@@ -451,8 +440,8 @@ if __name__ == '__main__':
                     win_mark_o += 1
 
     train_dataset_store = list(zip(state_memory, pi_memory, z_memory))
-    with open('data/train_dataset_s{}_g{}.pkl'.format(simul + 1, game + 1), 'wb') as f:
-        pickle.dump(train_dataset_store, f)
+    with open('data/train_dataset_s{}_g{}.pickle'.format(simul + 1, game + 1), 'wb') as f:
+        pickle.dump(train_dataset_store, f, pickle.HIGHEST_PROTOCOL)
 
     finish_game = round(float(time.time() - start))
 
