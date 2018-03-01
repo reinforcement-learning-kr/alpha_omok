@@ -35,7 +35,7 @@ class MCTS:
         # model
         self.pv_net = neural_net_5block.PolicyValueNet(CHANNEL)
         if model_path is not None:
-            print('#######  Model is loaded  #######')
+            print(' #######  Model is loaded  #######')
             self.pv_net.load_state_dict(torch.load(model_path))
 
         self.done = False
@@ -268,6 +268,7 @@ if __name__ == '__main__':
         print('##########    Game: {}    ##########\n'.format(game + 1))
         player_color = (MARK_O + game) % 2
         state = env.reset(player_color=player_color)
+        env.render()
         done = False
         step_play = 0
 
@@ -284,12 +285,14 @@ if __name__ == '__main__':
             action = manager.select_action(state)
             state, reward, done, _ = env.step(action)
             step_play += 1
+            env.render()
         if done:
             result[reward] += 1
             print('- FINAL -')
             print(env.board[PLAYER] + env.board[OPPONENT] * 2, '\n')
             manager.ai = MCTS()
             time.sleep(2)
+            env.render(close=True)
 
     print('=' * 20, '\nWin: {}  Lose: {}  Draw: {}  Winrate: {:0.1f}%'.format(
         result[1], result[-1], result[0],
