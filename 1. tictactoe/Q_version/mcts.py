@@ -23,22 +23,22 @@ class MCTS:
 
         self.win_mark = win_mark
 
-    def selection(self, node, edge):
+    def selection(self, tree, edges):
         node_id = (0,)
         # Loop until finding leaf node
         while True:
             # Check if current node is leaf node
-            if len(node[node_id]['child']) == 0:
+            if len(tree[node_id]['child']) == 0:
                 # Leaf node!
                 return node_id
             else:
                 Max_QU = -100
                 parent_id = node_id
-                for i in range(len(node[node_id]['child'])):
-                    id_temp = parent_id + (node[parent_id]['child'][i],)
-                    current_w = edge[id_temp]['W']
-                    current_n = copy.deepcopy(edge[id_temp]['N'])
-                    parent_n = MCTS_node[edge[id_temp]['parent_node']][
+                for i in range(len(tree[node_id]['child'])):
+                    id_temp = parent_id + (tree[parent_id]['child'][i],)
+                    current_w = edges[id_temp]['W']
+                    current_n = copy.deepcopy(edges[id_temp]['N'])
+                    parent_n = tree[edges[id_temp]['parent_node']][
                         'total_n']
 
                     if current_n == 0:
@@ -51,16 +51,15 @@ class MCTS:
                         Max_QU = Q + U
                         node_id = id_temp
 
-    def expansion(self, node, edge, leafnode_id):
+    def expansion(self, tree, edges, leaf_id):
         # Find legal move
-        current_board = copy.deepcopy(node[leafnode_id]['state'])
+        current_board = copy.deepcopy(tree[leaf_id]['state'])
         is_terminal = self.check_win(current_board,
                                      np.count_nonzero(current_board))
         legal_moves = self.find_legal_moves(current_board)
-        expand_count = 5
+        expand_thres = 5
 
-        if leafnode_id == (0,) or MCTS_node[leafnode_id][
-            'total_n'] > expand_count:
+        if leaf_id == (0,) or tree[leaf_id]['total_n'] > expand_thres:
             is_expand = True
         else:
             is_expand = False
@@ -68,12 +67,12 @@ class MCTS:
         if len(legal_moves) > 0 and is_terminal == 0 and is_expand:
             for legal_move in legal_moves:
                 # Initialize current board at every legal move
-                current_board = copy.deepcopy(MCTS_node[leafnode_id]['state'])
+                current_board = copy.deepcopy(tree[leaf_id]['state'])
 
                 chosen_coord = legal_move[0]
                 chosen_index = legal_move[1]
 
-                current_player = MCTS_node[leafnode_id]['player']
+                current_player = tree[leaf_id]['player']
 
                 if current_player == 0:
                     next_turn = 1
@@ -82,22 +81,22 @@ class MCTS:
                     next_turn = 0
                     current_board[chosen_coord[0]][chosen_coord[1]] = -1
 
-                child_node_id = leafnode_id + (chosen_index,)
-                MCTS_node[child_node_id] = {'state': current_board,
-                                            'player': next_turn,
-                                            'child': [],
-                                            'parent': leafnode_id,
-                                            'total_n': 0}
+                child_id = leaf_id + (chosen_index,)
+                tree[child_id] = {'state': current_board,
+                                  'player': next_turn,
+                                  'child': [],
+                                  'parent': leaf_id,
+                                  'total_n': 0}
 
-                MCTS_edge[child_node_id] = {'N': 0, 'W': 0, 'Q': 0,
-                                            'parent_node': leafnode_id}
+                edges[child_id] = {'N': 0, 'W': 0, 'Q': 0,
+                                   'parent_node': leaf_id}
 
-                MCTS_node[leafnode_id]['child'].append(chosen_index)
+                tree[leaf_id]['child'].append(chosen_index)
 
-            return MCTS_node, MCTS_edge, child_node_id
+            return tree, edges, child_id
         else:
             # If leaf node is terminal state, just return MCTS tree and True
-            return MCTS_node, MCTS_edge, leafnode_id
+            return tree, edges, leaf_id
 
     def simulation(self, MCTS_node, MCTS_edge, update_node_id):
         current_board = copy.deepcopy(MCTS_node[update_node_id]['state'])
@@ -155,16 +154,16 @@ class MCTS:
         return legal_moves
 
     # Check win
-    def check_win(self, gameboard, num_mark):
+    def check_win(self, game_board, num_mark):
         # Check four stones in a row (Horizontal)
         for row in range(self.state_size):
             for col in range(self.state_size - self.win_mark + 1):
                 # Black win!
-                if np.sum(gameboard[row,
+                if np.sum(game_board[row,
                           col:col + self.win_mark]) == self.win_mark:
                     return 1
                 # White win!
-                if np.sum(gameboard[row,
+                if np.sum(game_board[row,
                           col:col + self.win_mark]) == -self.win_mark:
                     return 2
 
@@ -245,40 +244,34 @@ if __name__ == '__main__':
         if do_mcts:
             start_time = time.time()
             # Initialize Tree
-            node = {(0,): {'state': game_board, 'player': agent.turn,
-                        'child': [], 'parent': None, 'total_n': 0}}
-            print(node[(0,)])
-            asdf
+            tree = {(0,): {'state': game_board, 'player': agent.turn,
+                           'child': [], 'parent': None, 'total_n': 0}}
             edges = {}
 
             count = 0
             for i in range(num_mcts):
-                leafnode_id = agent.selection(node, edges)
-                MCTS_node, MCTS_edge, update_node_id = agent.expansion(
-                    MCTS_node, MCTS_edge, leafnode_id)
+                leaf_id = agent.selection(tree, edges)
+                tree, edges, update_node_id = agent.expansion(tree, edges, leaf_id)
                 # sim_result: 1 = O win, 2 = X win, 3 = Draw
-                sim_result = agent.simulation(MCTS_node, MCTS_edge,
-                                                  update_node_id)
-                MCTS_node, MCTS_edge = agent.backup(MCTS_node,
-                                                        MCTS_edge,
-                                                        update_node_id,
-                                                        sim_result)
+                sim_result = agent.simulation(tree, edges, update_node_id)
+                tree, edges = agent.backup(tree, edges, update_node_id, sim_result)
                 count += 1
 
             print('=================================')
             for i in range(3):
-                print(MCTS_node[(0,)]['state'][i, :])
+                print(tree[(0,)]['state'][i, :])
+            print(tree[(0,)]['state'])
 
             print(
                 '======================== Root Node ========================')
-            print(MCTS_node[(0,)])
+            print(tree[(0,)])
 
             print('======================== Edge ========================')
             Q_list = {}
-            for i in MCTS_node[(0,)]['child']:
+            for i in tree[(0,)]['child']:
                 print('Edge_id: ' + str([0, i]))
-                print('Edge Value: ' + str(MCTS_edge[(0, i)]))
-                Q_list[(0, i)] = MCTS_edge[(0, i)]['Q']
+                print('Edge Value: ' + str(edges[(0, i)]))
+                Q_list[(0, i)] = edges[(0, i)]['Q']
 
             # Find Max Action
             max_action = max(Q_list, key=Q_list.get)[1]
