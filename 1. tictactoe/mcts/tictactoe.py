@@ -96,7 +96,7 @@ class GameState:
                 TOP_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE)) + int(
                     GRID_SIZE / (GAMEBOARD_SIZE * 2)))
 
-    def frame_step(self, input_):  # Game loop
+    def step(self, input_):  # Game loop
         # Initial settings
         if self.init == True:
             self.num_mark = 0
