@@ -28,6 +28,7 @@ class MCTS:
         # Loop until finding leaf node
         while True:
             # Check if current node is leaf node
+            valid_actions = self.find_legal_moves(tree[node_id][''])
             if len(tree[node_id]['child']) == 0:
                 # Leaf node!
                 return node_id
@@ -111,7 +112,7 @@ class MCTS:
 
                 chosen_move = random.choice(legal_moves)
                 chosen_coord = chosen_move[0]
-                chosen_index = chosen_move[1]
+                # chosen_index = chosen_move[1]
 
                 if current_player == 0:
                     current_player = 1
@@ -223,13 +224,13 @@ class MCTS:
 
 
 if __name__ == '__main__':
+    # tic-tac-toe game environment
     env = game
     state_size, win_mark = game.Return_BoardParams()
     action_size = env.Return_Num_Action()
 
     agent = MCTS(env, state_size, action_size, win_mark)
-    # Define game state
-    game_state = env.GameState()
+    env_step = env.GameState()
     board_shape = [state_size, state_size]
     game_board = np.zeros(board_shape)
 
@@ -251,20 +252,19 @@ if __name__ == '__main__':
             count = 0
             for i in range(num_mcts):
                 leaf_id = agent.selection(tree, edges)
-                tree, edges, update_node_id = agent.expansion(tree, edges, leaf_id)
+                tree, edges, child_id = agent.expansion(tree, edges, leaf_id)
                 # sim_result: 1 = O win, 2 = X win, 3 = Draw
-                sim_result = agent.simulation(tree, edges, update_node_id)
-                tree, edges = agent.backup(tree, edges, update_node_id, sim_result)
+                sim_result = agent.simulation(tree, edges, child_id)
+                tree, edges = agent.backup(tree, edges, child_id, sim_result)
                 count += 1
 
             print('=================================')
             print(tree[(0,)]['state'])
 
-            print(
-                '======================== Root Node ========================')
+            print(' Root Node ========================')
             print(tree[(0,)])
 
-            print('======================== Edge ========================')
+            print(' Edge ')
             Q_list = {}
             for i in tree[(0,)]['child']:
                 print('Edge_id: ' + str([0, i]))
@@ -273,13 +273,13 @@ if __name__ == '__main__':
 
             # Find Max Action
             max_action = max(Q_list, key=Q_list.get)[1]
-            print('\nMax Action: ' + str(max_action + 1))
+            print('Max Action: ' + str(max_action + 1))
             do_mcts = False
             print('MCTS Calculation time: ' + str(time.time() - start_time))
 
         # Take action and get info. for update
         game_board, agent.check_valid_pos, agent.win_index, agent.turn = \
-            game_state.frame_step(action)
+            env_step.frame_step(action)
 
         # If one move is done
         if agent.check_valid_pos:
