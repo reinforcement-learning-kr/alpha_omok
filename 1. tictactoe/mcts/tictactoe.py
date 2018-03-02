@@ -27,17 +27,17 @@ HALF_WINDOW_HEIGHT = int(WINDOW_HEIGHT / 2)
 
 # Colors
 #				 R    G    B
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (200, 72, 72)
-LIGHT_ORANGE = (198, 108, 58)
-ORANGE = (180, 122, 48)
-GREEN = (72, 160, 72)
-BLUE = (66, 72, 200)
-YELLOW = (162, 162, 42)
-NAVY = (75, 0, 130)
-PURPLE = (143, 0, 255)
-BADUK = (220, 179, 92)
+WHITE        = (255, 255, 255)
+BLACK        = (  0,   0,   0)
+RED          = (200,  72,  72)
+LIGHT_ORANGE = (198, 108,  58)
+ORANGE       = (180, 122,  48)
+GREEN        = ( 72, 160,  72)
+BLUE         = ( 66,  72, 200)
+YELLOW       = (162, 162,  42)
+NAVY         = ( 75,   0, 130)
+PURPLE       = (143,   0, 255)
+BADUK        = (220, 179,  92)
 
 
 def ReturnName():

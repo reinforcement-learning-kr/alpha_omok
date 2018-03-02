@@ -18,24 +18,28 @@ class MCTS:
         node_id = (0,)
 
         while True:
+            num_child = len(tree[node_id]['child'])
             # Check if current node is leaf node
-            if len(tree[node_id]['child']) == 0:
-                # print(len(tree[node_id]['child']))
+            if num_child == 0:
                 return node_id
             else:
                 max_value = -100
-                parent_id = node_id
-                for i in range(len(tree[node_id]['child'])):
-                    child_id = parent_id + (tree[parent_id]['child'][i],)
-                    current_w = tree[child_id]['w']
-                    current_n = deepcopy(tree[child_id]['n'])
+                leaf_id = node_id
+                for i in range(num_child):
+                    action = tree[leaf_id]['child'][i]
+                    child_id = leaf_id + (action,)
+                    w = tree[child_id]['w']
+                    n = tree[child_id]['n']
                     total_n = tree[tree[child_id]['parent']]['n']
 
-                    if current_n == 0:
-                        current_n = 0.000001
-
-                    q = current_w / current_n
-                    u = 10 * np.sqrt(2 * np.log(total_n) / current_n)
+                    # for unvisited child, cannot compute u value
+                    # so make n to be very small number
+                    if n == 0:
+                        q = w / 0.0001
+                        u = 10 * np.sqrt(2 * np.log(total_n) / 0.0001)
+                    else:
+                        q = w / n
+                        u = 10 * np.sqrt(2 * np.log(total_n) / n)
 
                     if q + u > max_value:
                         max_value = q + u
@@ -43,10 +47,7 @@ class MCTS:
 
     def expansion(self, tree, leaf_id):
         leaf_state = deepcopy(tree[leaf_id]['state'])
-        num_mark = np.count_nonzero(leaf_state)
-        is_terminal = check_win(leaf_state,
-                                num_mark,
-                                self.win_mark)
+        is_terminal = check_win(leaf_state, self.win_mark)
         actions = valid_actions(leaf_state)
         expand_thres = 20
 
@@ -60,7 +61,7 @@ class MCTS:
             childs = []
             for action in actions:
                 state = deepcopy(tree[leaf_id]['state'])
-                chosen_index = action[1]
+                action_index = action[1]
                 current_player = tree[leaf_id]['player']
 
                 if current_player == 0:
@@ -70,7 +71,7 @@ class MCTS:
                     next_turn = 0
                     state[action[0]] = -1
 
-                child_id = leaf_id + (chosen_index, )
+                child_id = leaf_id + (action_index, )
                 childs.append(child_id)
                 tree[child_id] = {'state': state,
                                   'player': next_turn,
@@ -80,12 +81,13 @@ class MCTS:
                                   'w': 0,
                                   'q': 0}
 
-                tree[leaf_id]['child'].append(chosen_index)
+                tree[leaf_id]['child'].append(action_index)
 
             child_id = random.sample(childs, 1)
             return tree, child_id[0]
         else:
-            # If leaf node is terminal state, just return MCTS tree and True
+            # If leaf node is terminal state,
+            # just return MCTS tree
             return tree, leaf_id
 
     def simulation(self, tree, child_id):
@@ -93,9 +95,7 @@ class MCTS:
         player = deepcopy(tree[child_id]['player'])
 
         while True:
-            win = check_win(state,
-                            np.count_nonzero(state),
-                            self.win_mark)
+            win = check_win(state, self.win_mark)
             if win != 0:
                 return win
             else:
@@ -109,27 +109,28 @@ class MCTS:
                     state[action[0]] = -1
 
     def backup(self, tree, child_id, sim_result):
-        current_player = deepcopy(tree[(0,)]['player'])
-        current_id = child_id
+        player = deepcopy(tree[(0,)]['player'])
+        node_id = child_id
 
+        # sim_result: 1 = O win, 2 = X win, 3 = Draw
         if sim_result == 3:
             value = 1
-        elif sim_result - 1 == current_player:
+        elif sim_result - 1 == player:
             value = 1
         else:
             value = 0
 
         while True:
-            tree[current_id]['n'] += 1
-            tree[current_id]['w'] += value
-            tree[current_id]['q'] = tree[current_id]['w'] / \
-                                    tree[current_id]['n']
-            tree[tree[current_id]['parent']]['n'] += 1
+            tree[node_id]['n'] += 1
+            tree[node_id]['w'] += value
+            tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
 
-            if tree[current_id]['parent'] == (0,):
+            parent_id = tree[node_id]['parent']
+            if parent_id == (0,):
+                tree[parent_id]['n'] += 1
                 return tree
             else:
-                current_id = tree[current_id]['parent']
+                node_id = parent_id
 
 
 if __name__ == '__main__':
@@ -164,28 +165,26 @@ if __name__ == '__main__':
                               'w': None,
                               'q': None}}
 
-            count = 0
             for i in range(num_mcts):
                 # step 1: selection
                 leaf_id = agent.selection(tree)
                 # step 2: expansion
                 tree, child_id = agent.expansion(tree, leaf_id)
                 # step 3: simulation
-                # sim_result: 1 = O win, 2 = X win, 3 = Draw
                 sim_result = agent.simulation(tree, child_id)
                 # step 4: backup
                 tree = agent.backup(tree, child_id, sim_result)
-                count += 1
 
             print('-------- current state --------')
             print(tree[(0,)]['state'])
-            Q_list = {}
-            for i in tree[(0,)]['child']:
-                Q_list[(0, i)] = tree[(0, i)]['q']
+            q_list = {}
+            actions = tree[(0,)]['child']
+            for action in actions:
+                q_list[(0, action)] = tree[(0, action)]['q']
 
             # Find Max Action
-            max_action = max(Q_list, key=Q_list.get)[1]
-            print('Max Action: ' + str(max_action + 1))
+            max_action = max(q_list, key=q_list.get)[1]
+            print('max action: ' + str(max_action + 1))
             do_mcts = False
 
         # Take action and get info. for update

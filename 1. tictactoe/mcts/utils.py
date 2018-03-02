@@ -16,7 +16,8 @@ def valid_actions(game_board):
 
 
 # Check win
-def check_win(game_board, num_mark, win_mark):
+def check_win(game_board, win_mark):
+    num_mark = np.count_nonzero(game_board)
     state_size = len(game_board)
     # Check four stones in a row (Horizontal)
     for row in range(state_size):
