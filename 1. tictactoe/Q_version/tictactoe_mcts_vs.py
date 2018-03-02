@@ -147,6 +147,7 @@ class self_demo:
 		    is_expand = False
 
 		if len(legal_moves) > 0 and is_terminal == 0 and is_expand:
+			child_id_list = []
 			for legal_move in legal_moves:
 				# Initialize current board at every legal move
 				current_board = copy.deepcopy(MCTS_node[leafnode_id]['state'])
@@ -164,6 +165,7 @@ class self_demo:
 				    current_board[chosen_coord[0]][chosen_coord[1]] = -1
 
 				child_node_id = leafnode_id + (chosen_index,)
+				child_id_list.append(child_node_id)
 				MCTS_node[child_node_id] = {'state': current_board,
 				                            'player': next_turn,
 				                            'child': [],
@@ -174,7 +176,9 @@ class self_demo:
 
 				MCTS_node[leafnode_id]['child'].append(chosen_index)
 
-			return MCTS_node, MCTS_edge, child_node_id
+			rand_child_id = random.sample(child_id_list,1)
+			
+			return MCTS_node, MCTS_edge, rand_child_id[0]
 		else:
 			# If leaf node is terminal state, just return MCTS tree and True
 			return MCTS_node, MCTS_edge, leafnode_id
@@ -292,7 +296,7 @@ class self_demo:
 		# Draw (board is full)
 		if num_mark == self.GAMEBOARD_SIZE  * self.GAMEBOARD_SIZE :
 		    return 3
-			
+
 		# If No winner or no draw
 		return 0
 
