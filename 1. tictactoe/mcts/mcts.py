@@ -175,8 +175,8 @@ if __name__ == '__main__':
             print(tree[(0,)]['state'])
             q_list = {}
             actions = tree[(0,)]['child']
-            for action in actions:
-                q_list[(0, action)] = tree[(0, action)]['q']
+            for i in actions:
+                q_list[(0, i)] = tree[(0, i)]['q']
 
             # Find Max Action
             max_action = max(q_list, key=q_list.get)[1]
