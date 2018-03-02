@@ -1,6 +1,6 @@
-# Mini Omok
+# Large Omok
 '''
-This is regular version of omok.
+This is large version of omok.
 Win: Black or white stone has to be 5 in a row (horizontal, vertical, diagonal)
 boardsize: 19 x 19
 '''
@@ -48,7 +48,7 @@ def main():
 
     DISPLAYSURF = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
-    pygame.display.set_caption('Mini Omok')
+    pygame.display.set_caption('Large Omok')
     # pygame.display.set_icon(pygame.image.load('./Qar_Sim/icon_resize2.png'))
 
     BASIC_FONT = pygame.font.Font('freesansbold.ttf', 16)

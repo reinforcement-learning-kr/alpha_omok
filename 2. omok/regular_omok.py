@@ -1,8 +1,8 @@
-# Mini Omok
+# Regular Omok
 '''
 This is regular version of omok.
 Win: Black or white stone has to be 5 in a row (horizontal, vertical, diagonal)
-boardsize: 19 x 19
+boardsize: 15 x 15
 '''
 # By KyushikMin kyushikmin@gamil.com
 # http://mmc.hanyang.ac.kr
@@ -14,12 +14,12 @@ import copy
 
 # Window Information
 FPS = 30
-WINDOW_WIDTH = 840
-WINDOW_HEIGHT = 980
+WINDOW_WIDTH = 680
+WINDOW_HEIGHT = 820
 TOP_MARGIN = 160
 MARGIN = 20
 BOARD_MARGIN = 40
-GAMEBOARD_SIZE = 19
+GAMEBOARD_SIZE = 15
 WIN_STONES = 5
 GRID_SIZE = WINDOW_WIDTH - 2 * (BOARD_MARGIN + MARGIN)
 
@@ -41,7 +41,7 @@ PURPLE       = (143,   0, 255)
 BADUK        = (220, 179,  92)
 
 def ReturnName():
-    return 'mini_omok'
+    return 'regular_omok'
 
 def Return_Num_Action():
     return GAMEBOARD_SIZE * GAMEBOARD_SIZE
@@ -55,7 +55,7 @@ class GameState:
 
         DISPLAYSURF = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
-        pygame.display.set_caption('Omok')
+        pygame.display.set_caption('Regular Omok')
         # pygame.display.set_icon(pygame.image.load('./Qar_Sim/icon_resize2.png'))
 
         BASIC_FONT = pygame.font.Font('freesansbold.ttf', 16)

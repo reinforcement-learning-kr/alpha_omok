@@ -6,8 +6,9 @@ import random
 import numpy as np
 import time
 
-import mini_omok as game
-import omok
+import mini_omok
+import large_omok
+import regular_omok as game
 
 class self_demo:
 	def __init__(self):
