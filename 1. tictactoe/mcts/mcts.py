@@ -8,10 +8,8 @@ import tictactoe as game
 
 
 class MCTS:
-    def __init__(self, state_size, action_size, win_mark):
+    def __init__(self, win_mark):
         # Get parameters
-        self.state_size = state_size
-        self.action_size = action_size
         self.win_mark = win_mark
 
     def selection(self, tree):
@@ -137,9 +135,7 @@ if __name__ == '__main__':
     # tic-tac-toe game environment
     env = game.GameState()
     state_size, win_mark = game.Return_BoardParams()
-    action_size = game.Return_Num_Action()
-
-    agent = MCTS(state_size, action_size, win_mark)
+    agent = MCTS(win_mark)
 
     board_shape = [state_size, state_size]
     game_board = np.zeros(board_shape)
