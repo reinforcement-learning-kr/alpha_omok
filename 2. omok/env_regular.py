@@ -1,8 +1,8 @@
-# Mini Omok
+# Regular Omok
 '''
-This is mini version of omok.
+This is regular version of omok.
 Win: Black or white stone has to be 5 in a row (horizontal, vertical, diagonal)
-boardsize: 9 x 9
+boardsize: 15 x 15
 '''
 # By KyushikMin kyushikmin@gamil.com
 # http://mmc.hanyang.ac.kr
@@ -14,12 +14,12 @@ import copy
 
 # Window Information
 FPS = 30
-WINDOW_WIDTH = 440
-WINDOW_HEIGHT = 580
+WINDOW_WIDTH = 680
+WINDOW_HEIGHT = 820
 TOP_MARGIN = 160
 MARGIN = 20
 BOARD_MARGIN = 40
-GAMEBOARD_SIZE = 9
+GAMEBOARD_SIZE = 15
 WIN_STONES = 5
 GRID_SIZE = WINDOW_WIDTH - 2 * (BOARD_MARGIN + MARGIN)
 
@@ -41,10 +41,13 @@ PURPLE       = (143,   0, 255)
 BADUK        = (220, 179,  92)
 
 def ReturnName():
-    return 'mini_omok'
+    return 'regular_omok'
 
 def Return_Num_Action():
     return GAMEBOARD_SIZE * GAMEBOARD_SIZE
+
+def Return_BoardParams():
+    return GAMEBOARD_SIZE, WIN_STONES
 
 class GameState:
     def __init__(self):
@@ -55,7 +58,7 @@ class GameState:
 
         DISPLAYSURF = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
-        pygame.display.set_caption('Mini Omok')
+        pygame.display.set_caption('Regular Omok')
         # pygame.display.set_icon(pygame.image.load('./Qar_Sim/icon_resize2.png'))
 
         BASIC_FONT = pygame.font.Font('freesansbold.ttf', 16)
@@ -85,7 +88,7 @@ class GameState:
             self.Y_coord.append(TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)))
 
     # Game loop
-    def frame_step(self, input_):
+    def step(self, input_):
         # Initial settings
         if self.init == True:
             self.num_stones = 0
@@ -98,10 +101,16 @@ class GameState:
 
             self.init = False
 
-        # terminate game
-        for event in pygame.event.get(): # event loop
-            if event.type == QUIT:
-                self.terminate()
+        # Key settings
+        mouse_pos = 0
+        if np.all(input_) == 0 or self.turn == 0:
+            # If guide mode of O's turn
+            for event in pygame.event.get():  # event loop
+                if event.type == QUIT:
+                    self.terminate()
+
+                if pygame.mouse.get_pressed()[0]:
+                    mouse_pos = pygame.mouse.get_pos()
 
         # get action and put stone on the board
         check_valid_pos = False
@@ -110,16 +119,18 @@ class GameState:
 
         action = np.reshape(input_, (GAMEBOARD_SIZE, GAMEBOARD_SIZE))
 
-        for i in range(len(self.X_coord)):
-            for j in range(len(self.Y_coord)):
-                if action[j,i] == 1:
-                    check_valid_pos = True
-                    x_index = i
-                    y_index = j
+        if mouse_pos != 0:
+            for i in range(len(self.X_coord)):
+                for j in range(len(self.Y_coord)):
+                    if ((self.X_coord[i] - 30 < mouse_pos[0] < self.X_coord[i] + 30) and
+                       (self.Y_coord[j] - 30 < mouse_pos[1] < self.Y_coord[j] + 30)):
+                        check_valid_pos = True
+                        x_index = i
+                        y_index = j
 
-                    # If selected spot is already occupied, it is not valid move!
-                    if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
-                        check_valid_pos = False
+                        # If selected spot is already occupied, it is not valid move!
+                        if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
+                            check_valid_pos = False
 
         # Change the gameboard according to the stone's index
         if check_valid_pos:
@@ -152,7 +163,7 @@ class GameState:
         win_index = self.check_win()
         self.display_win(win_index)
 
-        return self.gameboard, check_valid_pos, win_index
+        return self.gameboard, check_valid_pos, win_index, self.turn
 
     # Exit the game
     def terminate(self):
@@ -175,7 +186,10 @@ class GameState:
             pygame.draw.line(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)), TOP_MARGIN + BOARD_MARGIN), (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)), TOP_MARGIN + BOARD_MARGIN + GRID_SIZE), 1)
 
         # Draw center circle
-        pygame.draw.circle(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN + 4 * int(GRID_SIZE/(GAMEBOARD_SIZE-1)), TOP_MARGIN + BOARD_MARGIN + 4 * int(GRID_SIZE/(GAMEBOARD_SIZE-1))), 5, 0)
+        for i in range(GAMEBOARD_SIZE):
+            for j in range(GAMEBOARD_SIZE):
+                if i in [3, 7, 11] and j in [3, 7, 11]:
+                    pygame.draw.circle(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)), TOP_MARGIN + BOARD_MARGIN + j * int(GRID_SIZE/(GAMEBOARD_SIZE-1))), 5, 0)
 
         # Draw stones
         for i in range(self.gameboard.shape[0]):
@@ -188,7 +202,7 @@ class GameState:
 
     # Display title
     def title_msg(self):
-    	titleSurf = TITLE_FONT.render('Mini Omok', True, WHITE)
+    	titleSurf = TITLE_FONT.render('Regular Omok', True, WHITE)
     	titleRect = titleSurf.get_rect()
     	titleRect.topleft = (30, 10)
     	DISPLAYSURF.blit(titleSurf, titleRect)
@@ -242,10 +256,6 @@ class GameState:
 
     # Check win
     def check_win(self):
-        # Draw (board is full)
-        if self.num_stones == GAMEBOARD_SIZE * GAMEBOARD_SIZE:
-            return 3
-
         # Check four stones in a row (Horizontal)
         for row in range(GAMEBOARD_SIZE):
             for col in range(GAMEBOARD_SIZE - WIN_STONES + 1):
@@ -300,6 +310,12 @@ class GameState:
                 # White WIN!
                 if count_sum == -WIN_STONES:
                     return 2
+
+        # Draw (board is full)
+        if self.num_stones == GAMEBOARD_SIZE * GAMEBOARD_SIZE:
+            return 3
+
+        return 0
 
     # Display Win
     def display_win(self, win_index):
