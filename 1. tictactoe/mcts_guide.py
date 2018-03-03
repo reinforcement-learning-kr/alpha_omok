@@ -132,7 +132,6 @@ class MCTS:
 
 
 if __name__ == '__main__':
-    # tic-tac-toe game environment
     env = game.GameState()
     state_size, win_mark = game.Return_BoardParams()
     agent = MCTS(win_mark)
