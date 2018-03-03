@@ -1,305 +1,201 @@
-# TicTacToe Versus version
-
-# Import modules
-import pygame
-import random
+from utils import valid_actions, check_win
+from copy import deepcopy
 import numpy as np
+import random
 import time
-import copy
 
-import tictactoe_class as game
+import env as game
 
-class self_demo:
-	def __init__(self):
+class MCTS:
+    def __init__(self, win_mark):
+        # Get parameters
+        self.win_mark = win_mark
 
-		# Game Information
-		self.game_name = game.ReturnName()
+    def selection(self, tree):
+        node_id = (0,)
 
-		# Get parameters
-		self.Num_action = game.Return_Num_Action()
+        while True:
+            num_child = len(tree[node_id]['child'])
+            # Check if current node is leaf node
+            if num_child == 0:
+                return node_id
+            else:
+                max_value = -100
+                leaf_id = node_id
+                for i in range(num_child):
+                    action = tree[leaf_id]['child'][i]
+                    child_id = leaf_id + (action,)
+                    w = tree[child_id]['w']
+                    n = tree[child_id]['n']
+                    total_n = tree[tree[child_id]['parent']]['n']
 
-		# Initialize Parameters
-		self.step = 1
-		self.score = 0
-		self.episode = 0
+                    # for unvisited child, cannot compute u value
+                    # so make n to be very small number
+                    if n == 0:
+                        q = w / 0.0001
+                        u = 10 * np.sqrt(2 * np.log(total_n) / 0.0001)
+                    else:
+                        q = w / n
+                        u = 10 * np.sqrt(2 * np.log(total_n) / n)
 
-		# Turn = 0: Black, 1: White
-		self.turn = 0
+                    if q + u > max_value:
+                        max_value = q + u
+                        node_id = child_id
 
-		self.Num_spot = int(np.sqrt(self.Num_action))
-		self.gameboard = np.zeros([self.Num_spot, self.Num_spot])
-		self.check_valid_pos = 0
-		self.win_index = 0
+    def expansion(self, tree, leaf_id):
+        leaf_state = deepcopy(tree[leaf_id]['state'])
+        is_terminal = check_win(leaf_state, self.win_mark)
+        actions = valid_actions(leaf_state)
+        expand_thres = 20
 
-		####################### Parameters for MCTS (Monte Carlo Tree Search) #######################
-		# Start mcts or not
-		self.do_mcts = False
+        if leaf_id == (0,) or tree[leaf_id]['n'] > expand_thres:
+            is_expand = True
+        else:
+            is_expand = False
 
-		# Number of iteration for each move
-		self.num_MCTS_iteration = 1000
-		#############################################################################################
+        if is_terminal == 0 and is_expand:
+            # expansion for every possible actions
+            childs = []
+            for action in actions:
+                state = deepcopy(tree[leaf_id]['state'])
+                action_index = action[1]
+                current_player = tree[leaf_id]['player']
 
-		self.GAMEBOARD_SIZE, self.WIN_MARK = game.Return_BoardParams();
+                if current_player == 0:
+                    next_turn = 1
+                    state[action[0]] = 1
+                else:
+                    next_turn = 0
+                    state[action[0]] = -1
 
-	def main(self):
-		# Define game state
-		game_state = game.GameState()
+                child_id = leaf_id + (action_index, )
+                childs.append(child_id)
+                tree[child_id] = {'state': state,
+                                  'player': next_turn,
+                                  'child': [],
+                                  'parent': leaf_id,
+                                  'n': 0,
+                                  'w': 0,
+                                  'q': 0}
 
-		# Game Loop
-		while True:
-			# Select action
-			action = 0
+                tree[leaf_id]['child'].append(action_index)
 
-			############################################ MCTS ############################################
-			if self.do_mcts:
-				start_time = time.time()
-				# Initialize Tree
-				MCTS_node = {(0,): {'state': self.gameboard, 'player': self.turn, 'child': [], 'parent': None, 'total_n': 0}}
-				MCTS_edge = {}
+            child_id = random.sample(childs, 1)
+            return tree, child_id[0]
+        else:
+            # If leaf node is terminal state,
+            # just return MCTS tree
+            return tree, leaf_id
 
-				count = 0
-				for i in range(self.num_MCTS_iteration):
-					leafnode_id = self.MCTS_search(MCTS_node, MCTS_edge)
-					MCTS_node, MCTS_edge, update_node_id = self.MCTS_expand(MCTS_node, MCTS_edge, leafnode_id)
-					# sim_result: 1 = O win, 2 = X win, 3 = Draw
-					sim_result = self.MCTS_simulation(MCTS_node, MCTS_edge, update_node_id)
-					MCTS_node, MCTS_edge = self.MCTS_backup(MCTS_node, MCTS_edge, update_node_id, sim_result)
-					count += 1
+    def simulation(self, tree, child_id):
+        state = deepcopy(tree[child_id]['state'])
+        player = deepcopy(tree[child_id]['player'])
 
-				print('=================================')
-				for i in range(3):
-				    print(MCTS_node[(0,)]['state'][i,:])
+        while True:
+            win = check_win(state, self.win_mark)
+            if win != 0:
+                return win
+            else:
+                actions = valid_actions(state)
+                action = random.choice(actions)
+                if player == 0:
+                    player = 1
+                    state[action[0]] = 1
+                else:
+                    player = 0
+                    state[action[0]] = -1
 
-				print('======================== Root Node ========================')
-				print(MCTS_node[(0,)])
+    def backup(self, tree, child_id, sim_result):
+        player = deepcopy(tree[(0,)]['player'])
+        node_id = child_id
 
-				print('======================== Edge ========================')
-				Q_list = {}
-				for i in MCTS_node[(0,)]['child']:
-				    print('Edge_id: ' + str([0,i]))
-				    print('Edge Value: ' + str(MCTS_edge[(0,i)]))
-				    Q_list[(0,i)] = MCTS_edge[(0,i)]['Q']
+        # sim_result: 1 = O win, 2 = X win, 3 = Draw
+        if sim_result == 3:
+            value = 1
+        elif sim_result - 1 == player:
+            value = 1
+        else:
+            value = 0
 
-				# Find Max Action
-				max_action = max(Q_list, key = Q_list.get)[1]
-				print('\nMax Action: ' + str(max_action + 1))
+        while True:
+            tree[node_id]['n'] += 1
+            tree[node_id]['w'] += value
+            tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
 
-				self.do_mcts = False
-				action = np.zeros([self.GAMEBOARD_SIZE * self.GAMEBOARD_SIZE])
-				action[max_action] = 1
+            parent_id = tree[node_id]['parent']
+            if parent_id == (0,):
+                tree[parent_id]['n'] += 1
+                return tree
+            else:
+                node_id = parent_id
 
-				print('MCTS Calculation time: ' + str(time.time() - start_time))
-
-			################################################################################################
-
-			# Take action and get info. for update
-			self.gameboard, self.check_valid_pos, self.win_index, self.turn = game_state.frame_step(action)
-
-			# If one move is done
-			if self.turn == 1:
-				self.do_mcts = True
-
-			# If game is finished
-			if self.win_index != 0:
-				self.gameboard = np.zeros([self.Num_spot, self.Num_spot])
-
-			# Delay for visualization
-			time.sleep(0.01)
-
-	# Search (MCTS)
-	def MCTS_search(self, MCTS_node, MCTS_edge):
-		node_id = (0,)
-		# Loop until finding leaf node
-		while True:
-			# Check if current node is leaf node
-			if len(MCTS_node[node_id]['child']) == 0:
-				# Leaf node!
-				return node_id
-			else:
-			    Max_QU = -100
-			    parent_id = node_id
-			    for i in range(len(MCTS_node[node_id]['child'])):
-			        id_temp = parent_id + (MCTS_node[parent_id]['child'][i],)
-			        current_w = MCTS_edge[id_temp]['W']
-			        current_n = copy.deepcopy(MCTS_edge[id_temp]['N'])
-			        parent_n  = MCTS_node[MCTS_edge[id_temp]['parent_node']]['total_n']
-
-			        if current_n == 0:
-			            current_n = 0.000001
-
-			        Q = current_w / current_n
-			        U = 10 * np.sqrt(2 * np.log(parent_n) / current_n)
-
-			        if Q+U > Max_QU:
-			            Max_QU = Q+U
-			            node_id = id_temp
-
-	def MCTS_expand(self,MCTS_node, MCTS_edge, leafnode_id):
-		#Find legal move
-		current_board = copy.deepcopy(MCTS_node[leafnode_id]['state'])
-		is_terminal = self.check_win(current_board, np.count_nonzero(current_board))
-		legal_moves = self.find_legal_moves(current_board)
-		expand_count = 5
-
-		if leafnode_id == (0,) or MCTS_node[leafnode_id]['total_n'] > expand_count:
-			is_expand = True
-		else:
-		    is_expand = False
-
-		if len(legal_moves) > 0 and is_terminal == 0 and is_expand:
-			child_id_list = []
-			for legal_move in legal_moves:
-				# Initialize current board at every legal move
-				current_board = copy.deepcopy(MCTS_node[leafnode_id]['state'])
-
-				chosen_coord = legal_move[0]
-				chosen_index = legal_move[1]
-
-				current_player = MCTS_node[leafnode_id]['player']
-
-				if current_player == 0:
-				    next_turn = 1
-				    current_board[chosen_coord[0]][chosen_coord[1]] = 1
-				else:
-				    next_turn = 0
-				    current_board[chosen_coord[0]][chosen_coord[1]] = -1
-
-				child_node_id = leafnode_id + (chosen_index,)
-				child_id_list.append(child_node_id)
-				MCTS_node[child_node_id] = {'state': current_board,
-				                            'player': next_turn,
-				                            'child': [],
-				                            'parent': leafnode_id,
-				                            'total_n': 0}
-
-				MCTS_edge[child_node_id] = {'N': 0, 'W': 0, 'Q': 0, 'parent_node': leafnode_id}
-
-				MCTS_node[leafnode_id]['child'].append(chosen_index)
-
-			rand_child_id = random.sample(child_id_list,1)
-			
-			return MCTS_node, MCTS_edge, rand_child_id[0]
-		else:
-			# If leaf node is terminal state, just return MCTS tree and True
-			return MCTS_node, MCTS_edge, leafnode_id
-
-
-	def MCTS_simulation(self,MCTS_node, MCTS_edge, update_node_id):
-	    current_board  = copy.deepcopy(MCTS_node[update_node_id]['state'])
-	    current_player = copy.deepcopy(MCTS_node[update_node_id]['player'])
-	    while True:
-	        if self.check_win(current_board, np.count_nonzero(current_board)) != 0:
-	            return self.check_win(current_board, np.count_nonzero(current_board))
-	        else:
-	            legal_moves = self.find_legal_moves(current_board)
-
-	            chosen_move = random.choice(legal_moves)
-	            chosen_coord = chosen_move[0]
-	            chosen_index = chosen_move[1]
-
-	            if current_player == 0:
-	                current_player = 1
-	                current_board[chosen_coord[0]][chosen_coord[1]] = 1
-	            else:
-	                current_player = 0
-	                current_board[chosen_coord[0]][chosen_coord[1]] = -1
-
-	def MCTS_backup(self,MCTS_node, MCTS_edge, update_node_id, sim_result):
-		current_player = copy.deepcopy(MCTS_node[(0,)]['player'])
-		current_id = update_node_id
-
-		if sim_result == 3:
-		    value = 0.7
-		elif sim_result-1 == current_player:
-		    value = 1
-		else:
-		    value = -1
-
-		while True:
-			MCTS_edge[current_id]['N'] += 1
-			MCTS_edge[current_id]['W'] += value
-			MCTS_edge[current_id]['Q'] = MCTS_edge[current_id]['W'] / MCTS_edge[current_id]['N']
-			MCTS_node[MCTS_edge[current_id]['parent_node']]['total_n'] += 1
-
-			if MCTS_node[current_id]['parent'] == (0,):
-			    return MCTS_node, MCTS_edge
-			else:
-			    current_id = MCTS_node[current_id]['parent']
-
-	def find_legal_moves(self, gameboard):
-	    legal_moves = []
-	    count_moves = 0
-	    for i in range(self.GAMEBOARD_SIZE ):
-	        for j in range(self.GAMEBOARD_SIZE ):
-	            if gameboard[i][j] == 0:
-	                legal_moves.append([(i,j), count_moves])
-	            count_moves += 1
-	    return legal_moves
-
-	# Check win
-	def check_win(self, gameboard, num_mark):
-		# Check four stones in a row (Horizontal)
-		for row in range(self.GAMEBOARD_SIZE ):
-		    for col in range(self.GAMEBOARD_SIZE  - self.WIN_MARK + 1):
-		        # Black win!
-		        if np.sum(gameboard[row, col:col + self.WIN_MARK]) == self.WIN_MARK:
-		            return 1
-		        # White win!
-		        if np.sum(gameboard[row, col:col + self.WIN_MARK]) == -self.WIN_MARK:
-		            return 2
-
-		# Check four stones in a colum (Vertical)
-		for row in range(self.GAMEBOARD_SIZE  - self.WIN_MARK + 1):
-		    for col in range(self.GAMEBOARD_SIZE ):
-		        # Black win!
-		        if np.sum(gameboard[row : row + self.WIN_MARK, col]) == self.WIN_MARK:
-		            return 1
-		        # White win!
-		        if np.sum(gameboard[row : row + self.WIN_MARK, col]) == -self.WIN_MARK:
-		            return 2
-
-		# Check four stones in diagonal (Diagonal)
-		for row in range(self.GAMEBOARD_SIZE  - self.WIN_MARK + 1):
-		    for col in range(self.GAMEBOARD_SIZE  - self.WIN_MARK + 1):
-		        count_sum = 0
-		        for i in range(self.WIN_MARK):
-		            if gameboard[row + i, col + i] == 1:
-		                count_sum += 1
-		            if gameboard[row + i, col + i] == -1:
-		                count_sum -= 1
-
-		        # Black Win!
-		        if count_sum == self.WIN_MARK:
-		            return 1
-
-		        # White WIN!
-		        if count_sum == -self.WIN_MARK:
-		            return 2
-
-		for row in range(self.WIN_MARK-1, self.GAMEBOARD_SIZE ):
-		    for col in range(self.GAMEBOARD_SIZE  - self.WIN_MARK + 1):
-		        count_sum = 0
-		        for i in range(self.WIN_MARK):
-		            if gameboard[row - i, col + i] == 1:
-		                count_sum += 1
-		            if gameboard[row - i, col + i] == -1:
-		                count_sum -= 1
-
-		        # Black Win!
-		        if count_sum == self.WIN_MARK:
-		            return 1
-
-		        # White WIN!
-		        if count_sum == -self.WIN_MARK:
-		            return 2
-
-		# Draw (board is full)
-		if num_mark == self.GAMEBOARD_SIZE  * self.GAMEBOARD_SIZE :
-		    return 3
-
-		# If No winner or no draw
-		return 0
 
 if __name__ == '__main__':
-	agent = self_demo()
-	agent.main()
+	# tic-tac-toe game environment
+	env = game.GameState()
+	state_size, win_mark = game.Return_BoardParams()
+	agent = MCTS(win_mark)
+
+	board_shape = [state_size, state_size]
+	game_board = np.zeros(board_shape)
+
+	do_mcts = False
+	num_mcts = 2000
+	# 0: O, 1: X
+	turn = 0
+
+	while True:
+		# Select action
+		action = 0
+
+		# MCTS
+		if do_mcts:
+			# Initialize Tree
+			root_id = (0,)
+			tree = {root_id: {'state': game_board,
+			                  'player': turn,
+			                  'child': [],
+			                  'parent': None,
+			                  'n': 0,
+			                  'w': None,
+			                  'q': None}}
+
+			for i in range(num_mcts):
+			    # step 1: selection
+			    leaf_id = agent.selection(tree)
+			    # step 2: expansion
+			    tree, child_id = agent.expansion(tree, leaf_id)
+			    # step 3: simulation
+			    sim_result = agent.simulation(tree, child_id)
+			    # step 4: backup
+			    tree = agent.backup(tree, child_id, sim_result)
+
+			print('-------- current state --------')
+			print(tree[(0,)]['state'])
+			q_list = {}
+			actions = tree[(0,)]['child']
+			for i in actions:
+			    q_list[(0, i)] = tree[(0, i)]['q']
+
+			# Find Max Action
+			max_action = max(q_list, key=q_list.get)[1]
+			print('max action: ' + str(max_action + 1))
+			do_mcts = False
+
+			action = np.zeros([state_size * state_size])
+			action[max_action] = 1
+			################################################################################################
+
+		# Take action and get info. for update
+		game_board, check_valid_pos, win_index, turn = env.step(action)
+
+		# If one move is done
+		if turn == 1:
+			do_mcts = True
+
+		# If game is finished
+		if win_index != 0:
+			game_board = np.zeros([state_size, state_size])
+
+		# Delay for visualization
+		time.sleep(0.01)
