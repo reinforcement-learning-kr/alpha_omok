@@ -142,7 +142,7 @@ if __name__ == '__main__':
 
     do_mcts = True
     num_mcts = 2000
-    # 0: Black, 1: White
+    # 0: O, 1: X
     turn = 0
 
     while True:
