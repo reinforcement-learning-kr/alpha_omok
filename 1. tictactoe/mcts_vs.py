@@ -33,10 +33,10 @@ class MCTS:
                     # so make n to be very small number
                     if n == 0:
                         q = w / 0.0001
-                        u = 10 * np.sqrt(2 * np.log(total_n) / 0.0001)
+                        u = 5 * np.sqrt(2 * np.log(total_n) / 0.0001)
                     else:
                         q = w / n
-                        u = 10 * np.sqrt(2 * np.log(total_n) / n)
+                        u = 5 * np.sqrt(2 * np.log(total_n) / n)
 
                     if q + u > max_value:
                         max_value = q + u
@@ -46,7 +46,7 @@ class MCTS:
         leaf_state = deepcopy(tree[leaf_id]['state'])
         is_terminal = check_win(leaf_state, self.win_mark)
         actions = valid_actions(leaf_state)
-        expand_thres = 20
+        expand_thres = 10
 
         if leaf_id == (0,) or tree[leaf_id]['n'] > expand_thres:
             is_expand = True
@@ -111,11 +111,11 @@ class MCTS:
 
         # sim_result: 1 = O win, 2 = X win, 3 = Draw
         if sim_result == 3:
-            value = 1
+            value = 0.8
         elif sim_result - 1 == player:
             value = 1
         else:
-            value = 0
+            value = -1
 
         while True:
             tree[node_id]['n'] += 1
@@ -140,7 +140,7 @@ if __name__ == '__main__':
 	game_board = np.zeros(board_shape)
 
 	do_mcts = False
-	num_mcts = 2000
+	num_mcts = 1500
 	# 0: O, 1: X
 	turn = 0
 
