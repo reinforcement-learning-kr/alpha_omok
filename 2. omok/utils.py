@@ -19,59 +19,33 @@ def valid_actions(game_board):
 def check_win(game_board, win_mark):
     num_mark = np.count_nonzero(game_board)
     state_size = len(game_board)
-    # Check four stones in a row (Horizontal)
-    for row in range(state_size):
-        for col in range(state_size - win_mark + 1):
-            # Black win!
-            if np.sum(game_board[row, col:col + win_mark]) == win_mark:
-                return 1
-            # White win!
-            if np.sum(game_board[row, col:col + win_mark]) == -win_mark:
-                return 2
 
-    # Check four stones in a colum (Vertical)
-    for row in range(state_size - win_mark + 1):
-        for col in range(state_size):
-            # Black win!
-            if np.sum(game_board[row: row + win_mark, col]) == win_mark:
-                return 1
-            # White win!
-            if np.sum(game_board[row: row + win_mark, col]) == -win_mark:
-                return 2
+    current_grid = np.zeros([win_mark, win_mark])
 
-    # Check four stones in diagonal (Diagonal)
+    # check win
     for row in range(state_size - win_mark + 1):
         for col in range(state_size - win_mark + 1):
-            count_sum = 0
-            for i in range(win_mark):
-                if game_board[row + i, col + i] == 1:
-                    count_sum += 1
-                if game_board[row + i, col + i] == -1:
-                    count_sum -= 1
+            current_grid = game_board[row : row + win_mark, col : col + win_mark]
 
-            # Black Win!
-            if count_sum == win_mark:
+            sum_horizontal = np.sum(current_grid, axis = 1)             # hotizontal
+            sum_vertical   = np.sum(current_grid, axis = 0)             # vertical
+            sum_diagonal_1 = np.sum(current_grid.diagonal())            # diagonal -> lower right
+            sum_diagonal_2 = np.sum(np.flipud(current_grid).diagonal()) # diagonal -> upper right
+
+            # Black wins! (Horizontal and Vertical)
+            if win_mark in sum_horizontal or win_mark in sum_vertical:
                 return 1
 
-            # White WIN!
-            if count_sum == -win_mark:
+            # Black wins! (Diagonal)
+            if win_mark == sum_diagonal_1 or win_mark == sum_diagonal_2:
+                return 1
+
+            # White wins! (Horizontal and Vertical)
+            if -win_mark in sum_horizontal or -win_mark in sum_vertical:
                 return 2
 
-    for row in range(win_mark - 1, state_size):
-        for col in range(state_size - win_mark + 1):
-            count_sum = 0
-            for i in range(win_mark):
-                if game_board[row - i, col + i] == 1:
-                    count_sum += 1
-                if game_board[row - i, col + i] == -1:
-                    count_sum -= 1
-
-            # Black Win!
-            if count_sum == win_mark:
-                return 1
-
-            # White WIN!
-            if count_sum == -win_mark:
+            # White wins! (Diagonal)
+            if -win_mark == sum_diagonal_1 or -win_mark == sum_diagonal_2:
                 return 2
 
     # Draw (board is full)

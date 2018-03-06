@@ -7,6 +7,7 @@ boardsize: 19 x 19
 # By KyushikMin kyushikmin@gamil.com
 # http://mmc.hanyang.ac.kr
 
+from utils import check_win
 import random, sys, time, math, pygame
 from pygame.locals import *
 import numpy as np
@@ -160,7 +161,7 @@ class GameState:
         pygame.display.update()
 
         # Check_win 0: playing, 1: black win, 2: white win, 3: draw
-        win_index = self.check_win()
+        win_index = check_win(self.gameboard, WIN_STONES)
         self.display_win(win_index)
 
         return self.gameboard, check_valid_pos, win_index, self.turn
@@ -253,69 +254,6 @@ class GameState:
             turnRect = turnSurf.get_rect()
             turnRect.topleft = (WINDOW_WIDTH - 125, 135)
             DISPLAYSURF.blit(turnSurf, turnRect)
-
-    # Check win
-    def check_win(self):
-        # Check four stones in a row (Horizontal)
-        for row in range(GAMEBOARD_SIZE):
-            for col in range(GAMEBOARD_SIZE - WIN_STONES + 1):
-                # Black win!
-                if np.sum(self.gameboard[row, col:col + WIN_STONES]) == WIN_STONES:
-                    return 1
-                # White win!
-                if np.sum(self.gameboard[row, col:col + WIN_STONES]) == -WIN_STONES:
-                    return 2
-
-        # Check four stones in a colum (Vertical)
-        for row in range(GAMEBOARD_SIZE - WIN_STONES + 1):
-            for col in range(GAMEBOARD_SIZE):
-                # Black win!
-                if np.sum(self.gameboard[row : row + WIN_STONES, col]) == WIN_STONES:
-                    return 1
-                # White win!
-                if np.sum(self.gameboard[row : row + WIN_STONES, col]) == -WIN_STONES:
-                    return 2
-
-        # Check four stones in diagonal (Diagonal)
-        for row in range(GAMEBOARD_SIZE - WIN_STONES + 1):
-            for col in range(GAMEBOARD_SIZE - WIN_STONES + 1):
-                count_sum = 0
-                for i in range(WIN_STONES):
-                    if self.gameboard[row + i, col + i] == 1:
-                        count_sum += 1
-                    if self.gameboard[row + i, col + i] == -1:
-                        count_sum -= 1
-
-                # Black Win!
-                if count_sum == WIN_STONES:
-                    return 1
-
-                # White WIN!
-                if count_sum == -WIN_STONES:
-                    return 2
-
-        for row in range(WIN_STONES-1, GAMEBOARD_SIZE):
-            for col in range(GAMEBOARD_SIZE - WIN_STONES + 1):
-                count_sum = 0
-                for i in range(WIN_STONES):
-                    if self.gameboard[row - i, col + i] == 1:
-                        count_sum += 1
-                    if self.gameboard[row - i, col + i] == -1:
-                        count_sum -= 1
-
-                # Black Win!
-                if count_sum == WIN_STONES:
-                    return 1
-
-                # White WIN!
-                if count_sum == -WIN_STONES:
-                    return 2
-
-        # Draw (board is full)
-        if self.num_stones == GAMEBOARD_SIZE * GAMEBOARD_SIZE:
-            return 3
-
-        return 0
 
     # Display Win
     def display_win(self, win_index):
