@@ -4,8 +4,8 @@ import numpy as np
 import random
 import time
 
-import env_small
-import env_regular as game
+import env_small as game
+import env_regular
 import env_large
 
 class MCTS:
@@ -35,10 +35,10 @@ class MCTS:
                     # so make n to be very small number
                     if n == 0:
                         q = w / 0.0001
-                        u = np.sqrt(2 * np.log(total_n) / 0.0001)
+                        u = 10 * np.sqrt(2 * np.log(total_n) / 0.0001)
                     else:
                         q = w / n
-                        u = np.sqrt(2 * np.log(total_n) / n)
+                        u = 10 * np.sqrt(2 * np.log(total_n) / n)
 
                     if q + u > max_value:
                         max_value = q + u
@@ -48,7 +48,7 @@ class MCTS:
         leaf_state = deepcopy(tree[leaf_id]['state'])
         is_terminal = check_win(leaf_state, self.win_mark)
         actions = valid_actions(leaf_state)
-        expand_thres = 20
+        expand_thres = 2
 
         if leaf_id == (0,) or tree[leaf_id]['n'] > expand_thres:
             is_expand = True
@@ -174,6 +174,10 @@ if __name__ == '__main__':
             print('-------- current state --------')
             print(tree[(0,)]['state'])
             q_list = {}
+
+            print('tree length: ' + str(len(tree.keys())))
+            # print(tree.keys())
+
             actions = tree[(0,)]['child']
             for i in actions:
                 q_list[(0, i)] = tree[(0, i)]['q']
