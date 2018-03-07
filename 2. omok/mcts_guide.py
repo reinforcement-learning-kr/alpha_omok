@@ -142,7 +142,7 @@ if __name__ == '__main__':
     game_board = np.zeros(board_shape)
 
     do_mcts = True
-    num_mcts = 10
+    num_mcts = 100
     # 0: O, 1: X
     turn = 0
 

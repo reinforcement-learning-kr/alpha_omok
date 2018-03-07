@@ -15,11 +15,11 @@ import copy
 
 # Window Information
 FPS = 30
-WINDOW_WIDTH = 840
-WINDOW_HEIGHT = 980
+WINDOW_WIDTH = 600
+WINDOW_HEIGHT = 750
 TOP_MARGIN = 160
-MARGIN = 20
-BOARD_MARGIN = 40
+MARGIN = 10
+BOARD_MARGIN = 20
 GAMEBOARD_SIZE = 19
 WIN_STONES = 5
 GRID_SIZE = WINDOW_WIDTH - 2 * (BOARD_MARGIN + MARGIN)
@@ -123,8 +123,8 @@ class GameState:
         if mouse_pos != 0:
             for i in range(len(self.X_coord)):
                 for j in range(len(self.Y_coord)):
-                    if ((self.X_coord[i] - 30 < mouse_pos[0] < self.X_coord[i] + 30) and
-                       (self.Y_coord[j] - 30 < mouse_pos[1] < self.Y_coord[j] + 30)):
+                    if ((self.X_coord[i] - 15 < mouse_pos[0] < self.X_coord[i] + 15) and
+                       (self.Y_coord[j] - 15 < mouse_pos[1] < self.Y_coord[j] + 15)):
                         check_valid_pos = True
                         x_index = i
                         y_index = j
@@ -196,40 +196,40 @@ class GameState:
         for i in range(self.gameboard.shape[0]):
             for j in range(self.gameboard.shape[1]):
                 if self.gameboard[i,j] == 1:
-                    pygame.draw.circle(DISPLAYSURF, BLACK, (self.X_coord[j], self.Y_coord[i]), 15, 0)
+                    pygame.draw.circle(DISPLAYSURF, BLACK, (self.X_coord[j], self.Y_coord[i]), 12, 0)
 
                 if self.gameboard[i,j] == -1:
-                    pygame.draw.circle(DISPLAYSURF, WHITE, (self.X_coord[j], self.Y_coord[i]), 15, 0)
+                    pygame.draw.circle(DISPLAYSURF, WHITE, (self.X_coord[j], self.Y_coord[i]), 12, 0)
 
     # Display title
     def title_msg(self):
     	titleSurf = TITLE_FONT.render('Large Omok', True, WHITE)
     	titleRect = titleSurf.get_rect()
-    	titleRect.topleft = (30, 10)
+    	titleRect.topleft = (MARGIN, 10)
     	DISPLAYSURF.blit(titleSurf, titleRect)
 
     # Display rule
     def rule_msg(self):
     	ruleSurf1 = BASIC_FONT.render('Win: Stones has to be 5 in a row', True, WHITE)
     	ruleRect1 = ruleSurf1.get_rect()
-    	ruleRect1.topleft = (30, 50)
+    	ruleRect1.topleft = (MARGIN, 50)
     	DISPLAYSURF.blit(ruleSurf1, ruleRect1)
 
     	ruleSurf2 = BASIC_FONT.render('(horizontal, vertical, diagonal)', True, WHITE)
     	ruleRect2 = ruleSurf1.get_rect()
-    	ruleRect2.topleft = (65, 70)
+    	ruleRect2.topleft = (MARGIN + 35, 70)
     	DISPLAYSURF.blit(ruleSurf2, ruleRect2)
 
     # Display scores
     def score_msg(self):
         scoreSurf1 = BASIC_FONT.render('Score: ', True, WHITE)
         scoreRect1 = scoreSurf1.get_rect()
-        scoreRect1.topleft = (30, 105)
+        scoreRect1.topleft = (MARGIN, 105)
         DISPLAYSURF.blit(scoreSurf1, scoreRect1)
 
         scoreSurf2 = BASIC_FONT.render('Black = ' + str(self.black_win) + '  vs  ', True, WHITE)
         scoreRect2 = scoreSurf2.get_rect()
-        scoreRect2.topleft = (90, 105)
+        scoreRect2.topleft = (scoreRect1.midright[0], 105)
         DISPLAYSURF.blit(scoreSurf2, scoreRect2)
 
         scoreSurf3 = BASIC_FONT.render('White = ' + str(self.white_win) + '  vs  ', True, WHITE)
@@ -247,12 +247,12 @@ class GameState:
         if self.turn == 0:
             turnSurf = BASIC_FONT.render("Black's Turn!", True, WHITE)
             turnRect = turnSurf.get_rect()
-            turnRect.topleft = (30, 135)
+            turnRect.topleft = (MARGIN, 135)
             DISPLAYSURF.blit(turnSurf, turnRect)
         else:
             turnSurf = BASIC_FONT.render("White's Turn!", True, WHITE)
             turnRect = turnSurf.get_rect()
-            turnRect.topleft = (WINDOW_WIDTH - 125, 135)
+            turnRect.topleft = (WINDOW_WIDTH - 110, 135)
             DISPLAYSURF.blit(turnSurf, turnRect)
 
     # Display Win
