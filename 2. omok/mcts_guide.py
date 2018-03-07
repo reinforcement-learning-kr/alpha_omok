@@ -8,6 +8,7 @@ import env_small
 import env_regular as game
 import env_large
 
+
 class MCTS:
     def __init__(self, win_mark):
         # Get parameters

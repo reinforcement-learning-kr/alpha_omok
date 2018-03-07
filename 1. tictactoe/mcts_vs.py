@@ -6,6 +6,7 @@ import time
 
 import env as game
 
+
 class MCTS:
     def __init__(self, win_mark):
         # Get parameters
