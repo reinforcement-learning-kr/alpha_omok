@@ -5,8 +5,8 @@ import random
 import time
 
 import env_small
-import env_regular as game
-import env_large
+import env_regular
+import env_large as game
 
 class MCTS:
     def __init__(self, win_mark):
@@ -142,7 +142,7 @@ if __name__ == '__main__':
     game_board = np.zeros(board_shape)
 
     do_mcts = True
-    num_mcts = 100
+    num_mcts = 2
     # 0: O, 1: X
     turn = 0
 
@@ -176,9 +176,7 @@ if __name__ == '__main__':
 
             print('all time: ' + str(time.time() - start_all_time))
             print('-------- current state --------')
-            print(tree[(0,)]['state'])
             q_list = {}
-
             print('tree length: ' + str(len(tree.keys())))
             # print(tree.keys())
 
@@ -196,7 +194,7 @@ if __name__ == '__main__':
             do_mcts = False
 
         # Take action and get info. for update
-        game_board, check_valid_pos, win_index, turn = env.step(np.zeros([state_size, state_size]))
+        game_board, state, check_valid_pos, win_index, turn = env.step(np.zeros([state_size, state_size]))
 
         # If one move is done
         if check_valid_pos:

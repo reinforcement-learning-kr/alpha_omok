@@ -54,3 +54,12 @@ def check_win(game_board, win_mark):
 
     # If No winner or no draw
     return 0
+
+def update_state(state, turn, x_idx, y_idx):
+    state[:, :, 1:16] = state[:, :, 0:15]
+    state[:, :, 0] = state[:, :, 2]
+    state[y_idx, x_idx, 0] = 1
+    state[:, :, 16] = turn
+    state = np.int8(state)
+
+    return state
