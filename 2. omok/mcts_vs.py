@@ -4,7 +4,9 @@ import numpy as np
 import random
 import time
 
-import env as game
+import env_small as game
+import env_regular
+import env_large
 
 class MCTS:
     def __init__(self, win_mark):
@@ -131,71 +133,80 @@ class MCTS:
 
 
 if __name__ == '__main__':
-	# tic-tac-toe game environment
-	env = game.GameState()
-	state_size, win_mark = game.Return_BoardParams()
-	agent = MCTS(win_mark)
+    # tic-tac-toe game environment
+    env = game.GameState()
+    state_size, win_mark = game.Return_BoardParams()
+    agent = MCTS(win_mark)
 
-	board_shape = [state_size, state_size]
-	game_board = np.zeros(board_shape)
+    board_shape = [state_size, state_size]
+    game_board = np.zeros(board_shape)
 
-	do_mcts = False
-	num_mcts = 2000
-	# 0: O, 1: X
-	turn = 0
+    do_mcts = False
+    num_mcts = 100
+    # 0: O, 1: X
+    turn = 0
+    ai_turn = 1
 
-	while True:
-		# Select action
-		action = 0
+    while True:
+        # Select action
+        action = np.zeros([state_size, state_size])
 
-		# MCTS
-		if do_mcts:
-			# Initialize Tree
-			root_id = (0,)
-			tree = {root_id: {'state': game_board,
-			                  'player': turn,
-			                  'child': [],
-			                  'parent': None,
-			                  'n': 0,
-			                  'w': None,
-			                  'q': None}}
+        # MCTS
+        if do_mcts:
+        	# Initialize Tree
+        	root_id = (0,)
+        	tree = {root_id: {'state': game_board,
+        	                  'player': turn,
+        	                  'child': [],
+        	                  'parent': None,
+        	                  'n': 0,
+        	                  'w': None,
+        	                  'q': None}}
 
-			for i in range(num_mcts):
-			    # step 1: selection
-			    leaf_id = agent.selection(tree)
-			    # step 2: expansion
-			    tree, child_id = agent.expansion(tree, leaf_id)
-			    # step 3: simulation
-			    sim_result = agent.simulation(tree, child_id)
-			    # step 4: backup
-			    tree = agent.backup(tree, child_id, sim_result)
+        	for i in range(num_mcts):
+        	    # step 1: selection
+        	    leaf_id = agent.selection(tree)
+        	    # step 2: expansion
+        	    tree, child_id = agent.expansion(tree, leaf_id)
+        	    # step 3: simulation
+        	    sim_result = agent.simulation(tree, child_id)
+        	    # step 4: backup
+        	    tree = agent.backup(tree, child_id, sim_result)
 
-			print('-------- current state --------')
-			print(tree[(0,)]['state'])
-			q_list = {}
-			actions = tree[(0,)]['child']
-			for i in actions:
-			    q_list[(0, i)] = tree[(0, i)]['q']
+        	print('-------- current state --------')
+        	print(tree[(0,)]['state'])
+        	q_list = {}
+        	actions = tree[(0,)]['child']
+        	for i in actions:
+        	    q_list[(0, i)] = tree[(0, i)]['q']
 
-			# Find Max Action
-			max_action = max(q_list, key=q_list.get)[1]
-			print('max action: ' + str(max_action + 1))
-			do_mcts = False
+        	# Find Max Action
+        	max_action = max(q_list, key=q_list.get)[1]
+        	print('max action: ' + str(max_action + 1))
+        	do_mcts = False
 
-			action = np.zeros([state_size * state_size])
-			action[max_action] = 1
-			################################################################################################
+        	action = np.zeros([state_size * state_size])
+        	action[max_action] = 1
+        	################################################################################################
 
-		# Take action and get info. for update
-		game_board, check_valid_pos, win_index, turn = env.step(action)
+        # Take action and get info. for update
+        game_board, state, check_valid_pos, win_index, turn = env.step(action)
 
-		# If one move is done
-		if turn == 1:
-			do_mcts = True
+        # If one move is done
+        if turn == ai_turn:
+        	do_mcts = True
 
-		# If game is finished
-		if win_index != 0:
-			game_board = np.zeros([state_size, state_size])
+        # If game is finished
+        if win_index != 0:
+            game_board = np.zeros([state_size, state_size])
 
-		# Delay for visualization
-		time.sleep(0.01)
+            # Human wins!
+            if turn == ai_turn:
+                ai_turn = 0
+                do_mcts = True
+            else:
+                ai_turn = 1
+                do_mcts = False
+
+        # Delay for visualization
+        time.sleep(0.01)

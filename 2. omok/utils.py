@@ -14,7 +14,6 @@ def valid_actions(game_board):
 
     return actions
 
-
 # Check win
 def check_win(game_board, win_mark):
     num_mark = np.count_nonzero(game_board)

@@ -6,9 +6,9 @@ import random
 import numpy as np
 import time
 
-import mini_omok
-import large_omok
-import regular_omok as game
+import env_small as game
+import env_regular
+import env_large
 
 class self_demo:
 	def __init__(self):
@@ -29,12 +29,14 @@ class self_demo:
 
 		self.Num_spot = int(np.sqrt(self.Num_action))
 		self.gameboard = np.zeros([self.Num_spot, self.Num_spot])
+		self.state = np.zeros([self.Num_spot, self.Num_spot, 17])
 		self.check_valid_pos = 0
 		self.win_index = 0
 
 	def main(self):
 		# Define game state
 		game_state = game.GameState()
+		action = 0
 
 		# Game Loop
 		while True:
@@ -56,10 +58,10 @@ class self_demo:
 				action[random.choice(legal_index)] = 1
 
 			# Take action and get info. for update
-			self.gameboard, self.check_valid_pos, self.win_index = game_state.frame_step(action)
+			self.gameboard, self.state, self.check_valid_pos, self.win_index, self.turn = game_state.step(action)
 
 			# Delay for visualization
-			time.sleep(0.01)
+			# time.sleep(0.01)
 
 if __name__ == '__main__':
 	agent = self_demo()

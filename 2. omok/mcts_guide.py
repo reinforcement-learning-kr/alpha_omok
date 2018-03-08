@@ -4,9 +4,9 @@ import numpy as np
 import random
 import time
 
-import env_small
+import env_small as game
 import env_regular
-import env_large as game
+import env_large
 
 
 class MCTS:
