@@ -6,9 +6,9 @@ import random
 import numpy as np
 import time
 
-import env_small as game
+import env_small
 import env_regular
-import env_large
+import env_large as game
 
 class self_demo:
 	def __init__(self):

@@ -137,6 +137,13 @@ class GameState:
                         if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
                             check_valid_pos = False
 
+        # If self mode and MCTS works
+        if np.any(input_) != 0:
+            action_index = np.argmax(input_)
+            y_index = int(action_index / GAMEBOARD_SIZE)
+            x_index = action_index % GAMEBOARD_SIZE
+            check_valid_pos = True
+
         # Change the gameboard according to the stone's index
         if check_valid_pos:
             # update state
