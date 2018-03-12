@@ -153,7 +153,7 @@ class MCTS:
         return ucb
 
     def _backup(self, reward, steps):
-        # steps = num_selection + num_expansion
+        # steps = n_selection + n_expansion
         # update edges in my tree
         for i in range(steps):
             edges = self.tree[self.key_memory[i]]
@@ -183,6 +183,7 @@ def main():
                 result['White'] += 1
             else:
                 result['Draw'] += 1
+            # render & reset tree
             env.render()
             mcts.reset_tree()
         # result
