@@ -1,8 +1,8 @@
-# Regular Omok
+# Large Omok
 '''
-This is regular version of omok.
+This is large version of omok.
 Win: Black or white stone has to be 5 in a row (horizontal, vertical, diagonal)
-boardsize: 15 x 15
+boardsize: 19 x 19
 '''
 # By KyushikMin kyushikmin@gamil.com
 # http://mmc.hanyang.ac.kr
@@ -15,12 +15,12 @@ import copy
 
 # Window Information
 FPS = 30
-WINDOW_WIDTH = 480
-WINDOW_HEIGHT = 620
+WINDOW_WIDTH = 600
+WINDOW_HEIGHT = 750
 TOP_MARGIN = 160
 MARGIN = 10
 BOARD_MARGIN = 20
-GAMEBOARD_SIZE = 15
+GAMEBOARD_SIZE = 19
 WIN_STONES = 5
 GRID_SIZE = WINDOW_WIDTH - 2 * (BOARD_MARGIN + MARGIN)
 
@@ -29,30 +29,26 @@ HALF_WINDOW_HEIGHT = int(WINDOW_HEIGHT / 2)
 
 # Colors
 #				 R    G    B
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (200, 72, 72)
-LIGHT_ORANGE = (198, 108, 58)
-ORANGE = (180, 122, 48)
-GREEN = (72, 160, 72)
-BLUE = (66, 72, 200)
-YELLOW = (162, 162, 42)
-NAVY = (75, 0, 130)
-PURPLE = (143, 0, 255)
-BADUK = (220, 179, 92)
-
+WHITE        = (255, 255, 255)
+BLACK		 = (  0,   0,   0)
+RED 		 = (200,  72,  72)
+LIGHT_ORANGE = (198, 108,  58)
+ORANGE       = (180, 122,  48)
+GREEN		 = ( 72, 160,  72)
+BLUE 		 = ( 66,  72, 200)
+YELLOW 		 = (162, 162,  42)
+NAVY         = ( 75,   0, 130)
+PURPLE       = (143,   0, 255)
+BADUK        = (220, 179,  92)
 
 def ReturnName():
-    return 'regular_omok'
-
+    return 'large_omok'
 
 def Return_Num_Action():
     return GAMEBOARD_SIZE * GAMEBOARD_SIZE
 
-
 def Return_BoardParams():
     return GAMEBOARD_SIZE, WIN_STONES
-
 
 class GameState:
     def __init__(self):
@@ -63,7 +59,7 @@ class GameState:
 
         DISPLAYSURF = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
-        pygame.display.set_caption('Regular Omok')
+        pygame.display.set_caption('Large Omok')
         # pygame.display.set_icon(pygame.image.load('./Qar_Sim/icon_resize2.png'))
 
         BASIC_FONT = pygame.font.Font('freesansbold.ttf', 16)
@@ -76,8 +72,8 @@ class GameState:
 
         # No stone: 0, Black stone: 1, White stone = -1
         self.gameboard = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE])
-        self.state = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, 17])
-        self.state[:, :, 16] = 1
+        self.state     = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, 17])
+        self.state[:,:,16] = 1
 
         self.black_win = 0
         self.white_win = 0
@@ -91,10 +87,8 @@ class GameState:
         self.Y_coord = []
 
         for i in range(GAMEBOARD_SIZE):
-            self.X_coord.append(MARGIN + BOARD_MARGIN + i * int(
-                GRID_SIZE / (GAMEBOARD_SIZE - 1)))
-            self.Y_coord.append(TOP_MARGIN + BOARD_MARGIN + i * int(
-                GRID_SIZE / (GAMEBOARD_SIZE - 1)))
+            self.X_coord.append(MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)))
+            self.Y_coord.append(TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)))
 
     # Game loop
     def step(self, input_):
@@ -104,8 +98,8 @@ class GameState:
 
             # No stone: 0, Black stone: 1, White stone = -1
             self.gameboard = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE])
-            self.state = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, 17])
-            self.state[:, :, 16] = 1
+            self.state     = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, 17])
+            self.state[:,:,16] = 1
 
             # black turn: 0, white turn: 1
             self.turn = 0
@@ -133,18 +127,22 @@ class GameState:
         if mouse_pos != 0:
             for i in range(len(self.X_coord)):
                 for j in range(len(self.Y_coord)):
-                    if ((self.X_coord[i] - 15 < mouse_pos[0] < self.X_coord[
-                        i] + 15) and
-                            (self.Y_coord[j] - 15 < mouse_pos[1] < self.Y_coord[
-                                j] + 15)):
+                    if ((self.X_coord[i] - 15 < mouse_pos[0] < self.X_coord[i] + 15) and
+                       (self.Y_coord[j] - 15 < mouse_pos[1] < self.Y_coord[j] + 15)):
                         check_valid_pos = True
                         x_index = i
                         y_index = j
 
                         # If selected spot is already occupied, it is not valid move!
-                        if self.gameboard[y_index, x_index] == 1 or \
-                                        self.gameboard[y_index, x_index] == -1:
+                        if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
                             check_valid_pos = False
+
+        # If self mode and MCTS works
+        if np.any(input_) != 0:
+            action_index = np.argmax(input_)
+            y_index = int(action_index / GAMEBOARD_SIZE)
+            x_index = action_index % GAMEBOARD_SIZE
+            check_valid_pos = True
 
         # Change the gameboard according to the stone's index
         if check_valid_pos:
@@ -184,80 +182,57 @@ class GameState:
 
     # Exit the game
     def terminate(self):
-        pygame.quit()
-        sys.exit()
+    	pygame.quit()
+    	sys.exit()
 
     # Draw main board
     def draw_main_board(self):
         # Main board size = 400 x 400
         # Game board size = 320 x 320
-        mainboard_rect = pygame.Rect(MARGIN, TOP_MARGIN,
-                                     WINDOW_WIDTH - 2 * MARGIN,
-                                     WINDOW_WIDTH - 2 * MARGIN)
+        mainboard_rect = pygame.Rect(MARGIN, TOP_MARGIN, WINDOW_WIDTH - 2 * MARGIN, WINDOW_WIDTH - 2 * MARGIN)
         pygame.draw.rect(DISPLAYSURF, BADUK, mainboard_rect)
 
         # Horizontal Lines
         for i in range(GAMEBOARD_SIZE):
-            pygame.draw.line(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN,
-                                                  TOP_MARGIN + BOARD_MARGIN + i * int(
-                                                      GRID_SIZE / (
-                                                      GAMEBOARD_SIZE - 1))), (
-                             WINDOW_WIDTH - (MARGIN + BOARD_MARGIN),
-                             TOP_MARGIN + BOARD_MARGIN + i * int(
-                                 GRID_SIZE / (GAMEBOARD_SIZE - 1))), 1)
+            pygame.draw.line(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN, TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1))), (WINDOW_WIDTH - (MARGIN + BOARD_MARGIN), TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1))), 1)
 
         # Vertical Lines
         for i in range(GAMEBOARD_SIZE):
-            pygame.draw.line(DISPLAYSURF, BLACK, (
-            MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)),
-            TOP_MARGIN + BOARD_MARGIN), (MARGIN + BOARD_MARGIN + i * int(
-                GRID_SIZE / (GAMEBOARD_SIZE - 1)),
-                                         TOP_MARGIN + BOARD_MARGIN + GRID_SIZE),
-                             1)
+            pygame.draw.line(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)), TOP_MARGIN + BOARD_MARGIN), (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)), TOP_MARGIN + BOARD_MARGIN + GRID_SIZE), 1)
 
         # Draw center circle
         for i in range(GAMEBOARD_SIZE):
             for j in range(GAMEBOARD_SIZE):
-                if i in [3, 7, 11] and j in [3, 7, 11]:
-                    pygame.draw.circle(DISPLAYSURF, BLACK, (
-                    MARGIN + BOARD_MARGIN + i * int(
-                        GRID_SIZE / (GAMEBOARD_SIZE - 1)),
-                    TOP_MARGIN + BOARD_MARGIN + j * int(
-                        GRID_SIZE / (GAMEBOARD_SIZE - 1))), 5, 0)
+                if i in [3, 9, 15] and j in [3, 9, 15]:
+                    pygame.draw.circle(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)), TOP_MARGIN + BOARD_MARGIN + j * int(GRID_SIZE/(GAMEBOARD_SIZE-1))), 5, 0)
 
         # Draw stones
         for i in range(self.gameboard.shape[0]):
             for j in range(self.gameboard.shape[1]):
-                if self.gameboard[i, j] == 1:
-                    pygame.draw.circle(DISPLAYSURF, BLACK,
-                                       (self.X_coord[j], self.Y_coord[i]), 12,
-                                       0)
+                if self.gameboard[i,j] == 1:
+                    pygame.draw.circle(DISPLAYSURF, BLACK, (self.X_coord[j], self.Y_coord[i]), 12, 0)
 
-                if self.gameboard[i, j] == -1:
-                    pygame.draw.circle(DISPLAYSURF, WHITE,
-                                       (self.X_coord[j], self.Y_coord[i]), 12,
-                                       0)
+                if self.gameboard[i,j] == -1:
+                    pygame.draw.circle(DISPLAYSURF, WHITE, (self.X_coord[j], self.Y_coord[i]), 12, 0)
 
     # Display title
     def title_msg(self):
-        titleSurf = TITLE_FONT.render('Regular Omok', True, WHITE)
-        titleRect = titleSurf.get_rect()
-        titleRect.topleft = (MARGIN, 10)
-        DISPLAYSURF.blit(titleSurf, titleRect)
+    	titleSurf = TITLE_FONT.render('Large Omok', True, WHITE)
+    	titleRect = titleSurf.get_rect()
+    	titleRect.topleft = (MARGIN, 10)
+    	DISPLAYSURF.blit(titleSurf, titleRect)
 
     # Display rule
     def rule_msg(self):
-        ruleSurf1 = BASIC_FONT.render('Win: Stones has to be 5 in a row', True,
-                                      WHITE)
-        ruleRect1 = ruleSurf1.get_rect()
-        ruleRect1.topleft = (MARGIN, 50)
-        DISPLAYSURF.blit(ruleSurf1, ruleRect1)
+    	ruleSurf1 = BASIC_FONT.render('Win: Stones has to be 5 in a row', True, WHITE)
+    	ruleRect1 = ruleSurf1.get_rect()
+    	ruleRect1.topleft = (MARGIN, 50)
+    	DISPLAYSURF.blit(ruleSurf1, ruleRect1)
 
-        ruleSurf2 = BASIC_FONT.render('(horizontal, vertical, diagonal)', True,
-                                      WHITE)
-        ruleRect2 = ruleSurf1.get_rect()
-        ruleRect2.topleft = (MARGIN + 35, 70)
-        DISPLAYSURF.blit(ruleSurf2, ruleRect2)
+    	ruleSurf2 = BASIC_FONT.render('(horizontal, vertical, diagonal)', True, WHITE)
+    	ruleRect2 = ruleSurf1.get_rect()
+    	ruleRect2.topleft = (MARGIN + 35, 70)
+    	DISPLAYSURF.blit(ruleSurf2, ruleRect2)
 
     # Display scores
     def score_msg(self):
@@ -266,20 +241,17 @@ class GameState:
         scoreRect1.topleft = (MARGIN, 105)
         DISPLAYSURF.blit(scoreSurf1, scoreRect1)
 
-        scoreSurf2 = BASIC_FONT.render(
-            'Black = ' + str(self.black_win) + '  vs  ', True, WHITE)
+        scoreSurf2 = BASIC_FONT.render('Black = ' + str(self.black_win) + '  vs  ', True, WHITE)
         scoreRect2 = scoreSurf2.get_rect()
         scoreRect2.topleft = (scoreRect1.midright[0], 105)
         DISPLAYSURF.blit(scoreSurf2, scoreRect2)
 
-        scoreSurf3 = BASIC_FONT.render(
-            'White = ' + str(self.white_win) + '  vs  ', True, WHITE)
+        scoreSurf3 = BASIC_FONT.render('White = ' + str(self.white_win) + '  vs  ', True, WHITE)
         scoreRect3 = scoreSurf3.get_rect()
         scoreRect3.topleft = (scoreRect2.midright[0], 105)
         DISPLAYSURF.blit(scoreSurf3, scoreRect3)
 
-        scoreSurf4 = BASIC_FONT.render('Draw = ' + str(self.count_draw), True,
-                                       WHITE)
+        scoreSurf4 = BASIC_FONT.render('Draw = ' + str(self.count_draw), True, WHITE)
         scoreRect4 = scoreSurf4.get_rect()
         scoreRect4.topleft = (scoreRect3.midright[0], 105)
         DISPLAYSURF.blit(scoreSurf4, scoreRect4)
@@ -317,6 +289,5 @@ class GameState:
         else:
             self.init = False
 
-
 if __name__ == '__main__':
-    main()
+	main()

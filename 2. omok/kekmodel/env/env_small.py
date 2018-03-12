@@ -1,54 +1,57 @@
-# Large Omok
+# Mini Omok
 '''
-This is large version of omok.
+This is mini version of omok.
 Win: Black or white stone has to be 5 in a row (horizontal, vertical, diagonal)
-boardsize: 19 x 19
+boardsize: 9 x 9
 '''
 # By KyushikMin kyushikmin@gamil.com
 # http://mmc.hanyang.ac.kr
 
 from utils import check_win, update_state
-import random, sys, time, math, pygame
+import sys
+import pygame
 from pygame.locals import *
 import numpy as np
-import copy
 
 # Window Information
 FPS = 30
-WINDOW_WIDTH = 600
-WINDOW_HEIGHT = 750
+WINDOW_WIDTH = 300
+WINDOW_HEIGHT = 450
 TOP_MARGIN = 160
 MARGIN = 10
 BOARD_MARGIN = 20
-GAMEBOARD_SIZE = 19
+GAMEBOARD_SIZE = 9
 WIN_STONES = 5
 GRID_SIZE = WINDOW_WIDTH - 2 * (BOARD_MARGIN + MARGIN)
 
 HALF_WINDOW_WIDTH = int(WINDOW_WIDTH / 2)
 HALF_WINDOW_HEIGHT = int(WINDOW_HEIGHT / 2)
 
-# Colors
-#				 R    G    B
-WHITE        = (255, 255, 255)
-BLACK		 = (  0,   0,   0)
-RED 		 = (200,  72,  72)
-LIGHT_ORANGE = (198, 108,  58)
-ORANGE       = (180, 122,  48)
-GREEN		 = ( 72, 160,  72)
-BLUE 		 = ( 66,  72, 200)
-YELLOW 		 = (162, 162,  42)
-NAVY         = ( 75,   0, 130)
-PURPLE       = (143,   0, 255)
-BADUK        = (220, 179,  92)
+# Colors (R, G, B)
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (200, 72, 72)
+LIGHT_ORANGE = (198, 108, 58)
+ORANGE = (180, 122, 48)
+GREEN = (72, 160, 72)
+BLUE = (66, 72, 200)
+YELLOW = (162, 162, 42)
+NAVY = (75, 0, 130)
+PURPLE = (143, 0, 255)
+BADUK = (220, 179, 92)
+
 
 def ReturnName():
-    return 'large_omok'
+    return 'mini_omok'
+
 
 def Return_Num_Action():
     return GAMEBOARD_SIZE * GAMEBOARD_SIZE
 
+
 def Return_BoardParams():
-    return GAMEBOARD_SIZE, GAMEBOARD_SIZE * GAMEBOARD_SIZE, WIN_STONES
+    return GAMEBOARD_SIZE, WIN_STONES
+
 
 class GameState:
     def __init__(self):
@@ -59,10 +62,10 @@ class GameState:
 
         DISPLAYSURF = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
-        pygame.display.set_caption('Large Omok')
+        pygame.display.set_caption('Mini Omok')
         # pygame.display.set_icon(pygame.image.load('./Qar_Sim/icon_resize2.png'))
 
-        BASIC_FONT = pygame.font.Font('freesansbold.ttf', 16)
+        BASIC_FONT = pygame.font.Font('freesansbold.ttf', 12)
         TITLE_FONT = pygame.font.Font('freesansbold.ttf', 24)
         GAMEOVER_FONT = pygame.font.Font('freesansbold.ttf', 54)
 
@@ -72,8 +75,8 @@ class GameState:
 
         # No stone: 0, Black stone: 1, White stone = -1
         self.gameboard = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE])
-        self.state     = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, 17])
-        self.state[:,:,16] = 1
+        self.state = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, 17])
+        self.state[:, :, 16] = 1
 
         self.black_win = 0
         self.white_win = 0
@@ -87,19 +90,20 @@ class GameState:
         self.Y_coord = []
 
         for i in range(GAMEBOARD_SIZE):
-            self.X_coord.append(MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)))
-            self.Y_coord.append(TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)))
+            self.X_coord.append(MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)))
+            self.Y_coord.append(TOP_MARGIN + BOARD_MARGIN + i *
+                                int(GRID_SIZE / (GAMEBOARD_SIZE - 1)))
 
     # Game loop
     def step(self, input_):
         # Initial settings
-        if self.init == True:
+        if self.init is True:
             self.num_stones = 0
 
             # No stone: 0, Black stone: 1, White stone = -1
             self.gameboard = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE])
-            self.state     = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, 17])
-            self.state[:,:,16] = 1
+            self.state = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, 17])
+            self.state[:, :, 16] = 1
 
             # black turn: 0, white turn: 1
             self.turn = 0
@@ -122,19 +126,18 @@ class GameState:
         x_index = -1
         y_index = -1
 
-        action = np.reshape(input_, (GAMEBOARD_SIZE, GAMEBOARD_SIZE))
-
         if mouse_pos != 0:
             for i in range(len(self.X_coord)):
                 for j in range(len(self.Y_coord)):
                     if ((self.X_coord[i] - 15 < mouse_pos[0] < self.X_coord[i] + 15) and
-                       (self.Y_coord[j] - 15 < mouse_pos[1] < self.Y_coord[j] + 15)):
+                            (self.Y_coord[j] - 15 < mouse_pos[1] < self.Y_coord[j] + 15)):
                         check_valid_pos = True
                         x_index = i
                         y_index = j
 
                         # If selected spot is already occupied, it is not valid move!
-                        if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
+                        if self.gameboard[y_index, x_index] == 1 or \
+                                self.gameboard[y_index, x_index] == -1:
                             check_valid_pos = False
 
         # If self mode and MCTS works
@@ -153,6 +156,7 @@ class GameState:
                 self.gameboard[y_index, x_index] = 1
                 self.turn = 1
                 self.num_stones += 1
+
             else:
                 self.gameboard[y_index, x_index] = -1
                 self.turn = 0
@@ -182,57 +186,73 @@ class GameState:
 
     # Exit the game
     def terminate(self):
-    	pygame.quit()
-    	sys.exit()
+        pygame.quit()
+        sys.exit()
 
     # Draw main board
     def draw_main_board(self):
         # Main board size = 400 x 400
         # Game board size = 320 x 320
-        mainboard_rect = pygame.Rect(MARGIN, TOP_MARGIN, WINDOW_WIDTH - 2 * MARGIN, WINDOW_WIDTH - 2 * MARGIN)
+        mainboard_rect = pygame.Rect(MARGIN, TOP_MARGIN, WINDOW_WIDTH -
+                                     2 * MARGIN, WINDOW_WIDTH - 2 * MARGIN)
         pygame.draw.rect(DISPLAYSURF, BADUK, mainboard_rect)
 
         # Horizontal Lines
         for i in range(GAMEBOARD_SIZE):
-            pygame.draw.line(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN, TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1))), (WINDOW_WIDTH - (MARGIN + BOARD_MARGIN), TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1))), 1)
+            pygame.draw.line(
+                DISPLAYSURF,
+                BLACK,
+                (MARGIN + BOARD_MARGIN,
+                    TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1))),
+                (WINDOW_WIDTH - (MARGIN + BOARD_MARGIN),
+                    TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1))), 1)
 
         # Vertical Lines
         for i in range(GAMEBOARD_SIZE):
-            pygame.draw.line(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)), TOP_MARGIN + BOARD_MARGIN), (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)), TOP_MARGIN + BOARD_MARGIN + GRID_SIZE), 1)
+            pygame.draw.line(
+                DISPLAYSURF,
+                BLACK,
+                (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)),
+                    TOP_MARGIN + BOARD_MARGIN),
+                (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)),
+                    TOP_MARGIN + BOARD_MARGIN + GRID_SIZE), 1)
 
         # Draw center circle
-        for i in range(GAMEBOARD_SIZE):
-            for j in range(GAMEBOARD_SIZE):
-                if i in [3, 9, 15] and j in [3, 9, 15]:
-                    pygame.draw.circle(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)), TOP_MARGIN + BOARD_MARGIN + j * int(GRID_SIZE/(GAMEBOARD_SIZE-1))), 5, 0)
+        pygame.draw.circle(
+            DISPLAYSURF,
+            BLACK,
+            (MARGIN + BOARD_MARGIN + 4 * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)),
+                TOP_MARGIN + BOARD_MARGIN + 4 * int(GRID_SIZE / (GAMEBOARD_SIZE - 1))), 5, 0)
 
         # Draw stones
         for i in range(self.gameboard.shape[0]):
             for j in range(self.gameboard.shape[1]):
-                if self.gameboard[i,j] == 1:
-                    pygame.draw.circle(DISPLAYSURF, BLACK, (self.X_coord[j], self.Y_coord[i]), 12, 0)
+                if self.gameboard[i, j] == 1:
+                    pygame.draw.circle(DISPLAYSURF, BLACK,
+                                       (self.X_coord[j], self.Y_coord[i]), 12, 0)
 
-                if self.gameboard[i,j] == -1:
-                    pygame.draw.circle(DISPLAYSURF, WHITE, (self.X_coord[j], self.Y_coord[i]), 12, 0)
+                if self.gameboard[i, j] == -1:
+                    pygame.draw.circle(DISPLAYSURF, WHITE,
+                                       (self.X_coord[j], self.Y_coord[i]), 12, 0)
 
     # Display title
     def title_msg(self):
-    	titleSurf = TITLE_FONT.render('Large Omok', True, WHITE)
-    	titleRect = titleSurf.get_rect()
-    	titleRect.topleft = (MARGIN, 10)
-    	DISPLAYSURF.blit(titleSurf, titleRect)
+        titleSurf = TITLE_FONT.render('Mini Omok', True, WHITE)
+        titleRect = titleSurf.get_rect()
+        titleRect.topleft = (MARGIN, 10)
+        DISPLAYSURF.blit(titleSurf, titleRect)
 
     # Display rule
     def rule_msg(self):
-    	ruleSurf1 = BASIC_FONT.render('Win: Stones has to be 5 in a row', True, WHITE)
-    	ruleRect1 = ruleSurf1.get_rect()
-    	ruleRect1.topleft = (MARGIN, 50)
-    	DISPLAYSURF.blit(ruleSurf1, ruleRect1)
+        ruleSurf1 = BASIC_FONT.render('Win: Stones has to be 5 in a row', True, WHITE)
+        ruleRect1 = ruleSurf1.get_rect()
+        ruleRect1.topleft = (MARGIN, 50)
+        DISPLAYSURF.blit(ruleSurf1, ruleRect1)
 
-    	ruleSurf2 = BASIC_FONT.render('(horizontal, vertical, diagonal)', True, WHITE)
-    	ruleRect2 = ruleSurf1.get_rect()
-    	ruleRect2.topleft = (MARGIN + 35, 70)
-    	DISPLAYSURF.blit(ruleSurf2, ruleRect2)
+        ruleSurf2 = BASIC_FONT.render('(horizontal, vertical, diagonal)', True, WHITE)
+        ruleRect2 = ruleSurf1.get_rect()
+        ruleRect2.topleft = (MARGIN + 35, 70)
+        DISPLAYSURF.blit(ruleSurf2, ruleRect2)
 
     # Display scores
     def score_msg(self):
@@ -288,6 +308,3 @@ class GameState:
 
         else:
             self.init = False
-
-if __name__ == '__main__':
-	main()

@@ -1,8 +1,8 @@
-# Large Omok
+# Regular Omok
 '''
-This is large version of omok.
+This is regular version of omok.
 Win: Black or white stone has to be 5 in a row (horizontal, vertical, diagonal)
-boardsize: 19 x 19
+boardsize: 15 x 15
 '''
 # By KyushikMin kyushikmin@gamil.com
 # http://mmc.hanyang.ac.kr
@@ -15,12 +15,12 @@ import copy
 
 # Window Information
 FPS = 30
-WINDOW_WIDTH = 600
-WINDOW_HEIGHT = 750
+WINDOW_WIDTH = 480
+WINDOW_HEIGHT = 620
 TOP_MARGIN = 160
 MARGIN = 10
 BOARD_MARGIN = 20
-GAMEBOARD_SIZE = 19
+GAMEBOARD_SIZE = 15
 WIN_STONES = 5
 GRID_SIZE = WINDOW_WIDTH - 2 * (BOARD_MARGIN + MARGIN)
 
@@ -42,7 +42,7 @@ PURPLE       = (143,   0, 255)
 BADUK        = (220, 179,  92)
 
 def ReturnName():
-    return 'large_omok'
+    return 'regular_omok'
 
 def Return_Num_Action():
     return GAMEBOARD_SIZE * GAMEBOARD_SIZE
@@ -59,7 +59,7 @@ class GameState:
 
         DISPLAYSURF = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
-        pygame.display.set_caption('Large Omok')
+        pygame.display.set_caption('Regular Omok')
         # pygame.display.set_icon(pygame.image.load('./Qar_Sim/icon_resize2.png'))
 
         BASIC_FONT = pygame.font.Font('freesansbold.ttf', 16)
@@ -137,6 +137,13 @@ class GameState:
                         if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
                             check_valid_pos = False
 
+        # If self mode and MCTS works
+        if np.any(input_) != 0:
+            action_index = np.argmax(input_)
+            y_index = int(action_index / GAMEBOARD_SIZE)
+            x_index = action_index % GAMEBOARD_SIZE
+            check_valid_pos = True
+
         # Change the gameboard according to the stone's index
         if check_valid_pos:
             # update state
@@ -196,7 +203,7 @@ class GameState:
         # Draw center circle
         for i in range(GAMEBOARD_SIZE):
             for j in range(GAMEBOARD_SIZE):
-                if i in [3, 9, 15] and j in [3, 9, 15]:
+                if i in [3, 7, 11] and j in [3, 7, 11]:
                     pygame.draw.circle(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE/(GAMEBOARD_SIZE-1)), TOP_MARGIN + BOARD_MARGIN + j * int(GRID_SIZE/(GAMEBOARD_SIZE-1))), 5, 0)
 
         # Draw stones
@@ -210,7 +217,7 @@ class GameState:
 
     # Display title
     def title_msg(self):
-    	titleSurf = TITLE_FONT.render('Large Omok', True, WHITE)
+    	titleSurf = TITLE_FONT.render('Regular Omok', True, WHITE)
     	titleRect = titleSurf.get_rect()
     	titleRect.topleft = (MARGIN, 10)
     	DISPLAYSURF.blit(titleSurf, titleRect)
