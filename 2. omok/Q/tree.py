@@ -130,9 +130,7 @@ class MCTS:
             tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
 
             parent_id = tree[node_id]['parent']
-            # print('node id: ' +str(node_id))
-            # print('parent id: ' + str(parent_id))
-            # print('root id: ' + str(root_id))
+
             if parent_id == root_id:
                 tree[parent_id]['n'] += 1
                 return tree

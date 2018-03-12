@@ -36,11 +36,9 @@ class MCTS_guide:
                 if root_id != (0,):
                     # Delete useless tree elements
                     tree_keys = list(tree.keys())
-                    print('before: ' + str(len(tree_keys)))
                     for key in tree_keys:
                         if root_id != key[:len(root_id)]:
                             del tree[key]
-                    print('after: ' + str(len(list(tree.keys()))))
                 else:
                     # Initialize Tree
                     tree = {root_id: {'state': game_board,
@@ -106,5 +104,5 @@ class MCTS_guide:
             time.sleep(0.01)
 
 if __name__ == '__main__':
-    test = MCTS_guide()
-    test.main()
+    agent = MCTS_guide()
+    agent.main()

@@ -126,5 +126,5 @@ class MCTS_vs:
             time.sleep(0.01)
 
 if __name__ == '__main__':
-    test = MCTS_vs()
-    test.main()
+    agent = MCTS_vs()
+    agent.main()
