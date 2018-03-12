@@ -48,7 +48,7 @@ def Return_Num_Action():
     return GAMEBOARD_SIZE * GAMEBOARD_SIZE
 
 def Return_BoardParams():
-    return GAMEBOARD_SIZE, WIN_STONES
+    return GAMEBOARD_SIZE, GAMEBOARD_SIZE * GAMEBOARD_SIZE, WIN_STONES
 
 class GameState:
     def __init__(self):
@@ -136,6 +136,13 @@ class GameState:
                         # If selected spot is already occupied, it is not valid move!
                         if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
                             check_valid_pos = False
+
+        # If self mode and MCTS works
+        if np.any(input_) != 0:
+            action_index = np.argmax(input_)
+            y_index = int(action_index / GAMEBOARD_SIZE)
+            x_index = action_index % GAMEBOARD_SIZE
+            check_valid_pos = True
 
         # Change the gameboard according to the stone's index
         if check_valid_pos:

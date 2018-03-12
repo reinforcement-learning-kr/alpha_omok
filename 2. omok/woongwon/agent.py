@@ -26,7 +26,7 @@ class Player:
     def __init__(self, action_size=81):
         self.replay_memory = deque()
         self.action_size = action_size
-        self.agent = AlphaZero(action_size)
+        self.model = AlphaZero(action_size)
         self.tree = self.reset()
 
         self.change_temperature = 20
@@ -85,7 +85,7 @@ class Player:
         return leaf_v
 
     def expand_and_evaluate(self, state):
-        leaf_p, leaf_v = self.agent.forward(state)
+        leaf_p, leaf_v = self.model.forward(state)
         return leaf_p, leaf_v
 
     def select_action_q_and_u(self, state, is_root_node):

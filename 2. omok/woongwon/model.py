@@ -33,6 +33,7 @@ class ActorCritic(nn.Module):
 
     def forward(self, x):
         x = self.conv(x)
+        x = x.view(x.size(0), -1)
         action_prob = self.actor(x)
         value = self.critic(x)
         return action_prob, value
