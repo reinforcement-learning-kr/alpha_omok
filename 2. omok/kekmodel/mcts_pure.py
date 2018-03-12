@@ -36,13 +36,14 @@ class MCTS:
         # reset member
         self.key_memory = None
         self.action_memory = None
+
+        # init
         self._reset()
         self.reset_tree()
 
     def _reset(self):
         self.key_memory = deque(maxlen=BOARD_SIZE**2)
         self.action_memory = deque(maxlen=BOARD_SIZE**2)
-        self.board = None
 
     def reset_tree(self):
         self.tree = defaultdict(lambda: np.zeros((BOARD_SIZE**2, 2), 'float'))
