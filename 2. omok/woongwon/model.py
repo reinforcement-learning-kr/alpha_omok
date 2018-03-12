@@ -10,15 +10,15 @@ class ActorCritic(nn.Module):
     def __init__(self, action_size):
         super(ActorCritic, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(1, 16, kernel_size=(3, 3), padding=(1, 1)),
-            nn.BatchNorm2d(16),
+            nn.Conv2d(17, 32, kernel_size=(3, 3), padding=(1, 1)),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
 
-            nn.Conv2d(16, 16, kernel_size=(3, 3), padding=(1, 1)),
-            nn.BatchNorm2d(16),
+            nn.Conv2d(32, 32, kernel_size=(3, 3), padding=(1, 1)),
+            nn.BatchNorm2d(32),
             nn.ReLU(),
 
-            nn.Conv2d(16, 32, kernel_size=(3, 3), padding=(1, 1)),
+            nn.Conv2d(32, 32, kernel_size=(3, 3), padding=(1, 1)),
             nn.BatchNorm2d(32),
             nn.ReLU(),
         )
