@@ -20,7 +20,8 @@ class MCTS_guide:
         game_board = np.zeros(board_shape)
 
         do_mcts = True
-        num_mcts = 5000
+        num_mcts = 25000
+
         # 0: O, 1: X
         turn = 0
 
@@ -39,6 +40,7 @@ class MCTS_guide:
                     for key in tree_keys:
                         if root_id != key[:len(root_id)]:
                             del tree[key]
+
                 else:
                     # Initialize Tree
                     tree = {root_id: {'state': game_board,
@@ -46,8 +48,8 @@ class MCTS_guide:
                                       'child': [],
                                       'parent': None,
                                       'n': 0,
-                                      'w': None,
-                                      'q': None}}
+                                      'w': 0,
+                                      'q': 0}}
 
                 print('===================================================')
                 for i in range(num_mcts):

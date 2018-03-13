@@ -20,16 +20,15 @@ class MCTS_vs:
         game_board = np.zeros(board_shape)
 
         do_mcts = False
-        num_mcts = 5000
+        num_mcts = 25000
 
         # 0: O, 1: X
         turn = 0
-        ai_turn = 0
+        ai_turn = 1
 
         # Initialize tree root id
         root_id = (0,)
 
-        # Initialize Tree
         tree = {root_id: {'state': game_board,
                           'player': turn,
                           'child': [],
@@ -52,15 +51,15 @@ class MCTS_vs:
                         if root_id != key[:len(root_id)]:
                             del tree[key]
                     print('after: ' + str(len(list(tree.keys()))))
-                else:
-                    # Initialize Tree
-                    tree = {root_id: {'state': game_board,
-                                      'player': turn,
-                                      'child': [],
-                                      'parent': None,
-                                      'n': 0,
-                                      'w': None,
-                                      'q': None}}
+
+                # Initialize Tree
+                tree = {root_id: {'state': game_board,
+                                  'player': turn,
+                                  'child': [],
+                                  'parent': None,
+                                  'n': 0,
+                                  'w': None,
+                                  'q': None}}
 
                 print('===================================================')
                 for i in range(num_mcts):

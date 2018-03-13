@@ -54,12 +54,12 @@ class MCTS:
         actions = valid_actions(leaf_state)
         expand_thres = 1
 
-        if leaf_id == (0,) or tree[leaf_id]['n'] > expand_thres:
+        if leaf_id == (0,) or tree[leaf_id]['n'] >= expand_thres:
             is_expand = True
         else:
             is_expand = False
 
-        if is_terminal == 0 and is_expand:
+        if is_terminal == 0:
             # expansion for every possible actions
             childs = []
             for action in actions:

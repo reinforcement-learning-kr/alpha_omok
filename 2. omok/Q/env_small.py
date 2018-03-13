@@ -119,8 +119,8 @@ class GameState:
 
         # get action and put stone on the board
         check_valid_pos = False
-        x_index = -1
-        y_index = -1
+        x_index = 100
+        y_index = 100
 
         action = np.reshape(input_, (GAMEBOARD_SIZE, GAMEBOARD_SIZE))
 
@@ -143,6 +143,10 @@ class GameState:
             y_index = int(action_index / GAMEBOARD_SIZE)
             x_index = action_index % GAMEBOARD_SIZE
             check_valid_pos = True
+
+            # If selected spot is already occupied, it is not valid move!
+            if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
+                check_valid_pos = False
 
         # Change the gameboard according to the stone's index
         if check_valid_pos:
