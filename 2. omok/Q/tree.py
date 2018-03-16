@@ -35,18 +35,18 @@ class MCTS:
                         q = w / n
                         u = np.sqrt(2 * np.log(total_n) / n)
 
-                    if q + u > max_value:
-                        max_value = q + u
-                        node_id = child_id
+                    # if q + u > max_value:
+                    #     max_value = q + u
+                    #     node_id = child_id
 
-                    # if tree[leaf_id]['player'] == tree[root_id]['player']:
-                    #     if q + u > max_value:
-                    #         max_value = q + u
-                    #         node_id = child_id
-                    # else:
-                    #     if q + u < min_value:
-                    #         min_value = q - u
-                    #         node_id = child_id
+                    if tree[leaf_id]['player'] == tree[root_id]['player']:
+                        if q + u > max_value:
+                            max_value = q + u
+                            node_id = child_id
+                    else:
+                        if q - u < min_value:
+                            min_value = q - u
+                            node_id = child_id
 
     def expansion(self, tree, leaf_id):
         leaf_state = deepcopy(tree[leaf_id]['state'])
