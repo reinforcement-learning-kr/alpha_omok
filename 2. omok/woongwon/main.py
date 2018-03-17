@@ -18,7 +18,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torchvision import transforms
-
+import pygame
 import env_small as game
 from agent import Player
 
@@ -42,10 +42,10 @@ def self_play():
 
         while win_index == 0:
             # Select action
-            state = np.reshape(state, [1, 17, state_size, state_size])
-            state = torch.from_numpy(np.int32(state))
-            state = Variable(state).float().cpu()
-            policy, value = agent.model.model(state)
+            state_input = np.reshape(state, [1, 17, state_size, state_size])
+            state_input = torch.from_numpy(np.int32(state_input))
+            state_input = Variable(state_input).float().cpu()
+            policy, value = agent.model.model(state_input)
             policy = policy.data.numpy()[0]
 
             # Find legal moves
@@ -95,27 +95,28 @@ def self_play():
 
 
 def train():
-    iteration = 10
+    iteration = 2
     for i in range(iteration):
         print(i, 'th iteration')
         optimizer = optim.Adam(agent.model.model.parameters(), lr=0.001)
+
         mini_batch = random.sample(memory, batch_size)
         mini_batch = np.array(mini_batch).transpose()
-
         states = np.vstack(mini_batch[0])
         actions = np.vstack(mini_batch[1])
         rewards = list(mini_batch[2])
 
-        states = torch.from_numpy(np.int32(states))
-        states = Variable(states).float().cpu()
-        policies, values = agent.model.model(states)
+        states_input = np.reshape(states,
+                                  [batch_size, 17, state_size, state_size])
+        states_input = torch.from_numpy(np.int32(states_input))
+        states_input = Variable(states_input).float().cpu()
+        policies, values = agent.model.model(states_input)
 
-        actions = torch.from_numpy(actions)
-        policies = torch.sum(policies.mul(Variable(actions)))
-
-        rewards = torch.from_numpy(rewards)
-        loss = -torch.mul(Variable(rewards),
-                          torch.log(torch.mul(policies, actions)))
+        actions = torch.from_numpy(actions).float()
+        policies = policies.mul(Variable(actions))
+        policies = policies.sum(1)
+        rewards = torch.from_numpy(np.array(rewards))
+        loss = -torch.mul(Variable(rewards).float(), torch.log(policies))
 
         optimizer.zero_grad()
         loss.backward()
@@ -133,6 +134,7 @@ if __name__ == '__main__':
 
     for i in range(1):
         self_play()
+        pygame.quit()
         train()
         compete()
 
