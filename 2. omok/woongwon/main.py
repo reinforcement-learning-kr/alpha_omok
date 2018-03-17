@@ -6,18 +6,12 @@ project : make your own alphazero
 from utils import valid_actions, check_win
 from copy import deepcopy
 import time
-import sys
-import gym
 import torch
-import pylab
 import random
 import numpy as np
 from collections import deque
-import torch.nn as nny
 import torch.optim as optim
-import torch.nn.functional as F
 from torch.autograd import Variable
-from torchvision import transforms
 import pygame
 import env_small as game
 from agent import Player
@@ -30,11 +24,12 @@ def append_sample(sample):
     memory.append(sample)
 
 
-def self_play():
+def self_play(num_episode):
     state = np.zeros([state_size, state_size, 17])
     game_board = np.zeros([state_size, state_size])
     # Game Loop
-    for episode in range(1):
+    for episode in range(num_episode):
+        print('playing ', episode, 'th episode by self-play')
         samples_black = []
         samples_white = []
         turn = 0
@@ -58,19 +53,21 @@ def self_play():
                         legal_policy.append(policy[state_size * i + j])
 
             legal_policy /= np.sum(legal_policy)
-            legal_index = np.random.choice(len(legal_policy), 1,
-                                           p=legal_policy)[0]
-            action_index = legal_indexs[legal_index]
-            action = np.zeros(action_size)
-            action[action_index] = 1
+            if len(legal_policy) > 0:
+                legal_index = np.random.choice(len(legal_policy), 1,
+                                               p=legal_policy)[0]
+                action_index = legal_indexs[legal_index]
+                action = np.zeros(action_size)
+                action[action_index] = 1
 
-            if turn == 0:
-                samples_black.append([state, action])
+                if turn == 0:
+                    samples_black.append([state, action])
+                else:
+                    samples_white.append([state, action])
+
+                game_board, state, check_valid_pos, win_index, turn = env.step(action)
             else:
-                samples_white.append([state, action])
-
-            game_board, state, check_valid_pos, win_index, turn = env.step(action)
-            # time.sleep(0.1)
+                win_index = 0
 
             if win_index != 0:
                 print("win is ", win_index, "in episode", episode)
@@ -94,12 +91,11 @@ def self_play():
                 break
 
 
-def train():
-    iteration = 2
+def train(num_iter):
     optimizer = optim.Adam(agent.model.model.parameters(), lr=0.001)
     criterion = torch.nn.BCELoss(size_average=True)
 
-    for i in range(iteration):
+    for i in range(num_iter):
         print(i, 'th iteration')
         mini_batch = random.sample(memory, batch_size)
         mini_batch = np.array(mini_batch).transpose()
@@ -133,9 +129,15 @@ if __name__ == '__main__':
     state_size, action_size, win_mark = game.Return_BoardParams()
     agent = Player(action_size)
 
-    for i in range(1):
-        self_play()
+    for i in range(10):
+        print('-----------------------------------------')
+        print(i, 'th training process')
+        if i != 0:
+            env = game.GameState()
+            state_size, action_size, win_mark = game.Return_BoardParams()
+
+        self_play(num_episode=100)
         pygame.quit()
-        train()
+        train(num_iter=10)
         compete()
 
