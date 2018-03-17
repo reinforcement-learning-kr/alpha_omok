@@ -96,10 +96,11 @@ def self_play():
 
 def train():
     iteration = 2
+    optimizer = optim.Adam(agent.model.model.parameters(), lr=0.001)
+    criterion = torch.nn.BCELoss(size_average=True)
+
     for i in range(iteration):
         print(i, 'th iteration')
-        optimizer = optim.Adam(agent.model.model.parameters(), lr=0.001)
-
         mini_batch = random.sample(memory, batch_size)
         mini_batch = np.array(mini_batch).transpose()
         states = np.vstack(mini_batch[0])
@@ -108,15 +109,15 @@ def train():
 
         states_input = np.reshape(states,
                                   [batch_size, 17, state_size, state_size])
-        states_input = torch.from_numpy(np.int32(states_input))
-        states_input = Variable(states_input).float().cpu()
-        policies, values = agent.model.model(states_input)
+        states_input = torch.Tensor(states_input)
+        states_input = Variable(states_input).float()
+        actions = Variable(torch.FloatTensor(actions))
+        rewards = Variable(torch.FloatTensor(rewards))
 
-        actions = torch.from_numpy(actions).float()
-        policies = policies.mul(Variable(actions))
-        policies = policies.sum(1)
-        rewards = torch.from_numpy(np.array(rewards))
-        loss = -torch.mul(Variable(rewards).float(), torch.log(policies))
+        policies, values = agent.model.model(states_input)
+        policies = torch.sum(policies.mul(actions), dim=1)
+
+        loss = -criterion(policies, rewards)
 
         optimizer.zero_grad()
         loss.backward()
