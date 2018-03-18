@@ -24,7 +24,7 @@ class ActorCritic(nn.Module):
         )
         self.actor = nn.Sequential(
             nn.Linear(2592, action_size),
-            nn.Softmax()
+            nn.Softmax(dim=1)
         )
         self.critic = nn.Sequential(
             nn.Linear(2592, 1),

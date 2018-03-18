@@ -3,7 +3,7 @@ author : Woonwon Lee
 data : 2018.03.12
 project : make your own alphazero
 '''
-from utils import valid_actions, check_win
+from utils import valid_actions, check_win, render_str
 from copy import deepcopy
 import time
 import torch
@@ -16,6 +16,7 @@ import pygame
 import env_small as game
 from agent import Player
 
+GAMEBOARD_SIZE = 9
 memory = deque(maxlen=10000)
 batch_size = 32
 
@@ -36,6 +37,7 @@ def self_play(num_episode):
         win_index = 0
 
         while win_index == 0:
+            render_str(game_board, GAMEBOARD_SIZE)
             # Select action
             # policy = agent.get_policy(state, agent.model.model)
             state_input = np.reshape(state, [1, 17, state_size, state_size])
@@ -69,6 +71,7 @@ def self_play(num_episode):
                 game_board, state, check_valid_pos, win_index, turn, _ \
                     = env.step(action)
             else:
+                render_str(game_board, GAMEBOARD_SIZE)
                 win_index = 3
 
             if win_index != 0:
@@ -85,7 +88,7 @@ def self_play(num_episode):
 
                 for i in range(len(samples_black)):
                     memory.append([samples_black[i][0], samples_black[i][1],
-                                  reward_black])
+                                   reward_black])
 
                 for i in range(len(samples_white)):
                     memory.append([samples_white[i][0], samples_white[i][1],
@@ -125,6 +128,7 @@ def train(num_iter):
 def compete():
     pass
 
+
 if __name__ == '__main__':
     env = game.GameState('text')
     # win_mark == 5 : omok
@@ -134,8 +138,7 @@ if __name__ == '__main__':
     for i in range(10):
         print('-----------------------------------------')
         print(i, 'th training process')
-        self_play(num_episode=100)
+        self_play(num_episode=10)
         pygame.quit()
         train(num_iter=10)
         compete()
-
