@@ -14,9 +14,8 @@ def valid_actions(game_board):
 
     return actions
 
+
 # Check win
-
-
 def check_win(game_board, win_mark):
     num_mark = np.count_nonzero(game_board)
     state_size = len(game_board)
@@ -28,9 +27,9 @@ def check_win(game_board, win_mark):
         for col in range(state_size - win_mark + 1):
             current_grid = game_board[row: row + win_mark, col: col + win_mark]
 
-            sum_horizontal = np.sum(current_grid, axis=1)                # hotizontal
-            sum_vertical = np.sum(current_grid, axis=0)                  # vertical
-            sum_diagonal_1 = np.sum(current_grid.diagonal())             # diagonal -> lower right
+            sum_horizontal = np.sum(current_grid, axis=1)             # hotizontal
+            sum_vertical = np.sum(current_grid, axis=0)             # vertical
+            sum_diagonal_1 = np.sum(current_grid.diagonal())            # diagonal -> lower right
             sum_diagonal_2 = np.sum(np.flipud(current_grid).diagonal())  # diagonal -> upper right
 
             # Black wins! (Horizontal and Vertical)
@@ -65,3 +64,23 @@ def update_state(state, turn, x_idx, y_idx):
     state = np.int8(state)
 
     return state
+
+
+def render_str(gameboard, GAMEBOARD_SIZE):
+    count = np.count_nonzero(gameboard)
+    board_str = '\n  0 1 2 3 4 5 6 7 8\n'
+    for i in range(GAMEBOARD_SIZE):
+        for j in range(GAMEBOARD_SIZE):
+            if j == 0:
+                board_str += '{}'.format(i)
+            if gameboard[i][j] == 0:
+                board_str += ' .'
+            if gameboard[i][j] == 1:
+                board_str += ' O'
+            if gameboard[i][j] == -1:
+                board_str += ' X'
+            if j == GAMEBOARD_SIZE - 1:
+                board_str += ' \n'
+        if i == GAMEBOARD_SIZE - 1:
+            board_str += '  ***  MOVE: {} ***'.format(count)
+    print(board_str)
