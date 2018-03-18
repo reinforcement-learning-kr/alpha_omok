@@ -1,7 +1,7 @@
 from utils import valid_actions, check_win
 from copy import deepcopy
 import numpy as np
-import random
+from numpy import random
 
 
 class MCTS:
@@ -50,15 +50,9 @@ class MCTS:
                             node_id = child_id
 
     def expansion(self, tree, leaf_id):
-        leaf_state = deepcopy(tree[leaf_id]['state'])
-        is_terminal = check_win(leaf_state, self.win_mark)
-        actions = valid_actions(leaf_state)
-        expand_thres = 1
-
-        if leaf_id == (0,) or tree[leaf_id]['n'] >= expand_thres:
-            is_expand = True
-        else:
-            is_expand = False
+        leaf_board = deepcopy(tree[leaf_id]['state'])
+        is_terminal = check_win(leaf_board, self.win_mark)
+        actions = valid_actions(leaf_board)
 
         if is_terminal == 0:
             # expansion for every possible actions
@@ -77,7 +71,7 @@ class MCTS:
 
                 child_id = leaf_id + (action_index, )
                 childs.append(child_id)
-                tree[child_id] = {'state': state,
+                tree[child_id] = {'board': state,
                                   'player': next_turn,
                                   'child': [],
                                   'parent': leaf_id,

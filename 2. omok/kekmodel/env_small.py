@@ -52,7 +52,7 @@ def Return_BoardParams():
     return GAMEBOARD_SIZE, GAMEBOARD_SIZE * GAMEBOARD_SIZE, WIN_STONES
 
 
-class GameState:
+class OmokEnv:
     def __init__(self):
         global FPS_CLOCK, DISPLAYSURF, BASIC_FONT, TITLE_FONT, GAMEOVER_FONT
 
@@ -320,5 +320,5 @@ class GameState:
 
 
 if __name__ == '__main__':
-    env = GameState()
+    env = OmokEnv()
     env.render_str()

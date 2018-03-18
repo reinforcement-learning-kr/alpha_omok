@@ -1,49 +1,61 @@
 import env_small as game
-import trees
+from mcts import MCTS
 import time
 import numpy as np
 
 
-class MCTS_guide:
+class HumanUI:
     def main(self):
         env = game.GameState()
         state_size, action_size, win_mark = game.Return_BoardParams()
-        agent = trees.MCTS(win_mark)
+        agent = MCTS(win_mark)
 
         board_shape = [state_size, state_size]
         game_board = np.zeros(board_shape)
 
-        do_mcts = True
-        num_mcts = 20000
+        do_mcts = False
+        num_mcts = 2000
 
         # 0: O, 1: X
         turn = 0
+        ai_turn = 1
 
         # Initialize tree root id
         root_id = (0,)
 
+        tree = {
+            root_id: {'board': game_board,
+                      'player': turn,
+                      'child': [],
+                      'parent': None,
+                      'n': 0,
+                      'w': None,
+                      'q': None}
+        }
+
         while True:
             # Select action
-            # action = 0
+            action = np.zeros([state_size, state_size])
 
             # MCTS
             if do_mcts:
-                if root_id == (0,):
-                    # Initialize Tree
-                    tree = {
-                        root_id: {'player': turn,
-                                  'child': [],
-                                  'parent': None,
-                                  'n': 0,
-                                  'w': 0,
-                                  'q': 0}
-                    }
-                else:
+                if root_id != (0,):
                     # Delete useless tree elements
                     tree_keys = list(tree.keys())
+                    print('before: ' + str(len(tree_keys)))
                     for key in tree_keys:
                         if root_id != key[:len(root_id)]:
                             del tree[key]
+                    print('after: ' + str(len(list(tree.keys()))))
+
+                # Initialize Tree
+                tree = {root_id: {'board': game_board,
+                                  'player': turn,
+                                  'child': [],
+                                  'parent': None,
+                                  'n': 0,
+                                  'w': None,
+                                  'q': None}}
 
                 print('===================================================')
                 for i in range(num_mcts):
@@ -60,11 +72,8 @@ class MCTS_guide:
                     # step 4: backup
                     tree = agent.backup(tree, child_id, sim_result, root_id)
 
-                print('-------- current state --------')
-                print(tree[root_id]['state'])
+                env.render_str()
                 q_list = {}
-                print('tree length: ' + str(len(tree.keys())))
-
                 actions = tree[root_id]['child']
                 for i in actions:
                     q_list[root_id + (i,)] = tree[root_id + (i,)]['q']
@@ -78,29 +87,39 @@ class MCTS_guide:
                 print('max action: ' + str(max_action + 1))
                 do_mcts = False
 
+                action = np.zeros([state_size * state_size])
+                action[max_action] = 1
+                ##################################################################################
+
             # Take action and get info. for update
-            game_board, state, check_valid_pos, win_index, turn, coord = env.step(
-                np.zeros([state_size, state_size]))
+            game_board, state, check_valid_pos, win_index, turn, coord = env.step(action)
 
             # If one move is done
             if check_valid_pos:
-                do_mcts = True
                 last_action_idx = coord[0] * state_size + coord[1]
 
                 root_id = root_id + (last_action_idx,)
 
+            # If ai turn -> do mcts
+            if turn == ai_turn:
+                do_mcts = True
+
             # If game is finished
             if win_index != 0:
-                do_mcts = True
-                game_board = np.zeros(board_shape)
+                game_board = np.zeros([state_size, state_size])
 
-                # Initialize tree root id
-                root_id = (0,)
+                # Human wins!
+                if turn == ai_turn:
+                    ai_turn = 0
+                    do_mcts = True
+                else:
+                    ai_turn = 1
+                    do_mcts = False
 
             # Delay for visualization
             time.sleep(0.01)
 
 
 if __name__ == '__main__':
-    agent = MCTS_guide()
+    agent = HumanUI()
     agent.main()
