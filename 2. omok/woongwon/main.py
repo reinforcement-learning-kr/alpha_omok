@@ -37,11 +37,12 @@ def self_play(num_episode):
 
         while win_index == 0:
             # Select action
-            state_input = np.reshape(state, [1, 17, state_size, state_size])
-            state_input = torch.from_numpy(np.int32(state_input))
-            state_input = Variable(state_input).float().cpu()
-            policy, value = agent.model.model(state_input)
-            policy = policy.data.numpy()[0]
+            policy = agent.get_policy(state, agent.model.model)
+            # state_input = np.reshape(state, [1, 17, state_size, state_size])
+            # state_input = torch.from_numpy(np.int32(state_input))
+            # state_input = Variable(state_input).float().cpu()
+            # policy, value = agent.model.model(state_input)
+            # policy = policy.data.numpy()[0]
 
             # Find legal moves
             legal_policy = []

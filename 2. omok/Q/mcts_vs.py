@@ -12,7 +12,7 @@ import tree as MCTS_tree
 
 class MCTS_vs:
     def main(self):
-        env = game.GameState()
+        env = game.GameState('pygame')
         state_size, action_size, win_mark = game.Return_BoardParams()
         agent = MCTS_tree.MCTS(win_mark)
 
@@ -20,7 +20,7 @@ class MCTS_vs:
         game_board = np.zeros(board_shape)
 
         do_mcts = False
-        num_mcts = 25000
+        num_mcts = 1000
 
         # 0: O, 1: X
         turn = 0
@@ -29,7 +29,7 @@ class MCTS_vs:
         # Initialize tree root id
         root_id = (0,)
 
-        tree = {root_id: {'state': game_board,
+        tree = {root_id: {'board': game_board,
                           'player': turn,
                           'child': [],
                           'parent': None,
@@ -53,7 +53,7 @@ class MCTS_vs:
                     print('after: ' + str(len(list(tree.keys()))))
 
                 # Initialize Tree
-                tree = {root_id: {'state': game_board,
+                tree = {root_id: {'board': game_board,
                                   'player': turn,
                                   'child': [],
                                   'parent': None,
@@ -77,7 +77,7 @@ class MCTS_vs:
                     tree = agent.backup(tree, child_id, sim_result, root_id)
 
                 print('-------- current state --------')
-                print(tree[root_id]['state'])
+                print(tree[root_id]['board'])
                 q_list = {}
                 actions = tree[root_id]['child']
                 for i in actions:

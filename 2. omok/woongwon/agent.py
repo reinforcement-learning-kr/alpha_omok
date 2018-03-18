@@ -1,13 +1,160 @@
 from collections import defaultdict
 from logging import getLogger
-import numpy as np
-from model import AlphaZero
 import env_small as env
-from collections import deque
-
 logger = getLogger(__name__)
 
+from utils import valid_actions, check_win
+from copy import deepcopy
+import numpy as np
+import random
 
+
+class Player:
+    def __init__(self, win_mark, turn, board, model):
+        # Get parameters
+        self.win_mark = win_mark
+        self.turn = turn
+        self.game_board = board
+        self.root_id = (0,)
+        self.num_mcts = 1000
+        self.model = model
+        self.tree = {self.root_id: {'state': self.game_board,
+                                    'player': self.turn,
+                                    'child': [],
+                                    'parent': None,
+                                    'n': 0,
+                                    'w': None,
+                                    'q': None}}
+
+    def init_mcts(self, board, turn, model):
+        self.root_id = (0,)
+        self.turn = turn
+        self.game_board = board
+        self.model = model
+
+    def selection(self, tree):
+        node_id = (0,)
+
+        while True:
+            num_child = len(tree[node_id]['child'])
+            # Check if current node is leaf node
+            if num_child == 0:
+                return node_id
+            else:
+                max_value = -100
+                leaf_id = node_id
+                for i in range(num_child):
+                    action = tree[leaf_id]['child'][i]
+                    child_id = leaf_id + (action,)
+                    w = tree[child_id]['w']
+                    n = tree[child_id]['n']
+                    total_n = tree[tree[child_id]['parent']]['n']
+
+                    # for unvisited child, cannot compute u value
+                    # so make n to be very small number
+                    if n == 0:
+                        q = w / 0.0001
+                        u = 10 * np.sqrt(2 * np.log(total_n) / 0.0001)
+                    else:
+                        q = w / n
+                        u = 10 * np.sqrt(2 * np.log(total_n) / n)
+
+                    if q + u > max_value:
+                        max_value = q + u
+                        node_id = child_id
+
+    def expansion(self, tree, leaf_id):
+        leaf_state = deepcopy(tree[leaf_id]['state'])
+        is_terminal = check_win(leaf_state, self.win_mark)
+        actions = valid_actions(leaf_state)
+        expand_thres = 10
+
+        if leaf_id == (0,) or tree[leaf_id]['n'] > expand_thres:
+            is_expand = True
+        else:
+            is_expand = False
+
+        if is_terminal == 0 and is_expand:
+            # expansion for every possible actions
+            childs = []
+            for action in actions:
+                state = deepcopy(tree[leaf_id]['state'])
+                action_index = action[1]
+                current_player = tree[leaf_id]['player']
+
+                if current_player == 0:
+                    next_turn = 1
+                    state[action[0]] = 1
+                else:
+                    next_turn = 0
+                    state[action[0]] = -1
+
+                child_id = leaf_id + (action_index, )
+                childs.append(child_id)
+                tree[child_id] = {'state': state,
+                                  'player': next_turn,
+                                  'child': [],
+                                  'parent': leaf_id,
+                                  'n': 0,
+                                  'w': 0,
+                                  'q': 0}
+
+                tree[leaf_id]['child'].append(action_index)
+
+            child_id = random.sample(childs, 1)
+            leaf_p, leaf_v = self.model.forward(state)
+            return tree, child_id[0], leaf_v
+        else:
+            # If leaf node is terminal state,
+            # just return MCTS tree
+            return tree, leaf_id
+
+    def backup(self, tree, child_id, sim_result):
+        player = deepcopy(tree[(0,)]['player'])
+        node_id = child_id
+
+        # sim_result: 1 = O win, 2 = X win, 3 = Draw
+        if sim_result == 3:
+            value = 0.8
+        elif sim_result - 1 == player:
+            value = 1
+        else:
+            value = -1
+
+        while True:
+            tree[node_id]['n'] += 1
+            tree[node_id]['w'] += value
+            tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
+
+            parent_id = tree[node_id]['parent']
+            if parent_id == (0,):
+                tree[parent_id]['n'] += 1
+                return tree
+            else:
+                node_id = parent_id
+
+    def mcts(self):
+        for i in range(self.num_mcts):
+            # step 1: selection
+            leaf_id = self.selection(self.tree)
+            # step 2: expansion
+            self.tree, child_id, value = self.expansion(self.tree, leaf_id)
+            # step 3: backup
+            self.tree = self.backup(self.tree, child_id, value)
+
+    def get_policy(self, board, turn, model):
+        self.init_mcts(board, turn, model)
+        self.mcts()
+        my_Node = self.tree[self.root_id]
+        policy = np.zeros(self.action_size)
+        for action, a_s in my_Node.a.items():
+            policy[action] = a_s.n
+
+        policy /= np.sum(policy)
+        return policy
+
+
+'''
 class Node:
     def __init__(self):
         self.a = defaultdict(Edge)
@@ -135,3 +282,5 @@ class Player:
     def finish_game(self, z):
         for move in self.moves:  # add this game winner result to all past moves.
             move += [z]
+
+'''

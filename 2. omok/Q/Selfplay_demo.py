@@ -6,9 +6,9 @@ import random
 import numpy as np
 import time
 
-import env_small
+import env_small as game
 import env_regular
-import env_large as game
+import env_large
 
 class self_demo:
 	def __init__(self):
@@ -26,6 +26,7 @@ class self_demo:
 
 		# Turn = 0: Black, 1: White
 		self.turn = 0
+		self.coord = (0,0)
 
 		self.Num_spot = int(np.sqrt(self.Num_action))
 		self.gameboard = np.zeros([self.Num_spot, self.Num_spot])
@@ -35,7 +36,7 @@ class self_demo:
 
 	def main(self):
 		# Define game state
-		game_state = game.GameState()
+		game_state = game.GameState('text')
 		action = 0
 
 		# Game Loop
@@ -58,7 +59,7 @@ class self_demo:
 				action[random.choice(legal_index)] = 1
 
 			# Take action and get info. for update
-			self.gameboard, self.state, self.check_valid_pos, self.win_index, self.turn = game_state.step(action)
+			self.gameboard, self.state, self.check_valid_pos, self.win_index, self.turn, self.coord = game_state.step(action)
 
 			# Delay for visualization
 			# time.sleep(0.01)
