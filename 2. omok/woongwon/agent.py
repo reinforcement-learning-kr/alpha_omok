@@ -2,7 +2,8 @@ from collections import defaultdict
 from logging import getLogger
 import env_small as env
 logger = getLogger(__name__)
-
+from collections import deque
+from model import AlphaZero
 from utils import valid_actions, check_win
 from copy import deepcopy
 import numpy as np
@@ -10,16 +11,20 @@ import random
 
 
 class Player:
-    def __init__(self, win_mark, turn, board, model):
+    def __init__(self, action_size=81):
+        self.replay_memory = deque()
+        self.action_size = action_size
+        self.model = AlphaZero(action_size)
+        # self.tree = self.reset()
         # Get parameters
-        self.win_mark = win_mark
-        self.turn = turn
-        self.game_board = board
+        # self.win_mark = win_mark
+        # self.turn = turn
+        # self.game_board = board
         self.root_id = (0,)
         self.num_mcts = 1000
-        self.model = model
-        self.tree = {self.root_id: {'state': self.game_board,
-                                    'player': self.turn,
+        # self.model = model
+        self.tree = {self.root_id: {'state': None,
+                                    'player': None,
                                     'child': [],
                                     'parent': None,
                                     'n': 0,
