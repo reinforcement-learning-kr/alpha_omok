@@ -94,6 +94,8 @@ def self_play(num_episode):
                     memory.append([samples_white[i][0], samples_white[i][1],
                                    reward_white])
                 break
+        if (episode + 1) == num_episode:
+            render_str(game_board, GAMEBOARD_SIZE)
 
 
 def train(num_iter):
