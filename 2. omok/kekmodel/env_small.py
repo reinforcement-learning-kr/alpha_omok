@@ -8,7 +8,6 @@ boardsize: 9 x 9
 # http://mmc.hanyang.ac.kr
 
 from utils import check_win, update_state
-import sys
 import pygame
 from pygame.locals import *
 import numpy as np
@@ -50,7 +49,7 @@ def Return_Num_Action():
 
 
 def Return_BoardParams():
-    return GAMEBOARD_SIZE, WIN_STONES
+    return GAMEBOARD_SIZE, GAMEBOARD_SIZE * GAMEBOARD_SIZE, WIN_STONES
 
 
 class GameState:
@@ -123,8 +122,10 @@ class GameState:
 
         # get action and put stone on the board
         check_valid_pos = False
-        x_index = -1
-        y_index = -1
+        x_index = 100
+        y_index = 100
+
+        # action = np.reshape(input_, (GAMEBOARD_SIZE, GAMEBOARD_SIZE))
 
         if mouse_pos != 0:
             for i in range(len(self.X_coord)):
@@ -136,8 +137,7 @@ class GameState:
                         y_index = j
 
                         # If selected spot is already occupied, it is not valid move!
-                        if self.gameboard[y_index, x_index] == 1 or \
-                                self.gameboard[y_index, x_index] == -1:
+                        if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
                             check_valid_pos = False
 
         # If self mode and MCTS works
@@ -146,6 +146,10 @@ class GameState:
             y_index = int(action_index / GAMEBOARD_SIZE)
             x_index = action_index % GAMEBOARD_SIZE
             check_valid_pos = True
+
+            # If selected spot is already occupied, it is not valid move!
+            if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
+                check_valid_pos = False
 
         # Change the gameboard according to the stone's index
         if check_valid_pos:
@@ -156,7 +160,6 @@ class GameState:
                 self.gameboard[y_index, x_index] = 1
                 self.turn = 1
                 self.num_stones += 1
-
             else:
                 self.gameboard[y_index, x_index] = -1
                 self.turn = 0
@@ -182,7 +185,7 @@ class GameState:
         win_index = check_win(self.gameboard, WIN_STONES)
         self.display_win(win_index)
 
-        return self.gameboard, self.state, check_valid_pos, win_index, self.turn
+        return self.gameboard, self.state, check_valid_pos, win_index, self.turn, (y_index, x_index)
 
     # Exit the game
     def terminate(self):
@@ -199,30 +202,17 @@ class GameState:
 
         # Horizontal Lines
         for i in range(GAMEBOARD_SIZE):
-            pygame.draw.line(
-                DISPLAYSURF,
-                BLACK,
-                (MARGIN + BOARD_MARGIN,
-                    TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1))),
-                (WINDOW_WIDTH - (MARGIN + BOARD_MARGIN),
-                    TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1))), 1)
+            pygame.draw.line(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN, TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1))),
+                             (WINDOW_WIDTH - (MARGIN + BOARD_MARGIN), TOP_MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1))), 1)
 
         # Vertical Lines
         for i in range(GAMEBOARD_SIZE):
-            pygame.draw.line(
-                DISPLAYSURF,
-                BLACK,
-                (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)),
-                    TOP_MARGIN + BOARD_MARGIN),
-                (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)),
-                    TOP_MARGIN + BOARD_MARGIN + GRID_SIZE), 1)
+            pygame.draw.line(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)), TOP_MARGIN + BOARD_MARGIN),
+                             (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)), TOP_MARGIN + BOARD_MARGIN + GRID_SIZE), 1)
 
         # Draw center circle
-        pygame.draw.circle(
-            DISPLAYSURF,
-            BLACK,
-            (MARGIN + BOARD_MARGIN + 4 * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)),
-                TOP_MARGIN + BOARD_MARGIN + 4 * int(GRID_SIZE / (GAMEBOARD_SIZE - 1))), 5, 0)
+        pygame.draw.circle(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN + 4 * int(GRID_SIZE / (
+            GAMEBOARD_SIZE - 1)), TOP_MARGIN + BOARD_MARGIN + 4 * int(GRID_SIZE / (GAMEBOARD_SIZE - 1))), 5, 0)
 
         # Draw stones
         for i in range(self.gameboard.shape[0]):
@@ -308,3 +298,27 @@ class GameState:
 
         else:
             self.init = False
+
+    def render_str(self):
+        count = np.sum(np.nonzero(self.gameboard))
+        board_str = '\n  A B C D E F G H I\n'
+        for i in range(GAMEBOARD_SIZE):
+            for j in range(GAMEBOARD_SIZE):
+                if j == 0:
+                    board_str += '{}'.format(i + 1)
+                if self.gameboard[i][j] == 0:
+                    board_str += ' .'
+                if self.gameboard[i][j] == 1:
+                    board_str += ' O'
+                if self.gameboard[i][j] == -1:
+                    board_str += ' X'
+                if j == GAMEBOARD_SIZE - 1:
+                    board_str += ' \n'
+            if i == GAMEBOARD_SIZE - 1:
+                board_str += '  ***  MOVE: {} ***'.format(count)
+        print(board_str)
+
+
+if __name__ == '__main__':
+    env = GameState()
+    env.render_str()

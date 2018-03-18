@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Pure MCTS for text Omok env
-from env.env_text import OmokEnv, OmokEnvSimul
+from env_pure import OmokEnv, OmokEnvSimul
 
 import time
 from collections import deque, defaultdict

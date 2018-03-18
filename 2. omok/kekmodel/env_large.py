@@ -48,7 +48,7 @@ def Return_Num_Action():
     return GAMEBOARD_SIZE * GAMEBOARD_SIZE
 
 def Return_BoardParams():
-    return GAMEBOARD_SIZE, WIN_STONES
+    return GAMEBOARD_SIZE, GAMEBOARD_SIZE * GAMEBOARD_SIZE, WIN_STONES
 
 class GameState:
     def __init__(self):
@@ -178,7 +178,7 @@ class GameState:
         win_index = check_win(self.gameboard, WIN_STONES)
         self.display_win(win_index)
 
-        return self.gameboard, self.state, check_valid_pos, win_index, self.turn
+        return self.gameboard, self.state, check_valid_pos, win_index, self.turn, (y_index, x_index)
 
     # Exit the game
     def terminate(self):

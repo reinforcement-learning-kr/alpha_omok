@@ -1,11 +1,11 @@
-# my modules
-from env import env_small as env
-from utils import valid_actions
-from neural_net.resnet_10block import PolicyValueNet
-# built-in
-from collections import defaultdict, deque
-# third-party
+from collections import defaultdict
+from logging import getLogger
 import numpy as np
+from model import AlphaZero
+import env_small as env
+from collections import deque
+
+logger = getLogger(__name__)
 
 
 class Node:
@@ -23,18 +23,16 @@ class Edge:
 
 
 class Player:
-    def __init__(self, action_size=81, channel=192):
+    def __init__(self, action_size=81):
         self.replay_memory = deque()
         self.action_size = action_size
-        self.agent = PolicyValueNet(channel)
+        self.model = AlphaZero(action_size)
         self.tree = self.reset()
 
         self.change_temperature = 20
         self.epsilon = 0.25
         self.c_puct = 5
         self.dir_alpha = 0.2
-        self.done = False
-        self.win_index = None
 
     def reset(self):
         tree = defaultdict(Node)
@@ -55,7 +53,7 @@ class Player:
     def mcts(self, state, is_root_node=False):
         # return z
         if env.done:
-            if env.win_index == 0:
+            if env.winner == Winner.draw:
                 return 0
             return -1
 
@@ -74,8 +72,8 @@ class Player:
             my_edge = my_node.a[action]
             my_edge.q = my_edge.w / my_edge.n
 
-            board, state, valid_pos, self.win_index, turn = env.step(action)
-            leaf_v = self.mcts(state)  # next move from enemy POV
+            state, _, _, _ = env.step(action)
+            leaf_v = self.mcts(state) # next move from enemy POV
             leaf_v = -leaf_v
 
         # backup
@@ -87,7 +85,7 @@ class Player:
         return leaf_v
 
     def expand_and_evaluate(self, state):
-        leaf_p, leaf_v = self.agent.forward(state)
+        leaf_p, leaf_v = self.model.forward(state)
         return leaf_p, leaf_v
 
     def select_action_q_and_u(self, state, is_root_node):
@@ -104,7 +102,7 @@ class Player:
                 policy = (1 - self.epsilon) * policy + self.epsilon * noise[i]
                 i += 1
             ucb = a_s.q + self.c_puct * policy * np.sqrt(
-                my_node.sum_n + 1) / (1 + a_s.n)
+                                                my_node.sum_n + 1) / (1 + a_s.n)
             if ucb > best_s:
                 best_s = ucb
                 best_a = action
