@@ -3,7 +3,8 @@ author : Woonwon Lee
 data : 2018.03.12
 project : make your own alphazero
 '''
-from utils import valid_actions, check_win
+from utils import valid_actions, check_win, render_str
+from copy import deepcopy
 import time
 import torch
 import random
@@ -15,6 +16,7 @@ import pygame
 import env_small as game
 from agent import Player
 
+GAMEBOARD_SIZE = 9
 memory = deque(maxlen=10000)
 batch_size = 32
 
@@ -35,7 +37,9 @@ def self_play(num_episode):
         win_index = 0
 
         while win_index == 0:
+            render_str(game_board, GAMEBOARD_SIZE)
             # Select action
+            # policy = agent.get_policy(state, agent.model.model)
             state_input = np.reshape(state, [1, 17, state_size, state_size])
             state_input = torch.from_numpy(np.int32(state_input))
             state_input = Variable(state_input).float().cpu()
@@ -64,9 +68,11 @@ def self_play(num_episode):
                 else:
                     samples_white.append([state, action])
 
-                game_board, state, check_valid_pos, win_index, turn = env.step(action)
+                game_board, state, check_valid_pos, win_index, turn, _ \
+                    = env.step(action)
             else:
-                win_index = 0
+                render_str(game_board, GAMEBOARD_SIZE)
+                win_index = 3
 
             if win_index != 0:
                 print("win is ", win_index, "in episode", episode)
@@ -88,6 +94,8 @@ def self_play(num_episode):
                     memory.append([samples_white[i][0], samples_white[i][1],
                                    reward_white])
                 break
+        if (episode + 1) == num_episode:
+            render_str(game_board, GAMEBOARD_SIZE)
 
 
 def train(num_iter):
@@ -102,7 +110,8 @@ def train(num_iter):
         actions = np.vstack(mini_batch[1])
         rewards = list(mini_batch[2])
 
-        states_input = np.reshape(states, [batch_size, 17, state_size, state_size])
+        states_input = np.reshape(states,
+                                  [batch_size, 17, state_size, state_size])
         states_input = torch.Tensor(states_input)
         states_input = Variable(states_input).float()
         actions = Variable(torch.FloatTensor(actions))
@@ -123,7 +132,7 @@ def compete():
 
 
 if __name__ == '__main__':
-    env = game.GameState()
+    env = game.GameState('text')
     # win_mark == 5 : omok
     state_size, action_size, win_mark = game.Return_BoardParams()
     agent = Player(action_size)
@@ -131,11 +140,7 @@ if __name__ == '__main__':
     for i in range(10):
         print('-----------------------------------------')
         print(i, 'th training process')
-        if i != 0:
-            env = game.GameState()
-            state_size, action_size, win_mark = game.Return_BoardParams()
-
-        self_play(num_episode=100)
+        self_play(num_episode=10)
         pygame.quit()
-        train(num_iter=3)
+        train(num_iter=10)
         compete()
