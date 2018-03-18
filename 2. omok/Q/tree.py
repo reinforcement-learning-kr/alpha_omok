@@ -49,21 +49,21 @@ class MCTS:
                             node_id = child_id
 
     def expansion(self, tree, leaf_id):
-        leaf_state = deepcopy(tree[leaf_id]['state'])
+        leaf_state = deepcopy(tree[leaf_id]['board'])
         is_terminal = check_win(leaf_state, self.win_mark)
         actions = valid_actions(leaf_state)
-        expand_thres = 1
-
-        if leaf_id == (0,) or tree[leaf_id]['n'] >= expand_thres:
-            is_expand = True
-        else:
-            is_expand = False
+        # expand_thres = 1
+        #
+        # if leaf_id == (0,) or tree[leaf_id]['n'] >= expand_thres:
+        #     is_expand = True
+        # else:
+        #     is_expand = False
 
         if is_terminal == 0:
             # expansion for every possible actions
             childs = []
             for action in actions:
-                state = deepcopy(tree[leaf_id]['state'])
+                state = deepcopy(tree[leaf_id]['board'])
                 action_index = action[1]
                 current_player = tree[leaf_id]['player']
 
@@ -76,7 +76,7 @@ class MCTS:
 
                 child_id = leaf_id + (action_index, )
                 childs.append(child_id)
-                tree[child_id] = {'state': state,
+                tree[child_id] = {'board': state,
                                   'player': next_turn,
                                   'child': [],
                                   'parent': leaf_id,
@@ -94,7 +94,7 @@ class MCTS:
             return tree, leaf_id
 
     def simulation(self, tree, child_id):
-        state = deepcopy(tree[child_id]['state'])
+        state = deepcopy(tree[child_id]['board'])
         player = deepcopy(tree[child_id]['player'])
 
         while True:

@@ -1,4 +1,4 @@
-from utils import valid_actions, check_win
+from utils import valid_actions, check_win, render_str
 from copy import deepcopy
 import numpy as np
 import random
@@ -12,7 +12,9 @@ import tree as MCTS_tree
 
 class MCTS_guide:
     def main(self):
-        env = game.GameState()
+        # Game mode: 'text', 'pygame'
+        game_mode = 'text'
+        env = game.GameState(game_mode)
         state_size, action_size, win_mark = game.Return_BoardParams()
         agent = MCTS_tree.MCTS(win_mark)
 
@@ -20,17 +22,18 @@ class MCTS_guide:
         game_board = np.zeros(board_shape)
 
         do_mcts = True
-        num_mcts = 25000
+        num_mcts = 1000
 
-        # 0: O, 1: X
+        # 0: Black, 1: White
         turn = 0
+        turn_str = ['Black', 'White']
 
         # Initialize tree root id
         root_id = (0,)
 
         while True:
             # Select action
-            action = 0
+            action = np.zeros([action_size])
 
             # MCTS
             if do_mcts:
@@ -43,7 +46,7 @@ class MCTS_guide:
 
                 else:
                     # Initialize Tree
-                    tree = {root_id: {'state': game_board,
+                    tree = {root_id: {'board': game_board,
                                       'player': turn,
                                       'child': [],
                                       'parent': None,
@@ -51,7 +54,7 @@ class MCTS_guide:
                                       'w': 0,
                                       'q': 0}}
 
-                print('===================================================')
+                print('==========================')
                 for i in range(num_mcts):
                     # Show progress
                     if i % (num_mcts/10) == 0:
@@ -66,10 +69,10 @@ class MCTS_guide:
                     # step 4: backup
                     tree = agent.backup(tree, child_id, sim_result, root_id)
 
-                print('-------- current state --------')
-                print(tree[root_id]['state'])
+                print("\n--> " + turn_str[tree[root_id]['player']] + "'s turn <--\n")
+                render_str(tree[root_id]['board'], state_size)
+
                 q_list = {}
-                print('tree length: ' + str(len(tree.keys())))
 
                 actions = tree[root_id]['child']
                 for i in actions:
@@ -80,12 +83,17 @@ class MCTS_guide:
                 max_row = int(max_action/state_size)
                 max_col = int(max_action%state_size)
 
-                print('max index: ' + '(' + str(max_row) + ' , ' + str(max_col) + ')')
-                print('max action: ' + str(max_action + 1))
+                print('max index: ' + '(row: ' + str(max_row) + ' , col: ' + str(max_col) + ')')
                 do_mcts = False
 
+            if game_mode == 'text':
+                row_num = int(input('Please type row index: '))
+                col_num = int(input('Please type col index: '))
+                action_idx = row_num * state_size + col_num
+                action[action_idx] = 1
+
             # Take action and get info. for update
-            game_board, state, check_valid_pos, win_index, turn, coord = env.step(np.zeros([state_size, state_size]))
+            game_board, state, check_valid_pos, win_index, turn, coord = env.step(action)
 
             # If one move is done
             if check_valid_pos:

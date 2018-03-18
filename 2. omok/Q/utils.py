@@ -62,3 +62,22 @@ def update_state(state, turn, x_idx, y_idx):
     state = np.int8(state)
 
     return state
+
+def render_str(gameboard, GAMEBOARD_SIZE):
+    count = np.sum(np.nonzero(gameboard))
+    board_str = '  0 1 2 3 4 5 6 7 8\n'
+    for i in range(GAMEBOARD_SIZE):
+        for j in range(GAMEBOARD_SIZE):
+            if j == 0:
+                board_str += '{}'.format(i)
+            if gameboard[i][j] == 0:
+                board_str += ' .'
+            if gameboard[i][j] == 1:
+                board_str += ' O'
+            if gameboard[i][j] == -1:
+                board_str += ' X'
+            if j == GAMEBOARD_SIZE - 1:
+                board_str += ' \n'
+        if i == GAMEBOARD_SIZE - 1:
+            board_str += '  ***  MOVE: {} ***'.format(count)
+    print(board_str)
