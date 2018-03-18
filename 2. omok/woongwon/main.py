@@ -37,12 +37,12 @@ def self_play(num_episode):
 
         while win_index == 0:
             # Select action
-            policy = agent.get_policy(state, agent.model.model)
-            # state_input = np.reshape(state, [1, 17, state_size, state_size])
-            # state_input = torch.from_numpy(np.int32(state_input))
-            # state_input = Variable(state_input).float().cpu()
-            # policy, value = agent.model.model(state_input)
-            # policy = policy.data.numpy()[0]
+            # policy = agent.get_policy(state, agent.model.model)
+            state_input = np.reshape(state, [1, 17, state_size, state_size])
+            state_input = torch.from_numpy(np.int32(state_input))
+            state_input = Variable(state_input).float().cpu()
+            policy, value = agent.model.model(state_input)
+            policy = policy.data.numpy()[0]
 
             # Find legal moves
             legal_policy = []
@@ -66,9 +66,10 @@ def self_play(num_episode):
                 else:
                     samples_white.append([state, action])
 
-                game_board, state, check_valid_pos, win_index, turn = env.step(action)
+                game_board, state, check_valid_pos, win_index, turn, _ \
+                    = env.step(action)
             else:
-                win_index = 0
+                win_index = 3
 
             if win_index != 0:
                 print("win is ", win_index, "in episode", episode)
@@ -125,7 +126,7 @@ def compete():
     pass
 
 if __name__ == '__main__':
-    env = game.GameState()
+    env = game.GameState('text')
     # win_mark == 5 : omok
     state_size, action_size, win_mark = game.Return_BoardParams()
     agent = Player(action_size)
@@ -133,10 +134,6 @@ if __name__ == '__main__':
     for i in range(10):
         print('-----------------------------------------')
         print(i, 'th training process')
-        if i != 0:
-            env = game.GameState()
-            state_size, action_size, win_mark = game.Return_BoardParams()
-
         self_play(num_episode=100)
         pygame.quit()
         train(num_iter=10)

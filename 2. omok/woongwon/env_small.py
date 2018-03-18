@@ -51,20 +51,22 @@ def Return_BoardParams():
     return GAMEBOARD_SIZE, GAMEBOARD_SIZE * GAMEBOARD_SIZE, WIN_STONES
 
 class GameState:
-    def __init__(self):
-        global FPS_CLOCK, DISPLAYSURF, BASIC_FONT, TITLE_FONT, GAMEOVER_FONT
+    def __init__(self, gamemode):
+        global DISPLAYSURF, BASIC_FONT, TITLE_FONT, GAMEOVER_FONT
 
-        pygame.init()
-        FPS_CLOCK = pygame.time.Clock()
+        self.gamemode = gamemode
 
-        DISPLAYSURF = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+        if self.gamemode == 'pygame':
+            pygame.init()
 
-        pygame.display.set_caption('Mini Omok')
-        # pygame.display.set_icon(pygame.image.load('./Qar_Sim/icon_resize2.png'))
+            DISPLAYSURF = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
-        BASIC_FONT = pygame.font.Font('freesansbold.ttf', 12)
-        TITLE_FONT = pygame.font.Font('freesansbold.ttf', 24)
-        GAMEOVER_FONT = pygame.font.Font('freesansbold.ttf', 54)
+            pygame.display.set_caption('Mini Omok')
+            # pygame.display.set_icon(pygame.image.load('./Qar_Sim/icon_resize2.png'))
+
+            BASIC_FONT = pygame.font.Font('freesansbold.ttf', 12)
+            TITLE_FONT = pygame.font.Font('freesansbold.ttf', 24)
+            GAMEOVER_FONT = pygame.font.Font('freesansbold.ttf', 54)
 
         # Set initial parameters
         self.init = False
@@ -108,7 +110,7 @@ class GameState:
 
         # Key settings
         mouse_pos = 0
-        if np.all(input_) == 0 or self.turn == 0:
+        if np.all(input_) == 0 and self.gamemode == 'pygame':
             # If guide mode of O's turn
             for event in pygame.event.get():  # event loop
                 if event.type == QUIT:
@@ -119,8 +121,8 @@ class GameState:
 
         # get action and put stone on the board
         check_valid_pos = False
-        x_index = -1
-        y_index = -1
+        x_index = 100
+        y_index = 100
 
         action = np.reshape(input_, (GAMEBOARD_SIZE, GAMEBOARD_SIZE))
 
@@ -144,6 +146,10 @@ class GameState:
             x_index = action_index % GAMEBOARD_SIZE
             check_valid_pos = True
 
+            # If selected spot is already occupied, it is not valid move!
+            if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
+                check_valid_pos = False
+
         # Change the gameboard according to the stone's index
         if check_valid_pos:
             # update state
@@ -153,33 +159,33 @@ class GameState:
                 self.gameboard[y_index, x_index] = 1
                 self.turn = 1
                 self.num_stones += 1
-
             else:
                 self.gameboard[y_index, x_index] = -1
                 self.turn = 0
                 self.num_stones += 1
 
-        # Fill background color
-        DISPLAYSURF.fill(BLACK)
+        if self.gamemode == 'pygame':
+            # Fill background color
+            DISPLAYSURF.fill(BLACK)
 
-        # Draw board
-        self.draw_main_board()
+            # Draw board
+            self.draw_main_board()
 
-        # Display Information
-        self.title_msg()
-        self.rule_msg()
-        self.score_msg()
+            # Display Information
+            self.title_msg()
+            self.rule_msg()
+            self.score_msg()
 
-        # Display who's turn
-        self.turn_msg()
+            # Display who's turn
+            self.turn_msg()
 
-        pygame.display.update()
+            pygame.display.update()
 
         # Check_win 0: playing, 1: black win, 2: white win, 3: draw
         win_index = check_win(self.gameboard, WIN_STONES)
         self.display_win(win_index)
 
-        return self.gameboard, self.state, check_valid_pos, win_index, self.turn
+        return self.gameboard, self.state, check_valid_pos, win_index, self.turn, (y_index, x_index)
 
     # Exit the game
     def terminate(self):
@@ -286,6 +292,8 @@ class GameState:
 
         else:
             self.init = False
+
+
 
 if __name__ == '__main__':
 	main()
