@@ -52,14 +52,15 @@ class MCTS_vs:
                             del tree[key]
                     print('after: ' + str(len(list(tree.keys()))))
 
-                # Initialize Tree
-                tree = {root_id: {'board': game_board,
-                                  'player': turn,
-                                  'child': [],
-                                  'parent': None,
-                                  'n': 0,
-                                  'w': None,
-                                  'q': None}}
+                else:
+                    # Initialize Tree
+                    tree = {root_id: {'board': game_board,
+                                      'player': turn,
+                                      'child': [],
+                                      'parent': None,
+                                      'n': 0,
+                                      'w': None,
+                                      'q': None}}
 
                 print('===================================================')
                 for i in range(num_mcts):
