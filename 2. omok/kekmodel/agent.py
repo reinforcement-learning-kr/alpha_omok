@@ -23,13 +23,16 @@ class Player:
         self.root_id = (0,)
         self.num_mcts = 1000
         # self.model = model
-        self.tree = {self.root_id: {'state': None,
-                                    'player': None,
-                                    'child': [],
-                                    'parent': None,
-                                    'n': 0,
-                                    'w': None,
-                                    'q': None}}
+        self.tree = {
+            self.root_id: {'board': None,
+                           'player': None,
+                           'child': [],
+                           'parent': None,
+                           'n': 0,
+                           'w': 0,
+                           'q': 0,
+                           'p': None}
+        }
 
     def init_mcts(self, board, turn, model):
         self.root_id = (0,)

@@ -1,7 +1,7 @@
 from utils import valid_actions, check_win
 from copy import deepcopy
 import numpy as np
-from numpy import random
+import random
 
 
 class MCTS:
@@ -25,16 +25,17 @@ class MCTS:
                     child_id = leaf_id + (action,)
                     w = tree[child_id]['w']
                     n = tree[child_id]['n']
+                    p = tree[child_id]['p']
                     total_n = tree[tree[child_id]['parent']]['n']
 
                     # for unvisited child, cannot compute u value
                     # so make n to be very small number
                     if n == 0:
-                        q = w / 0.0001
-                        u = np.sqrt(2 * np.log(total_n) / 0.0001)
+                        q = 0
+                        u = p
                     else:
                         q = w / n
-                        u = np.sqrt(2 * np.log(total_n) / n)
+                        u = p * 5 * np.sqrt(total_n) / (n + 1)
 
                     # if q + u > max_value:
                     #     max_value = q + u
@@ -49,69 +50,76 @@ class MCTS:
                             min_value = q - u
                             node_id = child_id
 
-    def expansion(self, tree, leaf_id):
-        leaf_board = deepcopy(tree[leaf_id]['state'])
+    def expansion(self, tree, leaf_id, prior):
+        leaf_board = deepcopy(tree[leaf_id]['board'])
         is_terminal = check_win(leaf_board, self.win_mark)
         actions = valid_actions(leaf_board)
+        # expand_thres = 1
+        #
+        # if leaf_id == (0,) or tree[leaf_id]['n'] >= expand_thres:
+        #     is_expand = True
+        # else:
+        #     is_expand = False
 
         if is_terminal == 0:
             # expansion for every possible actions
             childs = []
             for action in actions:
-                state = deepcopy(tree[leaf_id]['state'])
+                board = deepcopy(tree[leaf_id]['board'])
                 action_index = action[1]
                 current_player = tree[leaf_id]['player']
 
                 if current_player == 0:
                     next_turn = 1
-                    state[action[0]] = 1
+                    board[action[0]] = 1
                 else:
                     next_turn = 0
-                    state[action[0]] = -1
+                    board[action[0]] = -1
 
                 child_id = leaf_id + (action_index, )
                 childs.append(child_id)
-                tree[child_id] = {'board': state,
+                tree[child_id] = {'board': board,
                                   'player': next_turn,
                                   'child': [],
                                   'parent': leaf_id,
                                   'n': 0,
                                   'w': 0,
-                                  'q': 0}
+                                  'q': 0,
+                                  'p': prior}
 
                 tree[leaf_id]['child'].append(action_index)
 
-            child_id = random.sample(childs, 1)
-            return tree, child_id[0]
+            child_id = random.choice(childs)
+            return tree, child_id
         else:
             # If leaf node is terminal state,
             # just return MCTS tree
             return tree, leaf_id
 
     def simulation(self, tree, child_id):
-        state = deepcopy(tree[child_id]['state'])
+        board = deepcopy(tree[child_id]['board'])
         player = deepcopy(tree[child_id]['player'])
 
         while True:
-            win = check_win(state, self.win_mark)
+            win = check_win(board, self.win_mark)
 
             if win != 0:
                 return win
             else:
-                actions = valid_actions(state)
+                actions = valid_actions(board)
                 action = random.choice(actions)
                 if player == 0:
                     player = 1
-                    state[action[0]] = 1
+                    board[action[0]] = 1
                 else:
                     player = 0
-                    state[action[0]] = -1
+                    board[action[0]] = -1
 
-    def backup(self, tree, child_id, sim_result, root_id):
+    def backup(self, tree, child_id, sim_result, root_id, value):
         player = deepcopy(tree[root_id]['player'])
-        node_id = child_id
+        node_id = tree[child_id]['parent']
 
-        # sim_result: 1 = O win, 2 = X win, 3 = Draw
+        # sim_result: 1 = black win, 2 = white win, 3 = Draw
         if sim_result == 3:
             value = 0
         elif sim_result - 1 == player:
