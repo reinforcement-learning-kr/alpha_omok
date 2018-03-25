@@ -1,12 +1,11 @@
-from utils import valid_actions, check_win, render_str
+from utils import valid_actions, check_win, render_str, get_state
 from copy import deepcopy
 import numpy as np
 import random
 import time
 
 import env_small as game
-import env_regular
-import env_large
+
 
 import tree as MCTS_tree
 
@@ -22,7 +21,7 @@ class MCTS_guide:
         game_board = np.zeros(board_shape)
 
         do_mcts = True
-        num_mcts = 1000
+        num_mcts = 100
 
         # 0: Black, 1: White
         turn = 0

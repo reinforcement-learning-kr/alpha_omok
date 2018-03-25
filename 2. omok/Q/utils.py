@@ -84,3 +84,37 @@ def render_str(gameboard, GAMEBOARD_SIZE):
         if i == GAMEBOARD_SIZE - 1:
             board_str += '  ***  MOVE: {} ***'.format(count)
     print(board_str)
+
+def get_state(id, turn, state_size, channel_size):
+    state = np.zeros([state_size, state_size, channel_size])
+    length_game = len(id)
+
+    state_1 = np.zeros([state_size, state_size])
+    state_2 = np.zeros([state_size, state_size])
+
+    channel_idx = channel_size - 1
+
+    for i in range(length_game):
+        row_idx = int(id[i] / state_size)
+        col_idx = int(id[i] % state_size)
+
+        if i != 0:
+            if i % 2 == 0:
+                state_1[row_idx, col_idx] = 1
+            else:
+                state_2[row_idx, col_idx] = 1
+
+        if length_game - i < channel_size:
+            channel_idx = length_game - i - 1
+
+            if i % 2 == 0:
+                state[:,:,channel_idx] = state_1
+            else:
+                state[:,:,channel_idx] = state_2 
+
+    if turn == 0:
+        state[:,:,channel_size-1] = 1
+    else:
+        state[:,:,channel_size-1] = 0
+
+    return state
