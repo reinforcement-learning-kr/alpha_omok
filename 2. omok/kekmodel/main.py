@@ -37,14 +37,17 @@ def self_play(num_episode):
         win_index = 0
 
         while win_index == 0:
-            render_str(game_board, GAMEBOARD_SIZE)
+            # render_str(game_board, GAMEBOARD_SIZE)
             # Select action
-            # policy = agent.get_policy(state, agent.model.model)
+
             state_input = np.reshape(state, [1, 17, state_size, state_size])
             state_input = torch.from_numpy(np.int32(state_input))
             state_input = Variable(state_input).float().cpu()
-            policy, value = agent.model.model(state_input)
-            policy = policy.data.numpy()[0]
+
+            policy = agent.get_policy(state_input, turn, agent.model.model)
+
+            # policy, value = agent.model.model(state_input)
+            # policy = policy.data.numpy()[0]
 
             # Find legal moves
             legal_policy = []
@@ -137,7 +140,7 @@ if __name__ == '__main__':
     state_size, action_size, win_mark = game.Return_BoardParams()
     agent = Player(action_size)
 
-    for i in range(10):
+    for i in range(1000):
         print('-----------------------------------------')
         print(i, 'th training process')
         self_play(num_episode=10)

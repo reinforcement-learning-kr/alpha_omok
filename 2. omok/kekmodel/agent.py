@@ -23,16 +23,13 @@ class Player:
         self.root_id = (0,)
         self.num_mcts = 1000
         # self.model = model
-        self.tree = {
-            self.root_id: {'board': None,
-                           'player': None,
-                           'child': [],
-                           'parent': None,
-                           'n': 0,
-                           'w': 0,
-                           'q': 0,
-                           'p': None}
-        }
+        self.tree = {self.root_id: {'state': None,
+                                    'player': None,
+                                    'child': [],
+                                    'parent': None,
+                                    'n': 0,
+                                    'w': None,
+                                    'q': None}}
 
     def init_mcts(self, board, turn, model):
         self.root_id = (0,)
@@ -153,12 +150,16 @@ class Player:
     def get_policy(self, board, turn, model):
         self.init_mcts(board, turn, model)
         self.mcts()
-        my_Node = self.tree[self.root_id]
-        policy = np.zeros(self.action_size)
-        for action, a_s in my_Node.a.items():
-            policy[action] = a_s.n
+        root_node = self.tree[self.root_id]
 
-        policy /= np.sum(policy)
+        policy = np.zeros(self.action_size)
+
+        for i in root_node['child']:
+            child_id = self.root_id + i
+            policy[i] = self.tree[child_id]['n']
+
+        policy = policy / self.tree[root_id]['n']
+
         return policy
 
 
