@@ -124,11 +124,11 @@ def get_state_tf(id, turn, state_size, channel_size):
 
 
 def get_state_pt(id, turn, state_size, channel_size):
-    state = np.zeros([channel_size, state_size, state_size])
+    state = np.zeros([channel_size, state_size, state_size], 'float')
     length_game = len(id)
 
-    state_1 = np.zeros([state_size, state_size])
-    state_2 = np.zeros([state_size, state_size])
+    state_1 = np.zeros([state_size, state_size], 'float')
+    state_2 = np.zeros([state_size, state_size], 'float')
 
     channel_idx = channel_size - 1
 
