@@ -129,7 +129,7 @@ class Player:
             return tree, reward
 
     def backup(self, tree, leaf_id, value):
-        player = deepcopy(tree[self.root_id]['player'])
+        # player = deepcopy(tree[self.root_id]['player'])
         node_id = leaf_id
 
         while True:
@@ -138,10 +138,13 @@ class Player:
                 return tree
 
             tree[node_id]['n'] += 1
+            """
             if tree[node_id]['player'] == player:
-                tree[node_id]['w'] += value
+                tree[node_id]['w'] -= value
             else:
                 tree[node_id]['w'] -= value
+            """
+            tree[node_id]['w'] -= value
             tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
             parent_id = tree[node_id]['parent']
 
