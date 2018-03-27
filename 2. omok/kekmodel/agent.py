@@ -72,9 +72,8 @@ class Player:
         # else:
         #    is_expand = False
         is_expand = True
-        state_input = np.reshape(leaf_state, [17, self.state_size, self.state_size])
-        state_input = torch.from_numpy(np.int32(state_input)).unsqueeze(0)
-        state_input = Variable(state_input).float()
+        state_input = torch.from_numpy(leaf_state).float().unsqueeze(0)
+        state_input = Variable(state_input)
         policy, value = self.model(state_input)
         policy = policy.data.numpy()[0]
         value = value.data.numpy().flatten()

@@ -106,8 +106,7 @@ def train(num_iter):
         z = list(mini_batch[2])
 
         state_input = np.reshape(state, [BATCH_SIZE, IN_PLANES, STATE_SIZE, STATE_SIZE])
-        state_input = torch.Tensor(state_input)
-        state_input = Variable(state_input).float()
+        state_input = Variable(torch.FloatTensor(state_input))
         pi = Variable(torch.FloatTensor(pi))
         z = Variable(torch.FloatTensor(z))
 
