@@ -42,4 +42,3 @@ class ActorCritic(nn.Module):
 class AlphaZero:
     def __init__(self, action_size):
         self.model = ActorCritic(action_size)
-

@@ -98,6 +98,7 @@ class PVNet(nn.Module):
 
 
 if __name__ == '__main__':
+    # test
     import torch
     from torch.autograd import Variable
     import numpy as np

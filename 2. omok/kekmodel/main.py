@@ -44,7 +44,7 @@ def self_play(num_episode):
             state_input = torch.from_numpy(np.int32(state_input))
             state_input = Variable(state_input).float().cpu()
 
-            policy = agent.get_policy(state_input, turn, agent.model.model)
+            policy = agent.get_policy(state_input, turn, agent.model)
 
             # policy, value = agent.model.model(state_input)
             # policy = policy.data.numpy()[0]
@@ -138,7 +138,7 @@ if __name__ == '__main__':
     env = game.GameState('text')
     # win_mark == 5 : omok
     state_size, action_size, win_mark = game.Return_BoardParams()
-    agent = Player(action_size)
+    agent = Player(state_size, win_mark)
 
     for i in range(1000):
         print('-----------------------------------------')
