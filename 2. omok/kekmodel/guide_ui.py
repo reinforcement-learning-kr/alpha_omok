@@ -9,6 +9,7 @@ import env_small as game
 
 import tree as MCTS_tree
 
+
 class MCTS_guide:
     def main(self):
         # Game mode: 'text', 'pygame'
@@ -56,7 +57,7 @@ class MCTS_guide:
                 print('==========================')
                 for i in range(num_mcts):
                     # Show progress
-                    if i % (num_mcts/10) == 0:
+                    if i % (num_mcts / 10) == 0:
                         print('Doing MCTS: ' + str(i) + ' / ' + str(num_mcts))
 
                     # step 1: selection
@@ -79,8 +80,8 @@ class MCTS_guide:
 
                 # Find Max Action
                 max_action = max(q_list, key=q_list.get)[-1]
-                max_row = int(max_action/state_size)
-                max_col = int(max_action%state_size)
+                max_row = int(max_action / state_size)
+                max_col = int(max_action % state_size)
 
                 print('max index: ' + '(row: ' + str(max_row) + ' , col: ' + str(max_col) + ')')
                 do_mcts = False
@@ -111,6 +112,7 @@ class MCTS_guide:
 
             # Delay for visualization
             time.sleep(0.01)
+
 
 if __name__ == '__main__':
     agent = MCTS_guide()
