@@ -1,45 +1,33 @@
-from collections import defaultdict
-from logging import getLogger
-from neural_net import PVNet
-import env_small as env
-logger = getLogger(__name__)
-from collections import deque
-# from model import AlphaZero
-from utils import valid_actions, check_win, get_state
+import sys
+import time
+from utils import *
 from copy import deepcopy
 import torch
 from torch.autograd import Variable
 import numpy as np
-import random
 
 
 class Player:
-    def __init__(self, state_size, win_mark):
-        self.replay_memory = deque()
+    def __init__(self, state_size, num_mcts):
         self.state_size = state_size
-        self.model = PVNet(20, 17, 256, self.state_size)
-        # self.tree = self.reset()
-        # Get parameters
-        self.win_mark = win_mark
-        # self.turn = turn
-        # self.game_board = board
+        self.num_mcts = num_mcts
+        self.win_mark = 5
+        self.turn = 0
+        self.game_board = np.zeros([self.state_size, self.state_size])
         self.root_id = (0,)
-        self.num_mcts = 1000
-        # self.model = model
-        self.tree = {self.root_id: {'board': np.zeros([self.state_size, self.state_size]),
-                                    'player': 0,
+        self.model = None
+        self.tree = {self.root_id: {'board': self.game_board,
+                                    'player': self.turn,
                                     'child': [],
                                     'parent': None,
-                                    'n': 0,
-                                    'w': 0,
-                                    'q': 0,
-                                    'p': None}}
+                                    'n': 0.,
+                                    'w': 0.,
+                                    'q': 0.,
+                                    'p': 0.}}
 
-    def init_mcts(self, board, turn, model):
-        self.root_id = (0,)
+    def init_mcts(self, board, turn):
         self.turn = turn
         self.game_board = board
-        self.model = model
 
     def selection(self, tree):
         node_id = self.root_id
@@ -60,14 +48,12 @@ class Player:
                     p = tree[child_id]['p']
                     total_n = tree[tree[child_id]['parent']]['n']
 
-                    # for unvisited child, cannot compute u value
-                    # so make n to be very small number
                     if n == 0:
                         q = 0
-                        u = p
+                        u = 5 * p
                     else:
                         q = w / n
-                        u = p * 5 * np.sqrt(total_n) / (n + 1)
+                        u = 5 * p * np.sqrt(total_n) / (n + 1)
 
                     if q + u > max_value:
                         max_value = q + u
@@ -78,7 +64,7 @@ class Player:
         is_terminal = check_win(leaf_board, self.win_mark)
         actions = valid_actions(leaf_board)
         turn = tree[leaf_id]['player']
-        leaf_state = get_state(leaf_id, turn, self.state_size, 17)
+        leaf_state = get_state_pt(leaf_id, turn, self.state_size, 17)
         # expand_thres = 10
 
         # if leaf_id == (0,) or tree[leaf_id]['n'] > expand_thres:
@@ -86,8 +72,8 @@ class Player:
         # else:
         #    is_expand = False
         is_expand = True
-        state_input = np.reshape(leaf_state, [1, 17, self.state_size, self.state_size])
-        state_input = torch.from_numpy(np.int32(state_input))
+        state_input = np.reshape(leaf_state, [17, self.state_size, self.state_size])
+        state_input = torch.from_numpy(np.int32(state_input)).unsqueeze(0)
         state_input = Variable(state_input).float()
         policy, value = self.model(state_input)
         policy = policy.data.numpy()[0]
@@ -97,26 +83,26 @@ class Player:
             # expansion for every possible actions
             childs = []
             for action in actions:
-                state = deepcopy(tree[leaf_id]['board'])
+                board = deepcopy(tree[leaf_id]['board'])
                 action_index = action[1]
                 current_player = tree[leaf_id]['player']
                 prior = policy[action_index]
                 if current_player == 0:
                     next_turn = 1
-                    state[action[0]] = 1
+                    board[action[0]] = 1
                 else:
                     next_turn = 0
-                    state[action[0]] = -1
+                    board[action[0]] = -1
 
-                child_id = leaf_id + (action_index, )
+                child_id = leaf_id + (action_index,)
                 childs.append(child_id)
-                tree[child_id] = {'board': state,
+                tree[child_id] = {'board': board,
                                   'player': next_turn,
                                   'child': [],
                                   'parent': leaf_id,
-                                  'n': 0,
-                                  'w': 0,
-                                  'q': 0,
+                                  'n': 0.,
+                                  'w': 0.,
+                                  'q': 0.,
                                   'p': prior}
 
                 tree[leaf_id]['child'].append(action_index)
@@ -124,10 +110,24 @@ class Player:
             # child_id = random.sample(childs, 1)
             # leaf_p, leaf_v = self.model.forward(state)
             return tree, value
+
         else:
-            # If leaf node is terminal state,
-            # just return MCTS tree
-            return tree, value  # need to be fixed
+            # If leaf node is terminal
+            win_index = check_win(leaf_board, 5)
+            if win_index == 1:
+                if turn == 0:
+                    reward = 1
+                else:
+                    reward = -1
+            elif win_index == 2:
+                if turn == 0:
+                    reward = -1
+                else:
+                    reward = 1
+            else:
+                reward = 0
+
+            return tree, reward
 
     def backup(self, tree, leaf_id, value):
         player = deepcopy(tree[self.root_id]['player'])
@@ -149,26 +149,44 @@ class Player:
             node_id = parent_id
 
     def mcts(self):
+        start = time.time()
         for i in range(self.num_mcts):
+            sys.stdout.write('simulation: {}\r'.format(i + 1))
+            sys.stdout.flush()
             # step 1: selection
             leaf_id = self.selection(self.tree)
             # step 2: expansion
             self.tree, value = self.expansion(self.tree, leaf_id)
             # step 3: backup
             self.tree = self.backup(self.tree, leaf_id, value)
+        finish = time.time() - start
+        print("{} simulations end ({:0.0f}s)".format(i + 1, finish))
 
-    def get_policy(self, board, turn, model):
-        self.init_mcts(board, turn, model)
+    def get_pi(self, board, turn):
+        self.init_mcts(board, turn)
         self.mcts()
         root_node = self.tree[self.root_id]
-        policy = np.zeros(self.action_size)
+        pi = np.zeros(self.state_size**2, 'float')
 
-        for i in root_node['child']:
-            child_id = self.root_id + i
-            policy[i] = self.tree[child_id]['n']
+        for action in root_node['child']:
+            child_id = self.root_id + (action,)
+            pi[action] = self.tree[child_id]['n']
 
-        policy = policy / self.tree[self.root_id]['n']
-        return policy
+        pi /= (self.tree[self.root_id]['n'] - 1)  # ====== why "n" is error?
+        return pi
+
+    def reset(self):
+        self.turn = 0
+        self.game_board = np.zeros([self.state_size, self.state_size])
+        self.root_id = (0,)
+        self.tree = {self.root_id: {'board': self.game_board,
+                                    'player': self.turn,
+                                    'child': [],
+                                    'parent': None,
+                                    'n': 0.,
+                                    'w': 0.,
+                                    'q': 0.,
+                                    'p': 0.}}
 
 
 '''

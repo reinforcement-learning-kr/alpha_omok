@@ -1,84 +1,78 @@
 '''
-author : Woonwon Lee
-data : 2018.03.12
-project : make your own alphazero
+Author : Woonwon Lee, Jungdae Kim
+Data : 2018.03.12, 2018.03.28
+Project : Make your own Alpha Zero
 '''
-from utils import valid_actions, check_win, render_str
-from copy import deepcopy
-import time
-import torch
-import random
+from utils import *
+# from model import AlphaZero
+from neural_net import PVNet
+# from copy import deepcopy
+# import time
+import sys
 import numpy as np
+import random
 from collections import deque
+import torch
 import torch.optim as optim
 from torch.autograd import Variable
 import pygame
 import env_small as game
 from agent import Player
 
-GAMEBOARD_SIZE = 9
-memory = deque(maxlen=10000)
-batch_size = 32
+N_BLOCKS = 10
+IN_PLANES = 17
+OUT_PLANES = 128
+BATCH_SIZE = 4
+LR = 0.01
+L2 = 0.0001
 
-
-def append_sample(sample):
-    memory.append(sample)
+STATE_SIZE = 9
+NUM_MCTS = 200
 
 
 def self_play(num_episode):
-    state = np.zeros([state_size, state_size, 17])
-    game_board = np.zeros([state_size, state_size])
+    tau_thres = 6
     # Game Loop
     for episode in range(num_episode):
-        print('playing ', episode, 'th episode by self-play')
+        print('playing ', episode + 1, 'th episode by self-play')
+        env = game.GameState('text')
+        game_board = np.zeros([STATE_SIZE, STATE_SIZE])
         samples_black = []
         samples_white = []
         turn = 0
         win_index = 0
+        step = 0
 
         while win_index == 0:
-            # render_str(game_board, GAMEBOARD_SIZE)
-            # Select action
+            render_str(game_board, STATE_SIZE)
+            pi = agent.get_pi(game_board, turn)
+            print('')
+            print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=4))
+            state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
 
-            state_input = np.reshape(state, [1, 17, state_size, state_size])
-            state_input = torch.from_numpy(np.int32(state_input))
-            state_input = Variable(state_input).float().cpu()
-
-            policy = agent.get_policy(state_input, turn, agent.model)
-
-            # policy, value = agent.model.model(state_input)
-            # policy = policy.data.numpy()[0]
-
-            # Find legal moves
-            legal_policy = []
-            legal_indexs = []
-            for i in range(state_size):
-                for j in range(state_size):
-                    if game_board[i, j] == 0:
-                        legal_indexs.append(state_size * i + j)
-                        legal_policy.append(policy[state_size * i + j])
-
-            legal_policy /= np.sum(legal_policy)
-            if len(legal_policy) > 0:
-                legal_index = np.random.choice(len(legal_policy), 1,
-                                               p=legal_policy)[0]
-                action_index = legal_indexs[legal_index]
-                action = np.zeros(action_size)
-                action[action_index] = 1
-
-                if turn == 0:
-                    samples_black.append([state, action])
-                else:
-                    samples_white.append([state, action])
-
-                game_board, state, check_valid_pos, win_index, turn, _ \
-                    = env.step(action)
+            if step < tau_thres:
+                tau = 1
             else:
-                render_str(game_board, GAMEBOARD_SIZE)
-                win_index = 3
+                tau = 0
+            # ====================== get_action ======================
+            action, action_index = get_action(pi, tau)
+            agent.root_id += (action_index,)
+            if turn == 0:
+                samples_black.append([state, pi])
+            else:
+                samples_white.append([state, pi])
+
+            game_board, _, check_valid_pos, win_index, turn, _ = env.step(action)
+            step += 1
+
+            if not check_valid_pos:
+                raise ValueError("no legal move!")
 
             if win_index != 0:
-                print("win is ", win_index, "in episode", episode)
+                render_str(game_board, STATE_SIZE)
+                print("win is ", win_index, "in episode", episode + 1)
+                agent.reset()
+
                 if win_index == 1:
                     reward_black = 1
                     reward_white = -1
@@ -90,40 +84,37 @@ def self_play(num_episode):
                     reward_white = 0
 
                 for i in range(len(samples_black)):
-                    memory.append([samples_black[i][0], samples_black[i][1],
-                                   reward_black])
+                    memory.append([samples_black[i][0], samples_black[i][1], reward_black])
 
                 for i in range(len(samples_white)):
-                    memory.append([samples_white[i][0], samples_white[i][1],
-                                   reward_white])
+                    memory.append([samples_white[i][0], samples_white[i][1], reward_white])
                 break
-        if (episode + 1) == num_episode:
-            render_str(game_board, GAMEBOARD_SIZE)
 
 
 def train(num_iter):
-    optimizer = optim.Adam(agent.model.model.parameters(), lr=0.001)
-    criterion = torch.nn.BCELoss(size_average=True)
+    optimizer = optim.SGD(agent.model.parameters(), lr=LR, momentum=0.9, weight_decay=L2)
+    criterion_p = torch.nn.CrossEntropyLoss()
+    criterion_v = torch.nn.MSELoss()
 
     for i in range(num_iter):
-        print(i, 'th iteration')
-        mini_batch = random.sample(memory, batch_size)
+        sys.stdout.write('{} th iteration\r'.format(i + 1))
+        sys.stdout.flush()
+        mini_batch = random.sample(memory, BATCH_SIZE)
         mini_batch = np.array(mini_batch).transpose()
-        states = np.vstack(mini_batch[0])
-        actions = np.vstack(mini_batch[1])
-        rewards = list(mini_batch[2])
+        state = np.vstack(mini_batch[0])
+        pi = np.vstack(mini_batch[1])
+        z = list(mini_batch[2])
 
-        states_input = np.reshape(states,
-                                  [batch_size, 17, state_size, state_size])
-        states_input = torch.Tensor(states_input)
-        states_input = Variable(states_input).float()
-        actions = Variable(torch.FloatTensor(actions))
-        rewards = Variable(torch.FloatTensor(rewards))
+        state_input = np.reshape(state, [BATCH_SIZE, IN_PLANES, STATE_SIZE, STATE_SIZE])
+        state_input = torch.Tensor(state_input)
+        state_input = Variable(state_input).float()
+        pi = Variable(torch.FloatTensor(pi))
+        z = Variable(torch.FloatTensor(z))
 
-        policies, values = agent.model.model(states_input)
-        policies = torch.sum(policies.mul(actions), dim=1)
+        policy, value = agent.model(state_input)
+        # policies = torch.sum(policies.mul(actions), dim=1)
 
-        loss = -criterion(policies, rewards)
+        loss = criterion_v(value, z) + criterion_p(policy, pi)
 
         optimizer.zero_grad()
         loss.backward()
@@ -135,15 +126,13 @@ def compete():
 
 
 if __name__ == '__main__':
-    env = game.GameState('text')
-    # win_mark == 5 : omok
-    state_size, action_size, win_mark = game.Return_BoardParams()
-    agent = Player(state_size, win_mark)
-
+    memory = deque(maxlen=BATCH_SIZE * 10)
+    agent = Player(STATE_SIZE, NUM_MCTS)
+    agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     for i in range(1000):
         print('-----------------------------------------')
-        print(i, 'th training process')
-        self_play(num_episode=10)
-        pygame.quit()
-        train(num_iter=10)
-        compete()
+        print(i + 1, 'th training process')
+        print('-----------------------------------------')
+        self_play(num_episode=2)
+        train(num_iter=1)
+        # compete()
