@@ -1,3 +1,5 @@
+__all__ = ["valid_actions", "check_win", "update_state",
+           "render_str", "get_state_tf", "get_state_pt", "get_action"]
 import numpy as np
 
 
@@ -86,7 +88,7 @@ def render_str(gameboard, GAMEBOARD_SIZE):
     print(board_str)
 
 
-def get_state(id, turn, state_size, channel_size):
+def get_state_tf(id, turn, state_size, channel_size):
     state = np.zeros([state_size, state_size, channel_size])
     length_game = len(id)
 
@@ -119,3 +121,50 @@ def get_state(id, turn, state_size, channel_size):
         state[:, :, channel_size - 1] = 0
 
     return state
+
+
+def get_state_pt(id, turn, state_size, channel_size):
+    state = np.zeros([channel_size, state_size, state_size])
+    length_game = len(id)
+
+    state_1 = np.zeros([state_size, state_size])
+    state_2 = np.zeros([state_size, state_size])
+
+    channel_idx = channel_size - 1
+
+    for i in range(length_game):
+        row_idx = int(id[i] / state_size)
+        col_idx = int(id[i] % state_size)
+
+        if i != 0:
+            if i % 2 == 0:
+                state_1[row_idx, col_idx] = 1
+            else:
+                state_2[row_idx, col_idx] = 1
+
+        if length_game - i < channel_size:
+            channel_idx = length_game - i - 1
+
+            if i % 2 == 0:
+                state[channel_idx] = state_1
+            else:
+                state[channel_idx] = state_2
+
+    if turn == 0:
+        state[channel_size - 1] = 1
+    else:
+        state[channel_size - 1] = 0
+
+    return state
+
+
+def get_action(pi, tau):
+    action_size = len(pi)
+    action = np.zeros(action_size)
+    if tau == 0:
+        actions = np.argwhere(pi == pi.max()).flatten()
+        action_index = actions[np.random.choice(len(actions))]
+    else:
+        action_index = np.random.choice(action_size, p=pi)
+    action[action_index] = 1
+    return action, action_index
