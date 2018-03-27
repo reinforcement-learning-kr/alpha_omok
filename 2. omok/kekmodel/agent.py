@@ -137,13 +137,13 @@ class Player:
                 tree[node_id]['n'] += 1
                 return tree
 
-            tree[node_id]['n'] += 1
             """
             if tree[node_id]['player'] == player:
                 tree[node_id]['w'] -= value
             else:
                 tree[node_id]['w'] -= value
             """
+            tree[node_id]['n'] += 1
             tree[node_id]['w'] -= value
             tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
             parent_id = tree[node_id]['parent']
