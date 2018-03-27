@@ -110,7 +110,7 @@ class Player:
 
                 child_id = leaf_id + (action_index, )
                 childs.append(child_id)
-                tree[child_id] = {'state': state,
+                tree[child_id] = {'board': state,
                                   'player': next_turn,
                                   'child': [],
                                   'parent': leaf_id,
@@ -134,6 +134,10 @@ class Player:
         node_id = leaf_id
 
         while True:
+            if node_id == self.root_id:
+                tree[node_id]['n'] += 1
+                return tree
+
             tree[node_id]['n'] += 1
             if tree[node_id]['player'] == player:
                 tree[node_id]['w'] += value
@@ -141,11 +145,8 @@ class Player:
                 tree[node_id]['w'] -= value
             tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
             parent_id = tree[node_id]['parent']
-            if parent_id == self.root_id:
-                tree[parent_id]['n'] += 1
-                return tree
-            else:
-                node_id = parent_id
+
+            node_id = parent_id
 
     def mcts(self):
         for i in range(self.num_mcts):

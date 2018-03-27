@@ -11,9 +11,10 @@ import random
 
 
 class Player:
-    def __init__(self, action_size=81):
+    def __init__(self, action_size=81, win_mark = 5):
         self.replay_memory = deque()
         self.action_size = action_size
+        self.win_mark = win_mark
         self.model = AlphaZero(action_size)
         # self.tree = self.reset()
         # Get parameters
@@ -38,7 +39,7 @@ class Player:
         self.game_board = board
         self.model = model
 
-#    def get_state(self, current_id, turn): ##################### need to be fixed 
+#    def get_state(self, current_id, turn): ##################### need to be fixed
 #        state = np.zeros([9, 9, 17])
 #        if len(current) > 16:
 
@@ -75,7 +76,7 @@ class Player:
                         node_id = child_id
 
     def expansion(self, tree, leaf_id):
-        leaf_state = deepcopy(tree[leaf_id]['board'])   ##################### need to be fixed 
+        leaf_state = deepcopy(tree[leaf_id]['board'])   ##################### need to be fixed
         is_terminal = check_win(leaf_state, self.win_mark)
         actions = valid_actions(leaf_state)
         # expand_thres = 10
@@ -124,7 +125,7 @@ class Player:
         else:
             # If leaf node is terminal state,
             # just return MCTS tree
-            return tree, value  ##################### need to be fixed 
+            return tree, value  ##################### need to be fixed
 
     def backup(self, tree, leaf_id, value):
         player = deepcopy(tree[self.root_id]['player'])
