@@ -4,16 +4,20 @@ import env_small as env
 logger = getLogger(__name__)
 from collections import deque
 from model import AlphaZero
-from utils import valid_actions, check_win
+from utils import valid_actions, check_win, get_state
 from copy import deepcopy
 import numpy as np
 import random
-
+import torch
+from torch.autograd import Variable
 
 class Player:
-    def __init__(self, action_size=81, win_mark = 5):
+    def __init__(self, state_size = 9, action_size=81, win_mark = 5):
         self.replay_memory = deque()
+        self.state_size = state_size
         self.action_size = action_size
+        self.channel_size = 17
+
         self.win_mark = win_mark
         self.model = AlphaZero(action_size)
         # self.tree = self.reset()
@@ -24,13 +28,13 @@ class Player:
         self.root_id = (0,)
         self.num_mcts = 1000
         # self.model = model
-        self.tree = {self.root_id: {'board': None,
-                                    'player': None,
+        self.tree = {self.root_id: {'board': np.zeros([self.state_size, self.state_size]),
+                                    'player': 0,
                                     'child': [],
                                     'parent': None,
                                     'n': 0,
-                                    'w': None,
-                                    'q': None,
+                                    'w': 0,
+                                    'q': 0,
                                     'p': None}}
 
     def init_mcts(self, board, turn, model):
@@ -76,17 +80,20 @@ class Player:
                         node_id = child_id
 
     def expansion(self, tree, leaf_id):
-        leaf_state = deepcopy(tree[leaf_id]['board'])   ##################### need to be fixed
-        is_terminal = check_win(leaf_state, self.win_mark)
-        actions = valid_actions(leaf_state)
+        leaf_board = deepcopy(tree[leaf_id]['board'])   ##################### need to be fixed
+        is_terminal = check_win(leaf_board, self.win_mark)
+        actions = valid_actions(leaf_board)
+
+        leaf_state = get_state(leaf_id, tree[leaf_id]['player'], self.state_size, self.channel_size)
         # expand_thres = 10
 
         # if leaf_id == (0,) or tree[leaf_id]['n'] > expand_thres:
         #     is_expand = True
         # else:
         #    is_expand = False
+
         is_expand = True
-        state_input = np.reshape(leaf_state, [1, 17, state_size, state_size])
+        state_input = np.reshape(leaf_state, [1, self.channel_size, self.state_size, self.state_size])
         state_input = torch.from_numpy(np.int32(state_input))
         state_input = Variable(state_input).float().cpu()
         policy, value = self.model.forward(state_input)
@@ -132,6 +139,10 @@ class Player:
         node_id = leaf_id
 
         while True:
+            if node_id == self.root_id:
+                tree[node_id]['n'] += 1
+                return tree
+
             tree[node_id]['n'] += 1
             if tree[node_id]['player'] == player:
                 tree[node_id]['w'] += value
@@ -139,11 +150,8 @@ class Player:
                 tree[node_id]['w'] -= value
             tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
             parent_id = tree[node_id]['parent']
-            if parent_id == self.root_id:
-                tree[parent_id]['n'] += 1
-                return tree
-            else:
-                node_id = parent_id
+
+            node_id = parent_id
 
     def mcts(self):
         for i in range(self.num_mcts):
