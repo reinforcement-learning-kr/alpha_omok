@@ -9,25 +9,26 @@ from neural_net import PVNet
 # from copy import deepcopy
 # import time
 import sys
-import numpy as np
 import random
-from collections import deque
+import numpy as np
+from collections import deque, namedtuple
 import torch
 import torch.optim as optim
 from torch.autograd import Variable
+from torch.utils import data
 import pygame
 import env_small as game
 from agent import Player
 
-N_BLOCKS = 10
-IN_PLANES = 17
+N_BLOCKS = 20
+IN_PLANES = 5
 OUT_PLANES = 128
 BATCH_SIZE = 4
 LR = 0.01
 L2 = 0.0001
 
 STATE_SIZE = 9
-NUM_MCTS = 200
+NUM_MCTS = 100
 
 
 def self_play(num_episode):
@@ -49,7 +50,6 @@ def self_play(num_episode):
             print('')
             print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=4))
             state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
-
             if step < tau_thres:
                 tau = 1
             else:
@@ -58,9 +58,9 @@ def self_play(num_episode):
             action, action_index = get_action(pi, tau)
             agent.root_id += (action_index,)
             if turn == 0:
-                samples_black.append([state, pi])
+                samples_black.append((Tensor([state]), Tensor([pi])))
             else:
-                samples_white.append([state, pi])
+                samples_white.append((Tensor([state]), Tensor([pi])))
 
             game_board, _, check_valid_pos, win_index, turn, _ = env.step(action)
             step += 1
@@ -74,64 +74,79 @@ def self_play(num_episode):
                 agent.reset()
 
                 if win_index == 1:
-                    reward_black = 1
-                    reward_white = -1
+                    reward_black = -1.
+                    reward_white = 1.
                 elif win_index == 2:
-                    reward_black = -1
-                    reward_white = 1
+                    reward_black = 1.
+                    reward_white = -1.
                 else:
-                    reward_black = 0
-                    reward_white = 0
+                    reward_black = 0.
+                    reward_white = 0.
 
                 for i in range(len(samples_black)):
-                    memory.append([samples_black[i][0], samples_black[i][1], reward_black])
+                    memory.append(
+                        NameTag(
+                            samples_black[i][0],
+                            samples_black[i][1],
+                            Tensor([reward_black])
+                        )
+                    )
 
                 for i in range(len(samples_white)):
-                    memory.append([samples_white[i][0], samples_white[i][1], reward_white])
+                    memory.append(
+                        NameTag(
+                            samples_white[i][0],
+                            samples_white[i][1],
+                            Tensor([reward_white])
+                        )
+                    )
                 break
 
 
 def train(num_iter):
     optimizer = optim.SGD(agent.model.parameters(), lr=LR, momentum=0.9, weight_decay=L2)
-    criterion_p = torch.nn.CrossEntropyLoss()
-    criterion_v = torch.nn.MSELoss()
-
+    running_loss = 0.
+    j = 0
     for i in range(num_iter):
-        sys.stdout.write('{} th iteration\r'.format(i + 1))
-        sys.stdout.flush()
-        mini_batch = random.sample(memory, BATCH_SIZE)
-        mini_batch = np.array(mini_batch).transpose()
-        state = np.vstack(mini_batch[0])
-        pi = np.vstack(mini_batch[1])
-        z = list(mini_batch[2])
+        j += 1
+        batch = random.sample(memory, BATCH_SIZE)
+        batch = NameTag(*zip(*batch))
 
-        # state_input = np.reshape(state, [BATCH_SIZE, IN_PLANES, STATE_SIZE, STATE_SIZE])
-        state_input = Variable(torch.FloatTensor(state))
-        pi = Variable(torch.FloatTensor(pi))
-        z = Variable(torch.FloatTensor(z))
+        s_batch = Variable(torch.cat(batch.s))
+        pi_batch = Variable(torch.cat(batch.pi))
+        z_batch = Variable(torch.cat(batch.z))
 
-        policy, value = agent.model(state_input)
-        # policies = torch.sum(policies.mul(actions), dim=1)
+        p_batch, v_batch = agent.model(s_batch)
 
-        loss = criterion_v(value, z) + criterion_p(policy, pi)
+        pi_flat = pi_batch.view(1, BATCH_SIZE * STATE_SIZE**2)
+        p_flat = p_batch.view(BATCH_SIZE * STATE_SIZE**2, 1)
+
+        loss = (z_batch - v_batch).pow(2).sum() - torch.matmul(pi_flat, torch.log(p_flat))
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
-
-def compete():
-    pass
+        running_loss += loss.data[0]
+        print('{} iterarion loss: {:.4f}'.format(j, running_loss[0] / j))
 
 
 if __name__ == '__main__':
-    memory = deque(maxlen=BATCH_SIZE * 10)
+    use_cuda = torch.cuda.is_available()
+    print('cuda:', use_cuda)
+    FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
+    LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
+    # # ByteTensor = torch.cuda.ByteTensor if use_cuda else torch.ByteTensor
+    Tensor = FloatTensor
+    NameTag = namedtuple('NameTag', ('s', 'pi', 'z'))
+    memory = deque(maxlen=10000)
     agent = Player(STATE_SIZE, NUM_MCTS)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
-    for i in range(1000):
+    if use_cuda:
+        agent.model.cuda()
+    for i in range(100):
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
-        self_play(num_episode=2)
-        train(num_iter=1)
+        self_play(num_episode=1)
+        train(num_iter=8)
         # compete()

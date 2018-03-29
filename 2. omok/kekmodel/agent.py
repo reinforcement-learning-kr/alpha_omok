@@ -6,6 +6,8 @@ import torch
 from torch.autograd import Variable
 import numpy as np
 
+IN_PLANES = 5
+
 
 class Player:
     def __init__(self, state_size, num_mcts):
@@ -23,7 +25,7 @@ class Player:
                                     'n': 0.,
                                     'w': 0.,
                                     'q': 0.,
-                                    'p': 0.}}
+                                    'p': None}}
 
     def init_mcts(self, board, turn):
         self.turn = turn
@@ -49,11 +51,11 @@ class Player:
                     total_n = tree[tree[child_id]['parent']]['n']
 
                     if n == 0:
-                        q = 0
-                        u = 5 * p
+                        q = 0.
+                        u = 1.
                     else:
                         q = w / n
-                        u = 5 * p * np.sqrt(total_n) / (n + 1)
+                        u = 5. * p * np.sqrt(total_n) / (n + 1)
 
                     if q + u > max_value:
                         max_value = q + u
@@ -64,7 +66,7 @@ class Player:
         is_terminal = check_win(leaf_board, self.win_mark)
         actions = valid_actions(leaf_board)
         turn = tree[leaf_id]['player']
-        leaf_state = get_state_pt(leaf_id, turn, self.state_size, 17)
+        leaf_state = get_state_pt(leaf_id, turn, self.state_size, IN_PLANES)
         # expand_thres = 10
 
         # if leaf_id == (0,) or tree[leaf_id]['n'] > expand_thres:
@@ -72,8 +74,10 @@ class Player:
         # else:
         #    is_expand = False
         is_expand = True
-        state_input = torch.from_numpy(leaf_state).float().unsqueeze(0)
-        state_input = Variable(state_input)
+        # print(leaf_state[0])
+        # print(leaf_state[1])
+        # print(leaf_state[16])
+        state_input = Variable(torch.from_numpy(leaf_state).float().unsqueeze(0))
         policy, value = self.model(state_input)
         policy = policy.data.numpy()[0]
         value = value.data.numpy().flatten()
@@ -115,14 +119,14 @@ class Player:
             win_index = check_win(leaf_board, 5)
             if win_index == 1:
                 if turn == 0:
-                    reward = 1
-                else:
                     reward = -1
+                else:
+                    reward = 1
             elif win_index == 2:
                 if turn == 0:
-                    reward = -1
-                else:
                     reward = 1
+                else:
+                    reward = -1
             else:
                 reward = 0
 
@@ -144,7 +148,7 @@ class Player:
                 tree[node_id]['w'] -= value
             """
             tree[node_id]['n'] += 1
-            tree[node_id]['w'] -= value
+            tree[node_id]['w'] += value
             tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
             parent_id = tree[node_id]['parent']
 
@@ -188,7 +192,7 @@ class Player:
                                     'n': 0.,
                                     'w': 0.,
                                     'q': 0.,
-                                    'p': 0.}}
+                                    'p': None}}
 
 
 '''

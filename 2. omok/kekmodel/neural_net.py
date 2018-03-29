@@ -60,6 +60,7 @@ class ValueHead(nn.Module):
         out = self.value_fc1(out)
         out = F.relu(out, inplace=True)
         out = self.value_fc2(out)
+        out = out.view(out.size(0))
         out = F.tanh(out)
         return out
 
@@ -102,8 +103,8 @@ if __name__ == '__main__':
     import torch
     from torch.autograd import Variable
     import numpy as np
-    model = PVNet(20, 17, 256, 9)
-    state = np.ones((17, 9, 9))
+    model = PVNet(20, 17, 256, 3)
+    state = np.ones((17, 3, 3))
     state_input = Variable(torch.from_numpy(state).unsqueeze(0).float())
     p, v = model(state_input)
-    print('P: {}\nV: {}'.format(p.data.numpy()[0].shape, v.data.numpy()[0]))
+    print('P: {}\nV: {}'.format(p, v))

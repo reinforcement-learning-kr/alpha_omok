@@ -151,9 +151,9 @@ def get_state_pt(id, turn, state_size, channel_size):
                 state[channel_idx] = state_2
 
     if turn == 0:
-        state[channel_size - 1] = 1
-    else:
         state[channel_size - 1] = 0
+    else:
+        state[channel_size - 1] = 1
 
     return state
 
