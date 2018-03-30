@@ -303,7 +303,3 @@ class GameState:
 
         else:
             self.init = False
-
-
-if __name__ == '__main__':
-    main()

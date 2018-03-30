@@ -65,6 +65,10 @@ def self_play(num_episode):
 
                 if win_index == 1:
                     reward_black = 1
+                elif win_index == 2:
+                    reward_black = -1
+                else:
+                    reward_black = 0
 
                 for i in range(len(samples)):
                     memory.append(

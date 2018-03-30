@@ -60,7 +60,11 @@ class Player:
                         q = w / n
                         u = 5. * p * np.sqrt(total_n) / (n + 1)
 
-                    qu[child_id] = q + u
+                    if tree[leaf_id]['player'] == 0:
+                        qu[child_id] = q + u
+                    else:
+                        qu[child_id] = -q + u
+
                 # random choice of same values
                 max_value = max(qu.values())
                 ids = [key for key, value in qu.items() if value == max_value]
@@ -79,9 +83,6 @@ class Player:
         # else:
         #    is_expand = False
         is_expand = True
-        # print(leaf_state[0])
-        # print(leaf_state[1])
-        # print(leaf_state[16])
         state_input = Variable(Tensor(leaf_state).unsqueeze(0))
         policy, value = self.model(state_input)
         policy = policy.data.cpu().numpy()[0]
@@ -116,23 +117,15 @@ class Player:
 
                 tree[leaf_id]['child'].append(action_index)
 
-            # child_id = random.sample(childs, 1)
-            # leaf_p, leaf_v = self.model.forward(state)
             return tree, value
 
         else:
             # If leaf node is terminal
             win_index = check_win(leaf_board, 5)
             if win_index == 1:
-                if turn == 0:
-                    reward = -1.
-                else:
-                    reward = 1.
+                reward = 1.
             elif win_index == 2:
-                if turn == 0:
-                    reward = 1.
-                else:
-                    reward = -1.
+                reward = -1.
             else:
                 reward = 0.
 
