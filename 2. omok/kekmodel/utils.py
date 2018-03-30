@@ -2,6 +2,8 @@ __all__ = ["valid_actions", "check_win", "update_state",
            "render_str", "get_state_tf", "get_state_pt", "get_action"]
 import numpy as np
 
+ALPHABET = 'A B C D E F G H I J K L M N O P Q R S'
+
 
 def valid_actions(game_board):
     actions = []
@@ -68,23 +70,46 @@ def update_state(state, turn, x_idx, y_idx):
     return state
 
 
-def render_str(gameboard, GAMEBOARD_SIZE):
+def render_str(gameboard, GAMEBOARD_SIZE, action_index):
+    if action_index is not None:
+        row = action_index // GAMEBOARD_SIZE
+        col = action_index % GAMEBOARD_SIZE
     count = np.count_nonzero(gameboard)
-    board_str = '\n  0 1 2 3 4 5 6 7 8\n'
+    board_str = '\n  {}\n'.format(ALPHABET[:GAMEBOARD_SIZE * 2 - 1])
     for i in range(GAMEBOARD_SIZE):
         for j in range(GAMEBOARD_SIZE):
             if j == 0:
-                board_str += '{}'.format(i)
+                board_str += '{}'.format(i + 1)
             if gameboard[i][j] == 0:
-                board_str += ' .'
+                if count > 0:
+                    if col + 1 < GAMEBOARD_SIZE:
+                        if (i, j) == (row, col + 1):
+                            board_str += '.'
+                        else:
+                            board_str += ' .'
+                    else:
+                        board_str += ' .'
+                else:
+                    board_str += ' .'
             if gameboard[i][j] == 1:
-                board_str += ' O'
+                if (i, j) == (row, col):
+                    board_str += '(O)'
+                elif (i, j) == (row, col + 1):
+                    board_str += 'O'
+                else:
+                    board_str += ' O'
             if gameboard[i][j] == -1:
-                board_str += ' X'
+                if (i, j) == (row, col):
+                    board_str += '(X)'
+                elif (i, j) == (row, col + 1):
+                    board_str += 'X'
+                else:
+                    board_str += ' X'
             if j == GAMEBOARD_SIZE - 1:
                 board_str += ' \n'
         if i == GAMEBOARD_SIZE - 1:
-            board_str += '  ***  MOVE: {} ***'.format(count)
+            board_str += ' ' + '-' * (GAMEBOARD_SIZE - 5) + \
+                ' MOVE: {} '.format(count) + '-' * (GAMEBOARD_SIZE - 5)
     print(board_str)
 
 
