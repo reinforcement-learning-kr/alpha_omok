@@ -6,16 +6,12 @@ Project : Make your own Alpha Zero
 from utils import *
 # from model import AlphaZero
 from neural_net import PVNet
-# from copy import deepcopy
-# import time
-import sys
 import random
 import numpy as np
 from collections import deque, namedtuple
 import torch
 import torch.optim as optim
 from torch.autograd import Variable
-from torch.utils import data
 import pygame
 import env_small as game
 from agent import Player
@@ -28,7 +24,7 @@ LR = 0.01
 L2 = 0.0001
 
 STATE_SIZE = 9
-NUM_MCTS = 100
+NUM_MCTS = 800
 
 
 def self_play(num_episode):
@@ -133,10 +129,7 @@ def train(num_iter):
 if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
-    FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
-    # # ByteTensor = torch.cuda.ByteTensor if use_cuda else torch.ByteTensor
-    Tensor = FloatTensor
+    Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
     NameTag = namedtuple('NameTag', ('s', 'pi', 'z'))
     memory = deque(maxlen=10000)
     agent = Player(STATE_SIZE, NUM_MCTS)
