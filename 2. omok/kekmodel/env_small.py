@@ -7,7 +7,7 @@ boardsize: 9 x 9
 # By KyushikMin kyushikmin@gamil.com
 # http://mmc.hanyang.ac.kr
 
-from utils import check_win, update_state
+from utils import check_win
 import sys
 import pygame
 from pygame.locals import *
@@ -78,8 +78,8 @@ class GameState:
 
         # No stone: 0, Black stone: 1, White stone = -1
         self.gameboard = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE])
-        self.state = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, INPUT_CHANNEL])
-        self.state[:, :, 16] = 1
+        # self.state = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, INPUT_CHANNEL])
+        # self.state[:, :, 16] = 1
 
         self.black_win = 0
         self.white_win = 0
@@ -105,8 +105,8 @@ class GameState:
 
             # No stone: 0, Black stone: 1, White stone = -1
             self.gameboard = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE])
-            self.state = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, INPUT_CHANNEL])
-            self.state[:, :, 16] = 1
+            # self.state = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, INPUT_CHANNEL])
+            # self.state[:, :, 16] = 1
 
             # black turn: 0, white turn: 1
             self.turn = 0
@@ -158,7 +158,7 @@ class GameState:
         # Change the gameboard according to the stone's index
         if check_valid_pos:
             # update state
-            self.state = update_state(self.state, self.turn, x_index, y_index)
+            # self.state = update_state(self.state, self.turn, x_index, y_index)
 
             if self.turn == 0:
                 self.gameboard[y_index, x_index] = 1
@@ -190,7 +190,7 @@ class GameState:
         win_index = check_win(self.gameboard, WIN_STONES)
         self.display_win(win_index)
 
-        return self.gameboard, self.state, check_valid_pos, win_index, self.turn, (y_index, x_index)
+        return self.gameboard, check_valid_pos, win_index, self.turn, (y_index, x_index)
 
     # Exit the game
     def terminate(self):
