@@ -14,7 +14,7 @@ import torch.optim as optim
 from torch.autograd import Variable
 # import pygame
 import env_small as game
-from agent import Player
+from agent_test import Player
 
 N_BLOCKS = 20
 IN_PLANES = 17

@@ -40,8 +40,9 @@ class Player:
             if num_child == 0:
                 return node_id
             else:
-                max_value = -100
                 leaf_id = node_id
+                qu = {}
+                ids = []
                 for i in range(num_child):
                     action = tree[leaf_id]['child'][i]
                     child_id = leaf_id + (action,)
@@ -52,14 +53,15 @@ class Player:
 
                     if n == 0:
                         q = 0.
-                        u = 5. * p
+                        u = 5. * p * np.sqrt(total_n) / (n + 1)
                     else:
                         q = w / n
                         u = 5. * p * np.sqrt(total_n) / (n + 1)
 
-                    if q + u > max_value:
-                        max_value = q + u
-                        node_id = child_id
+                    qu[child_id] = q + u
+                max_value = max(qu.values())
+                ids = [key for key, value in qu.items() if value == max_value]
+                node_id = ids[np.random.choice(len(ids))]
 
     def expansion(self, tree, leaf_id):
         leaf_board = deepcopy(tree[leaf_id]['board'])
@@ -91,7 +93,7 @@ class Player:
                 action_index = action[1]
                 current_player = tree[leaf_id]['player']
                 prior = policy[action_index]
-                print('prior:', prior)
+                # print('prior:', prior)
                 if current_player == 0:
                     next_turn = 1
                     board[action[0]] = 1
@@ -121,16 +123,16 @@ class Player:
             win_index = check_win(leaf_board, 5)
             if win_index == 1:
                 if turn == 0:
-                    reward = -1
+                    reward = -1.
                 else:
-                    reward = 1
+                    reward = 1.
             elif win_index == 2:
                 if turn == 0:
-                    reward = 1
+                    reward = 1.
                 else:
-                    reward = -1
+                    reward = -1.
             else:
-                reward = 0
+                reward = 0.
 
             return tree, reward
 
@@ -151,7 +153,7 @@ class Player:
             """
             tree[node_id]['n'] += 1
             tree[node_id]['w'] += value
-            print('backup:', value)
+            # print('backup:', value)
             tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
             parent_id = tree[node_id]['parent']
 
