@@ -2,7 +2,7 @@ __all__ = ["valid_actions", "check_win", "update_state",
            "render_str", "get_state_tf", "get_state_pt", "get_action"]
 import numpy as np
 
-ALPHABET = 'A B C D E F G H I J K L M N O P Q R S'
+ALPHABET = ' A B C D E F G H I J K L M N O P Q R S'
 
 
 def valid_actions(game_board):
@@ -75,11 +75,11 @@ def render_str(gameboard, GAMEBOARD_SIZE, action_index):
         row = action_index // GAMEBOARD_SIZE
         col = action_index % GAMEBOARD_SIZE
     count = np.count_nonzero(gameboard)
-    board_str = '\n  {}\n'.format(ALPHABET[:GAMEBOARD_SIZE * 2 - 1])
+    board_str = '\n  {}\n'.format(ALPHABET[:GAMEBOARD_SIZE * 2])
     for i in range(GAMEBOARD_SIZE):
         for j in range(GAMEBOARD_SIZE):
             if j == 0:
-                board_str += '{}'.format(i + 1)
+                board_str += '{:2}'.format(i + 1)
             if gameboard[i][j] == 0:
                 if count > 0:
                     if col + 1 < GAMEBOARD_SIZE:
@@ -108,8 +108,8 @@ def render_str(gameboard, GAMEBOARD_SIZE, action_index):
             if j == GAMEBOARD_SIZE - 1:
                 board_str += ' \n'
         if i == GAMEBOARD_SIZE - 1:
-            board_str += ' ' + '-' * (GAMEBOARD_SIZE - 5) + \
-                ' MOVE: {} '.format(count) + '-' * (GAMEBOARD_SIZE - 5)
+            board_str += '  ' + '-' * (GAMEBOARD_SIZE - 5) + \
+                ' MOVE: {:2} '.format(count) + '-' * (GAMEBOARD_SIZE - 5)
     print(board_str)
 
 
