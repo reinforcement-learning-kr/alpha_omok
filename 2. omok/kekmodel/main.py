@@ -146,3 +146,8 @@ if __name__ == '__main__':
         self_play(num_episode=3)
         train(num_iter=3)
         # compete()
+        if (i + 1) % 100 == 0:
+            torch.save(
+                agent.model.state_dict(),
+                'models/{}train_model.pickle'.format(100 * BATCH_SIZE * 3)
+            )

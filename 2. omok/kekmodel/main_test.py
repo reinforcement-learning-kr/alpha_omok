@@ -75,7 +75,7 @@ def self_play(num_episode):
                         NameTag(samples[i][0],
                                 samples[i][1],
                                 Tensor([reward_black]))
-                        )
+                    )
                 agent.reset()
                 break
 
@@ -125,4 +125,8 @@ if __name__ == '__main__':
         print('-----------------------------------------')
         self_play(num_episode=3)
         train(num_iter=3)
-        # compete()
+        if (i + 1) % 100 == 0:
+            torch.save(
+                agent.model.state_dict(),
+                'models/{}train_model.pickle'.format(100 * BATCH_SIZE * 3)
+            )
