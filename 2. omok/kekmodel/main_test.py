@@ -41,6 +41,7 @@ def self_play(num_episode):
 
         while win_index == 0:
             render_str(board, STATE_SIZE)
+            # ====================  start mcts ======================
             pi = agent.get_pi(board, turn)
             print('')
             print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=4))
@@ -53,7 +54,7 @@ def self_play(num_episode):
             action, action_index = get_action(pi, tau)
             agent.root_id += (action_index,)
             samples.append((Tensor([state]), Tensor([pi])))
-            board, _, check_valid_pos, win_index, turn, _ = env.step(action)
+            board, check_valid_pos, win_index, turn, _ = env.step(action)
             step += 1
 
             if not check_valid_pos:
@@ -115,11 +116,13 @@ if __name__ == '__main__':
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
     NameTag = namedtuple('NameTag', ('s', 'pi', 'z'))
     memory = deque(maxlen=10000)
-    agent = Player(STATE_SIZE, NUM_MCTS)
+
+    agent = Player(STATE_SIZE, NUM_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     if use_cuda:
         agent.model.cuda()
-    for i in range(100):
+
+    for i in range(1000):
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
