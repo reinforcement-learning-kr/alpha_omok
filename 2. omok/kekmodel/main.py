@@ -60,7 +60,7 @@ def self_play(num_episode):
                 raise ValueError("no legal move!")
 
             if win_index != 0:
-                render_str(board, STATE_SIZE)
+                render_str(board, STATE_SIZE, action_index)
                 print("win is ", win_index, "in episode", episode + 1)
 
                 if win_index == 1:
