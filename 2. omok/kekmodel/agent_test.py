@@ -7,8 +7,8 @@ from torch.autograd import Variable
 import numpy as np
 
 IN_PLANES = 17
-USE_CUDA = torch.cuda.is_available()
-Tensor = torch.cuda.FloatTensor if USE_CUDA else torch.FloatTensor
+use_cuda = torch.cuda.is_available()
+Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 
 
 class Player:
@@ -61,6 +61,7 @@ class Player:
                         u = 5. * p * np.sqrt(total_n) / (n + 1)
 
                     qu[child_id] = q + u
+                # random choice of same values
                 max_value = max(qu.values())
                 ids = [key for key, value in qu.items() if value == max_value]
                 node_id = ids[np.random.choice(len(ids))]

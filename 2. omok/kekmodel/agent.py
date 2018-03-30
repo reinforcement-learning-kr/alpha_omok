@@ -7,6 +7,8 @@ from torch.autograd import Variable
 import numpy as np
 
 IN_PLANES = 17
+use_cuda = torch.cuda.is_available()
+Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 
 
 class Player:
@@ -36,12 +38,13 @@ class Player:
 
         while True:
             num_child = len(tree[node_id]['child'])
-            # Check if current node is leaf node
+            # check if current node is leaf node
             if num_child == 0:
                 return node_id
             else:
-                max_value = -100
                 leaf_id = node_id
+                qu = {}
+                ids = []
                 for i in range(num_child):
                     action = tree[leaf_id]['child'][i]
                     child_id = leaf_id + (action,)
@@ -52,14 +55,16 @@ class Player:
 
                     if n == 0:
                         q = 0.
-                        u = 5. * p
+                        u = 5. * p * np.sqrt(total_n) / (n + 1)
                     else:
                         q = w / n
                         u = 5. * p * np.sqrt(total_n) / (n + 1)
 
-                    if q + u > max_value:
-                        max_value = q + u
-                        node_id = child_id
+                        qu[child_id] = q + u
+                # random choice of same values
+                max_value = max(qu.values())
+                ids = [key for key, value in qu.items() if value == max_value]
+                node_id = ids[np.random.choice(len(ids))]
 
     def expansion(self, tree, leaf_id):
         leaf_board = deepcopy(tree[leaf_id]['board'])
@@ -73,15 +78,12 @@ class Player:
         #     is_expand = True
         # else:
         #    is_expand = False
+
         is_expand = True
-        # print(leaf_state[0])
-        # print(leaf_state[1])
-        # print(leaf_state[16])
-        state_input = Variable(
-            torch.from_numpy(leaf_state).float().unsqueeze(0))
+        state_input = Variable(Tensor(leaf_state).unsqueeze(0))
         policy, value = self.model(state_input)
-        policy = policy.data.numpy()[0]
-        value = value.data.numpy().flatten()
+        policy = policy.data.cpu().numpy()[0]
+        value = value.data.cpu().numpy().flatten()
 
         if is_terminal == 0 and is_expand:
             # expansion for every possible actions
@@ -111,8 +113,6 @@ class Player:
 
                 tree[leaf_id]['child'].append(action_index)
 
-            # child_id = random.sample(childs, 1)
-            # leaf_p, leaf_v = self.model.forward(state)
             return tree, value
 
         else:
