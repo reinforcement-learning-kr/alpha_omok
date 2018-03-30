@@ -14,13 +14,13 @@ import torch.optim as optim
 from torch.autograd import Variable
 # import pygame
 import env_small as game
-from agent import Player
+from agent_test import Player
 
 N_BLOCKS = 20
 IN_PLANES = 5
 OUT_PLANES = 128
 BATCH_SIZE = 32
-LR = 0.01
+LR = 0.2
 L2 = 0.0001
 
 STATE_SIZE = 9
@@ -34,14 +34,15 @@ def self_play(num_episode):
         print('playing ', episode + 1, 'th episode by self-play')
         env = game.GameState('text')
         board = np.zeros([STATE_SIZE, STATE_SIZE])
-        samples_black = []
-        samples_white = []
+        samples = []
         turn = 0
         win_index = 0
         step = 0
+        action_index = None
 
         while win_index == 0:
-            render_str(board, STATE_SIZE)
+            render_str(board, STATE_SIZE, action_index)
+            # ====================  start mcts ======================
             pi = agent.get_pi(board, turn)
             print('')
             print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=4))
@@ -53,12 +54,8 @@ def self_play(num_episode):
             # ====================== get_action ======================
             action, action_index = get_action(pi, tau)
             agent.root_id += (action_index,)
-            if turn == 0:
-                samples_black.append((Tensor([state]), Tensor([pi])))
-            else:
-                samples_white.append((Tensor([state]), Tensor([pi])))
-
-            board, _, check_valid_pos, win_index, turn, _ = env.step(action)
+            samples.append((Tensor([state]), Tensor([pi])))
+            board, check_valid_pos, win_index, turn, _ = env.step(action)
             step += 1
 
             if not check_valid_pos:
@@ -67,35 +64,21 @@ def self_play(num_episode):
             if win_index != 0:
                 render_str(board, STATE_SIZE)
                 print("win is ", win_index, "in episode", episode + 1)
-                agent.reset()
 
                 if win_index == 1:
-                    reward_black = -1.
-                    reward_white = 1.
+                    reward_black = 1
                 elif win_index == 2:
-                    reward_black = 1.
-                    reward_white = -1.
+                    reward_black = -1
                 else:
-                    reward_black = 0.
-                    reward_white = 0.
+                    reward_black = 0
 
-                for i in range(len(samples_black)):
+                for i in range(len(samples)):
                     memory.append(
-                        NameTag(
-                            samples_black[i][0],
-                            samples_black[i][1],
-                            Tensor([reward_black])
-                        )
+                        NameTag(samples[i][0],
+                                samples[i][1],
+                                Tensor([reward_black]))
                     )
-
-                for i in range(len(samples_white)):
-                    memory.append(
-                        NameTag(
-                            samples_white[i][0],
-                            samples_white[i][1],
-                            Tensor([reward_white])
-                        )
-                    )
+                agent.reset()
                 break
 
 
@@ -134,18 +117,18 @@ if __name__ == '__main__':
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
     NameTag = namedtuple('NameTag', ('s', 'pi', 'z'))
     memory = deque(maxlen=10000)
-    agent = Player(STATE_SIZE, NUM_MCTS)
+
+    agent = Player(STATE_SIZE, NUM_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     if use_cuda:
         agent.model.cuda()
 
-    for i in range(100):
+    for i in range(1000):
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
         self_play(num_episode=3)
         train(num_iter=3)
-        # compete()
         if (i + 1) % 100 == 0:
             torch.save(
                 agent.model.state_dict(),

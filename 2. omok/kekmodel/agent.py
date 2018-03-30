@@ -6,16 +6,17 @@ import torch
 from torch.autograd import Variable
 import numpy as np
 
-IN_PLANES = 5
 use_cuda = torch.cuda.is_available()
 Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 
 
 class Player:
-    def __init__(self, state_size, num_mcts):
+    def __init__(self, state_size, num_mcts, inplanes):
         self.state_size = state_size
         self.num_mcts = num_mcts
+        self.inplanes = inplanes
         self.win_mark = 5
+        self.alpha = 0.2
         self.turn = 0
         self.board = np.zeros([self.state_size, self.state_size])
         self.root_id = (0,)
@@ -43,6 +44,8 @@ class Player:
                 return node_id
             else:
                 leaf_id = node_id
+                if leaf_id == self.root_id:
+                    noise = np.random.dirichlet(self.alpha * np.ones(num_child))
                 qu = {}
                 ids = []
                 for i in range(num_child):
@@ -53,6 +56,9 @@ class Player:
                     p = tree[child_id]['p']
                     total_n = tree[tree[child_id]['parent']]['n']
 
+                    if leaf_id == self.root_id:
+                        p = 0.75 * p + 0.25 * noise[i]
+
                     if n == 0:
                         q = 0.
                         u = 5. * p * np.sqrt(total_n) / (n + 1)
@@ -60,7 +66,11 @@ class Player:
                         q = w / n
                         u = 5. * p * np.sqrt(total_n) / (n + 1)
 
+                    if tree[leaf_id]['player'] == 0:
                         qu[child_id] = q + u
+                    else:
+                        qu[child_id] = -q + u
+
                 # random choice of same values
                 max_value = max(qu.values())
                 ids = [key for key, value in qu.items() if value == max_value]
@@ -71,16 +81,16 @@ class Player:
         is_terminal = check_win(leaf_board, self.win_mark)
         actions = valid_actions(leaf_board)
         turn = tree[leaf_id]['player']
-        leaf_state = get_state_pt(leaf_id, turn, self.state_size, IN_PLANES)
+        leaf_state = get_state_pt(
+            leaf_id, turn, self.state_size, self.inplanes)
         # expand_thres = 10
 
         # if leaf_id == (0,) or tree[leaf_id]['n'] > expand_thres:
         #     is_expand = True
         # else:
         #    is_expand = False
-
         is_expand = True
-        state_input = Variable(Tensor(leaf_state).unsqueeze(0))
+        state_input = Variable(Tensor([leaf_state]))
         policy, value = self.model(state_input)
         policy = policy.data.cpu().numpy()[0]
         value = value.data.cpu().numpy().flatten()
@@ -93,6 +103,7 @@ class Player:
                 action_index = action[1]
                 current_player = tree[leaf_id]['player']
                 prior = policy[action_index]
+
                 if current_player == 0:
                     next_turn = 1
                     board[action[0]] = 1
@@ -119,17 +130,11 @@ class Player:
             # If leaf node is terminal
             win_index = check_win(leaf_board, 5)
             if win_index == 1:
-                if turn == 0:
-                    reward = -1
-                else:
-                    reward = 1
+                reward = 1.
             elif win_index == 2:
-                if turn == 0:
-                    reward = 1
-                else:
-                    reward = -1
+                reward = -1.
             else:
-                reward = 0
+                reward = 0.
 
             return tree, reward
 
@@ -150,6 +155,7 @@ class Player:
             """
             tree[node_id]['n'] += 1
             tree[node_id]['w'] += value
+            # print('backup:', value)
             tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
             parent_id = tree[node_id]['parent']
 
@@ -166,6 +172,10 @@ class Player:
             self.tree, value = self.expansion(self.tree, leaf_id)
             # step 3: backup
             self.tree = self.backup(self.tree, leaf_id, value)
+            # Delete useless tree elements
+        # for key in list(self.tree.keys()):
+        #     if self.root_id != key[:len(self.root_id)]:
+        #         del self.tree[key]
         finish = time.time() - start
         print("{} simulations end ({:0.0f}s)".format(i + 1, finish))
 
@@ -184,9 +194,9 @@ class Player:
 
     def reset(self):
         self.turn = 0
-        self.game_board = np.zeros([self.state_size, self.state_size])
+        self.board = np.zeros([self.state_size, self.state_size])
         self.root_id = (0,)
-        self.tree = {self.root_id: {'board': self.game_board,
+        self.tree = {self.root_id: {'board': self.board,
                                     'player': self.turn,
                                     'child': [],
                                     'parent': None,
@@ -194,135 +204,3 @@ class Player:
                                     'w': 0.,
                                     'q': 0.,
                                     'p': None}}
-
-
-'''
-class Node:
-    def __init__(self):
-        self.a = defaultdict(Edge)
-        self.sum_n = 0
-
-
-class Edge:
-    def __init__(self):
-        self.n = 0
-        self.w = 0
-        self.q = 0
-        self.p = 0
-
-
-class Player:
-    def __init__(self, action_size=81):
-        self.replay_memory = deque()
-        self.action_size = action_size
-        self.model = AlphaZero(action_size)
-        self.tree = self.reset()
-
-        self.change_temperature = 20
-        self.epsilon = 0.25
-        self.c_puct = 5
-        self.dir_alpha = 0.2
-
-    def reset(self):
-        tree = defaultdict(Node)
-        return tree
-
-    def action(self, state):
-        action = np.zeros(self.action_size)
-        self.tree = self.reset()
-        for i in range(1000):
-            self.mcts(state, is_root_node=True)
-
-        policy = self.get_policy(env)
-        policy_temp = self.apply_temperature(policy, self.change_temperature)
-        action_index = int(np.random.choice(action, p=policy_temp))
-        action[action_index] = 1
-        return policy, action
-
-    def mcts(self, state, is_root_node=False):
-        # return z
-        if env.done:
-            if env.winner == Winner.draw:
-                return 0
-            return -1
-
-        # expansion
-        if state not in self.tree:
-            leaf_p, leaf_v = self.expand_and_evaluate(state)
-            # make edge!! need to be fixed
-            self.tree[state].p = leaf_p
-            # I'm returning everything from the POV of side to move
-            return leaf_v
-
-        else:
-            # selection
-            action = self.select_action_q_and_u(state, is_root_node)
-            my_node = self.tree[state]
-            my_edge = my_node.a[action]
-            my_edge.q = my_edge.w / my_edge.n
-
-            state, _, _, _ = env.step(action)
-            leaf_v = self.mcts(state) # next move from enemy POV
-            leaf_v = -leaf_v
-
-        # backup
-        my_node.sum_n += 1
-        my_edge.n += 1
-        my_edge.w += leaf_v
-        my_edge.q = my_edge.w / my_edge.n
-
-        return leaf_v
-
-    def expand_and_evaluate(self, state):
-        leaf_p, leaf_v = self.model.forward(state)
-        return leaf_p, leaf_v
-
-    def select_action_q_and_u(self, state, is_root_node):
-        my_node = self.tree[state]
-
-        best_s = -999
-        best_a = None
-        i = 0
-
-        for action, a_s in my_node.a.items():
-            policy = a_s.p
-            if is_root_node:
-                noise = np.random.dirichlet([self.dir_alpha] * len(my_node.a))
-                policy = (1 - self.epsilon) * policy + self.epsilon * noise[i]
-                i += 1
-            ucb = a_s.q + self.c_puct * policy * np.sqrt(
-                                                my_node.sum_n + 1) / (1 + a_s.n)
-            if ucb > best_s:
-                best_s = ucb
-                best_a = action
-        return best_a
-
-    def apply_temperature(self, policy, turn):
-        tau = np.power(self.play_config.tau_decay_rate, turn + 1)
-        if tau < 0.1:
-            tau = 0
-        if tau == 0:
-            action = np.argmax(policy)
-            ret = np.zeros(self.labels_n)
-            ret[action] = 1.0
-            return ret
-        else:
-            ret = np.power(policy, 1 / tau)
-            ret /= np.sum(ret)
-            return ret
-
-    def get_policy(self, env):
-        state = state_key(env)
-        my_Node = self.tree[state]
-        policy = np.zeros(self.action_size)
-        for action, a_s in my_Node.a.items():
-            policy[action] = a_s.n
-
-        policy /= np.sum(policy)
-        return policy
-
-    def finish_game(self, z):
-        for move in self.moves:  # add this game winner result to all past moves.
-            move += [z]
-
-'''
