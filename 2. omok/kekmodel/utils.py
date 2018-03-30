@@ -108,8 +108,8 @@ def render_str(gameboard, GAMEBOARD_SIZE, action_index):
             if j == GAMEBOARD_SIZE - 1:
                 board_str += ' \n'
         if i == GAMEBOARD_SIZE - 1:
-            board_str += '  ' + '-' * (GAMEBOARD_SIZE - 5) + \
-                ' MOVE: {:2} '.format(count) + '-' * (GAMEBOARD_SIZE - 5)
+            board_str += '  ' + '-' * (GAMEBOARD_SIZE - 6) + \
+                '  MOVE: {:2}  '.format(count) + '-' * (GAMEBOARD_SIZE - 6)
     print(board_str)
 
 
