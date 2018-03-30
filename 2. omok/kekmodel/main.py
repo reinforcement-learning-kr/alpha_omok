@@ -17,7 +17,7 @@ import env_small as game
 from agent import Player
 
 N_BLOCKS = 20
-IN_PLANES = 17
+IN_PLANES = 5
 OUT_PLANES = 128
 BATCH_SIZE = 32
 LR = 0.01

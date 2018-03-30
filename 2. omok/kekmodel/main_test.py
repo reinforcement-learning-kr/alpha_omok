@@ -17,7 +17,7 @@ import env_small as game
 from agent_test import Player
 
 N_BLOCKS = 20
-IN_PLANES = 17
+IN_PLANES = 5
 OUT_PLANES = 128
 BATCH_SIZE = 32
 LR = 0.01
@@ -34,8 +34,7 @@ def self_play(num_episode):
         print('playing ', episode + 1, 'th episode by self-play')
         env = game.GameState('text')
         board = np.zeros([STATE_SIZE, STATE_SIZE])
-        samples_black = []
-        samples_white = []
+        samples = []
         turn = 0
         win_index = 0
         step = 0
@@ -53,11 +52,7 @@ def self_play(num_episode):
             # ====================== get_action ======================
             action, action_index = get_action(pi, tau)
             agent.root_id += (action_index,)
-            if turn == 0:
-                samples_black.append((Tensor([state]), Tensor([pi])))
-            else:
-                samples_white.append((Tensor([state]), Tensor([pi])))
-
+            samples.append((Tensor([state]), Tensor([pi])))
             board, _, check_valid_pos, win_index, turn, _ = env.step(action)
             step += 1
 
@@ -67,35 +62,17 @@ def self_play(num_episode):
             if win_index != 0:
                 render_str(board, STATE_SIZE)
                 print("win is ", win_index, "in episode", episode + 1)
-                agent.reset()
 
                 if win_index == 1:
-                    reward_black = -1.
-                    reward_white = 1.
-                elif win_index == 2:
-                    reward_black = 1.
-                    reward_white = -1.
-                else:
-                    reward_black = 0.
-                    reward_white = 0.
+                    reward_black = 1
 
-                for i in range(len(samples_black)):
+                for i in range(len(samples)):
                     memory.append(
-                        NameTag(
-                            samples_black[i][0],
-                            samples_black[i][1],
-                            Tensor([reward_black])
+                        NameTag(samples[i][0],
+                                samples[i][1],
+                                Tensor([reward_black]))
                         )
-                    )
-
-                for i in range(len(samples_white)):
-                    memory.append(
-                        NameTag(
-                            samples_white[i][0],
-                            samples_white[i][1],
-                            Tensor([reward_white])
-                        )
-                    )
+                agent.reset()
                 break
 
 

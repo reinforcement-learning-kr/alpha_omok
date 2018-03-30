@@ -6,7 +6,7 @@ import torch
 from torch.autograd import Variable
 import numpy as np
 
-IN_PLANES = 17
+IN_PLANES = 5
 use_cuda = torch.cuda.is_available()
 Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 
