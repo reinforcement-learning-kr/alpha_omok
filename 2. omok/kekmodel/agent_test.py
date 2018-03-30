@@ -91,6 +91,7 @@ class Player:
                 action_index = action[1]
                 current_player = tree[leaf_id]['player']
                 prior = policy[action_index]
+                print('prior:', prior)
                 if current_player == 0:
                     next_turn = 1
                     board[action[0]] = 1
@@ -150,6 +151,7 @@ class Player:
             """
             tree[node_id]['n'] += 1
             tree[node_id]['w'] += value
+            print('backup:', value)
             tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
             parent_id = tree[node_id]['parent']
 

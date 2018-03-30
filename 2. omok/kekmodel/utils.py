@@ -29,10 +29,10 @@ def check_win(game_board, win_mark):
         for col in range(state_size - win_mark + 1):
             current_grid = game_board[row: row + win_mark, col: col + win_mark]
 
-            sum_horizontal = np.sum(current_grid, axis=1)             # hotizontal
-            sum_vertical = np.sum(current_grid, axis=0)             # vertical
-            sum_diagonal_1 = np.sum(current_grid.diagonal())            # diagonal -> lower right
-            sum_diagonal_2 = np.sum(np.flipud(current_grid).diagonal())  # diagonal -> upper right
+            sum_horizontal = np.sum(current_grid, axis=1)
+            sum_vertical = np.sum(current_grid, axis=0)
+            sum_diagonal_1 = np.sum(current_grid.diagonal())
+            sum_diagonal_2 = np.sum(np.flipud(current_grid).diagonal())
 
             # Black wins! (Horizontal and Vertical)
             if win_mark in sum_horizontal or win_mark in sum_vertical:
