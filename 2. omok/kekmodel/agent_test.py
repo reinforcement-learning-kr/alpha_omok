@@ -8,6 +8,7 @@ import numpy as np
 
 IN_PLANES = 17
 USE_CUDA = torch.cuda.is_available()
+Tensor = torch.cuda.FloatTensor if USE_CUDA else torch.FloatTensor
 
 
 class Player:
@@ -80,10 +81,7 @@ class Player:
         # print(leaf_state[0])
         # print(leaf_state[1])
         # print(leaf_state[16])
-        state_input = Variable(
-            torch.from_numpy(leaf_state).float().unsqueeze(0))
-        if USE_CUDA:
-            state_input.cuda()
+        state_input = Variable(Tensor(leaf_state).unsqueeze(0))
         policy, value = self.model(state_input)
         policy = policy.data.cpu().numpy()[0]
         value = value.data.cpu().numpy().flatten()
