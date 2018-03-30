@@ -135,6 +135,7 @@ if __name__ == '__main__':
     NameTag = namedtuple('NameTag', ('s', 'pi', 'z'))
     memory = deque(maxlen=10000)
     agent = Player(STATE_SIZE, NUM_MCTS)
+    agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     if use_cuda:
         agent.model.cuda()
     for i in range(100):
