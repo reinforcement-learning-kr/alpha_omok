@@ -4,7 +4,6 @@ Data : 2018.03.12, 2018.03.28
 Project : Make your own Alpha Zero
 '''
 from utils import render_str, get_state_pt, get_action
-# from model import AlphaZero
 from neural_net import PVNet
 import random
 import numpy as np
@@ -12,9 +11,8 @@ from collections import deque, namedtuple
 import torch
 import torch.optim as optim
 from torch.autograd import Variable
-# import pygame
 import env_small as game
-from agent_test import Player
+from agent import Player
 
 N_BLOCKS = 20
 IN_PLANES = 5
