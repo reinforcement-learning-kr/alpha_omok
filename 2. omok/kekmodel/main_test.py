@@ -136,9 +136,7 @@ if __name__ == '__main__':
     memory = deque(maxlen=10000)
     agent = Player(STATE_SIZE, NUM_MCTS)
     if use_cuda:
-        agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE).cuda()
-    else:
-        agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
+        agent.model.cuda()
     for i in range(100):
         print('-----------------------------------------')
         print(i + 1, 'th training process')

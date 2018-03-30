@@ -7,6 +7,7 @@ from torch.autograd import Variable
 import numpy as np
 
 IN_PLANES = 17
+USE_CUDA = torch.cuda.is_available()
 
 
 class Player:
@@ -81,9 +82,11 @@ class Player:
         # print(leaf_state[16])
         state_input = Variable(
             torch.from_numpy(leaf_state).float().unsqueeze(0))
+        if USE_CUDA:
+            state_input.cuda()
         policy, value = self.model(state_input)
-        policy = policy.data.numpy()[0]
-        value = value.data.numpy().flatten()
+        policy = policy.data.cpu().numpy()[0]
+        value = value.data.cpu().numpy().flatten()
 
         if is_terminal == 0 and is_expand:
             # expansion for every possible actions
