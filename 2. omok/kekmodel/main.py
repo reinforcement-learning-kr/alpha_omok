@@ -102,7 +102,7 @@ def train(num_iter):
         loss.backward()
         optimizer.step()
         running_loss += loss.data[0]
-        print('{} iterarion loss: {:.4f}'.format(
+        print('{:3} iterarion loss: {:.4f}'.format(
             i + 1, running_loss[0] / (i + 1)))
 
 

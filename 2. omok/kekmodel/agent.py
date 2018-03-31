@@ -70,7 +70,7 @@ class Player:
                     if tree[leaf_id]['player'] == 0:
                         qu[child_id] = q + u
                     else:
-                        qu[child_id] = -q + u
+                        qu[child_id] = -q - u
 
                 # random choice of same values
                 max_value = max(qu.values())
