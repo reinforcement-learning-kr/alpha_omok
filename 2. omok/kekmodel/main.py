@@ -17,12 +17,12 @@ from agent import Player
 N_BLOCKS = 20
 IN_PLANES = 5
 OUT_PLANES = 128
-BATCH_SIZE = 32
+BATCH_SIZE = 4
 LR = 0.2
 L2 = 0.0001
 
 STATE_SIZE = 9
-NUM_MCTS = 800
+NUM_MCTS = 100
 
 
 def self_play(num_episode):
@@ -71,13 +71,11 @@ def self_play(num_episode):
                     reward_black = 0
 
                 for i in range(len(samples)):
-                    memory.append(
+                    memory.appendleft(
                         NameTag(samples[i][0],
                                 samples[i][1],
-                                Tensor([reward_black]))
-                    )
+                                Tensor([reward_black])))
                 agent.reset()
-                break
 
 
 def train(num_iter):
@@ -87,6 +85,7 @@ def train(num_iter):
     for i in range(num_iter):
         batch = random.sample(memory, BATCH_SIZE)
         batch = NameTag(*zip(*batch))
+        print(batch)
 
         s_batch = Variable(torch.cat(batch.s))
         pi_batch = Variable(torch.cat(batch.pi))
@@ -124,8 +123,8 @@ if __name__ == '__main__':
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
-        self_play(num_episode=10)
-        train(num_iter=10)
+        self_play(num_episode=1)
+        train(num_iter=3)
         if (i + 1) % 100 == 0:
             torch.save(
                 agent.model.state_dict(),
