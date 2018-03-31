@@ -84,9 +84,7 @@ def train(num_iter):
     optimizer = optim.SGD(
         agent.model.parameters(), lr=LR, momentum=0.9, weight_decay=L2)
     running_loss = 0.
-    j = 0
     for i in range(num_iter):
-        j += 1
         batch = random.sample(memory, BATCH_SIZE)
         batch = NameTag(*zip(*batch))
 
@@ -106,7 +104,8 @@ def train(num_iter):
         loss.backward()
         optimizer.step()
         running_loss += loss.data[0]
-        print('{} iterarion loss: {:.4f}'.format(j, running_loss[0] / j))
+        print('{} iterarion loss: {:.4f}'.format(
+            i + 1, running_loss[0] / (i + 1)))
 
 
 if __name__ == '__main__':
@@ -114,7 +113,7 @@ if __name__ == '__main__':
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
     NameTag = namedtuple('NameTag', ('s', 'pi', 'z'))
-    memory = deque(maxlen=10000)
+    memory = deque(maxlen=1000)
 
     agent = Player(STATE_SIZE, NUM_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
@@ -125,8 +124,8 @@ if __name__ == '__main__':
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
-        self_play(num_episode=3)
-        train(num_iter=3)
+        self_play(num_episode=10)
+        train(num_iter=10)
         if (i + 1) % 100 == 0:
             torch.save(
                 agent.model.state_dict(),
