@@ -55,7 +55,7 @@ class Player:
                     w = tree[child_id]['w']
                     n = tree[child_id]['n']
                     p = tree[child_id]['p']
-                    total_n = tree[tree[child_id]['parent']]['n']
+                    total_n = tree[tree[child_id]['parent']]['n'] - 1
 
                     if leaf_id == self.root_id:
                         p = 0.75 * p + 0.25 * noise[i]
