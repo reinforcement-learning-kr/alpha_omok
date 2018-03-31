@@ -75,8 +75,8 @@ class Player:
                 # random choice of same values
                 max_value = max(qu.values())
                 ids = [key for key, value in qu.items() if value == max_value]
+                print(ids)
                 node_id = ids[np.random.choice(len(ids))]
-                print(node_id)
 
     def expansion(self, tree, leaf_id):
         leaf_board = deepcopy(tree[leaf_id]['board'])
@@ -164,8 +164,8 @@ class Player:
     def mcts(self):
         start = time.time()
         for i in range(self.num_mcts):
-            sys.stdout.write('simulation: {}\r'.format(i + 1))
-            sys.stdout.flush()
+            # sys.stdout.write('simulation: {}\r'.format(i + 1))
+            # sys.stdout.flush()
             # step 1: selection
             leaf_id = self.selection(self.tree)
             # step 2: expansion
