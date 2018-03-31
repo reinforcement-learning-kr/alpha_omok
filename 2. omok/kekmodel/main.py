@@ -17,12 +17,12 @@ from agent import Player
 N_BLOCKS = 20
 IN_PLANES = 5
 OUT_PLANES = 128
-BATCH_SIZE = 4
+BATCH_SIZE = 32
 LR = 0.2
 L2 = 0.0001
 
 STATE_SIZE = 9
-NUM_MCTS = 200
+NUM_MCTS = 800
 
 
 def self_play(num_episode):
@@ -123,7 +123,7 @@ if __name__ == '__main__':
         print(i + 1, 'th training process')
         print('-----------------------------------------')
         self_play(num_episode=10)
-        train(num_iter=100)
+        train(num_iter=10)
         if (i + 1) % 100 == 0:
             torch.save(
                 agent.model.state_dict(),

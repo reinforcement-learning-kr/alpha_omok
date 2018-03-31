@@ -62,7 +62,7 @@ class Player:
 
                     if n == 0:
                         q = 0.
-                        u = p
+                        u = 5. * p * np.sqrt(total_n) / (n + 1)
                     else:
                         q = w / n
                         u = 5. * p * np.sqrt(total_n) / (n + 1)
