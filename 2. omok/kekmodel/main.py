@@ -88,11 +88,8 @@ def train(num_iter):
         batch = NameTag(*zip(*batch))
 
         s_batch = Variable(torch.cat(batch.s))
-        print(s_batch)
         pi_batch = Variable(torch.cat(batch.pi))
-        print(pi_batch)
         z_batch = Variable(torch.cat(batch.z))
-        print(z_batch)
         p_batch, v_batch = agent.model(s_batch)
 
         pi_flat = pi_batch.view(1, BATCH_SIZE * STATE_SIZE**2)
@@ -125,8 +122,8 @@ if __name__ == '__main__':
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
-        self_play(num_episode=1)
-        train(num_iter=10)
+        self_play(num_episode=10)
+        train(num_iter=100)
         if (i + 1) % 100 == 0:
             torch.save(
                 agent.model.state_dict(),
