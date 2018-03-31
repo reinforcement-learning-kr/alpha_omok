@@ -62,7 +62,7 @@ class Player:
 
                     if n == 0:
                         q = 0.
-                        u = 5. * p
+                        u = p
                     else:
                         q = w / n
                         u = 5. * p * np.sqrt(total_n) / (n + 1)
@@ -70,7 +70,7 @@ class Player:
                     if tree[leaf_id]['player'] == 0:
                         qu[child_id] = q + u
                     else:
-                        qu[child_id] = -q - u
+                        qu[child_id] = -q + u
 
                 # random choice of same values
                 max_value = max(qu.values())
