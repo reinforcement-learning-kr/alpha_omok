@@ -75,6 +75,7 @@ class Player:
                 # random choice of same values
                 max_value = max(qu.values())
                 ids = [key for key, value in qu.items() if value == max_value]
+                print(ids)
                 node_id = ids[np.random.choice(len(ids))]
 
     def expansion(self, tree, leaf_id):
