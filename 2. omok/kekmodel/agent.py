@@ -45,7 +45,8 @@ class Player:
             else:
                 leaf_id = node_id
                 if leaf_id == self.root_id:
-                    noise = np.random.dirichlet(self.alpha * np.ones(num_child))
+                    noise = np.random.dirichlet(
+                        self.alpha * np.ones(num_child))
                 qu = {}
                 ids = []
                 for i in range(num_child):
@@ -97,7 +98,6 @@ class Player:
 
         if is_terminal == 0 and is_expand:
             # expansion for every possible actions
-            childs = []
             for action in actions:
                 board = deepcopy(tree[leaf_id]['board'])
                 action_index = action[1]
@@ -112,7 +112,6 @@ class Player:
                     board[action[0]] = -1
 
                 child_id = leaf_id + (action_index,)
-                childs.append(child_id)
                 tree[child_id] = {'board': board,
                                   'player': next_turn,
                                   'child': [],
