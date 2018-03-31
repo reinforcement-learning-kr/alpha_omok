@@ -82,15 +82,17 @@ def train(num_iter):
     optimizer = optim.SGD(
         agent.model.parameters(), lr=LR, momentum=0.9, weight_decay=L2)
     running_loss = 0.
+    print('memory size:', len(memory))
     for i in range(num_iter):
         batch = random.sample(memory, BATCH_SIZE)
         batch = NameTag(*zip(*batch))
-        print(batch)
 
         s_batch = Variable(torch.cat(batch.s))
+        print(s_batch)
         pi_batch = Variable(torch.cat(batch.pi))
+        print(pi_batch)
         z_batch = Variable(torch.cat(batch.z))
-
+        print(z_batch)
         p_batch, v_batch = agent.model(s_batch)
 
         pi_flat = pi_batch.view(1, BATCH_SIZE * STATE_SIZE**2)
@@ -124,7 +126,7 @@ if __name__ == '__main__':
         print(i + 1, 'th training process')
         print('-----------------------------------------')
         self_play(num_episode=1)
-        train(num_iter=3)
+        train(num_iter=10)
         if (i + 1) % 100 == 0:
             torch.save(
                 agent.model.state_dict(),
