@@ -43,7 +43,7 @@ def self_play(num_episode):
             # ====================  start mcts ======================
             pi = agent.get_pi(board, turn)
             print('')
-            print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=4))
+            print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=3))
             state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
             if step < tau_thres:
                 tau = 1
