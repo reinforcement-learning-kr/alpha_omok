@@ -18,6 +18,7 @@ N_BLOCKS = 20
 IN_PLANES = 5
 OUT_PLANES = 128
 BATCH_SIZE = 8
+SAVE_CYCLE = 10
 LR = 0.2
 L2 = 0.0001
 
@@ -45,6 +46,8 @@ def self_play(num_episode):
             print('')
             print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=3))
             state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
+            state = Variable(Tensor([state]))
+
             if step < tau_thres:
                 tau = 1
             else:
@@ -52,12 +55,21 @@ def self_play(num_episode):
             # ====================== get_action ======================
             action, action_index = get_action(pi, tau)
             agent.root_id += (action_index,)
-            samples.append((Tensor([state]), Tensor([pi])))
-            board, check_valid_pos, win_index, turn, _ = env.step(action)
+
+            p, v = agent.model(state)
+            if turn == 0:
+                print("\nBlack's winrate: {:.1f}%".format(
+                    (v.data[0] + 1) / 2 * 100))
+            else:
+                print("\nWhite's winrate: {:.1f}%".format(
+                    100 - ((v.data[0] + 1) / 2 * 100)))
+
+            samples.append((state, Tensor([pi])))
+            board, _, win_index, turn, _ = env.step(action)
             step += 1
 
-            if not check_valid_pos:
-                raise ValueError("no legal move!")
+            # if not check_valid_pos:
+            #     raise ValueError("no legal move!")
 
             if win_index != 0:
                 render_str(board, STATE_SIZE, action_index)
@@ -102,7 +114,7 @@ def train(num_iter):
         loss.backward()
         optimizer.step()
         running_loss += loss.data[0]
-        print('{:3} iterarion loss: {:.4f}'.format(
+        print('{:2} iterarion loss: {:.3f}'.format(
             i + 1, running_loss[0] / (i + 1)))
 
 
@@ -111,21 +123,21 @@ if __name__ == '__main__':
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
     NameTag = namedtuple('NameTag', ('s', 'pi', 'z'))
-    memory = deque(maxlen=1000)
+    memory = deque(maxlen=100)
 
     agent = Player(STATE_SIZE, NUM_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     if use_cuda:
         agent.model.cuda()
 
-    for i in range(1000):
+    for i in range(100):
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
-        self_play(num_episode=10)
-        train(num_iter=30)
-        if (i + 1) % 100 == 0:
+        self_play(num_episode=1)
+        train(num_iter=4)
+        if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
-                'models/{}train_model.pickle'.format(100 * BATCH_SIZE * 3)
-            )
+                'models/{}train_model.pickle'.format(
+                    SAVE_CYCLE * BATCH_SIZE * 4))
