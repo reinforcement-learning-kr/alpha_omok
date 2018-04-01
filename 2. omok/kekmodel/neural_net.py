@@ -63,8 +63,8 @@ class ValueHead(nn.Module):
         out = self.value_fc1(out)
         out = F.relu(out, inplace=True)
         out = self.value_fc2(out)
-        out = out.view(out.size(0))
         out = F.tanh(out)
+        out = out.view(out.size(0))
         return out
 
 
@@ -106,8 +106,11 @@ if __name__ == '__main__':
     import torch
     from torch.autograd import Variable
     import numpy as np
-    model = PVNet(20, 17, 256, 3)
+    use_cuda = torch.cuda.is_available()
+    Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
+    model = PVNet(20, 17, 128, 3)
     state = np.ones((17, 3, 3))
-    state_input = Variable(torch.from_numpy(state).unsqueeze(0).float())
+    state_input = Variable(torch.FloatTensor([state]))
     p, v = model(state_input)
+    print('cuda:', use_cuda)
     print('P: {}\nV: {}'.format(p, v))
