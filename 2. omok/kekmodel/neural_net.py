@@ -64,7 +64,7 @@ class ValueHead(nn.Module):
         out = F.relu(out, inplace=True)
         out = self.value_fc2(out)
         out = F.tanh(out)
-        out = out.view(out.size(0))
+        # out = out.view(out.size(0))
         return out
 
 
@@ -85,7 +85,7 @@ class PVNet(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
         """
-        # weight 초기화 (xavier)
+        # xavier weight initialize
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels

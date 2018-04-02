@@ -10,6 +10,7 @@ import numpy as np
 from collections import deque, namedtuple
 import torch
 import torch.optim as optim
+import torch.nn.functional as F
 from torch.autograd import Variable
 import env_small as game
 from agent import Player
@@ -52,10 +53,10 @@ def self_play(num_episode):
             p, v = agent.model(state_input)
             if turn == 0:
                 print("\nBlack's winrate: {:.1f}%".format(
-                    (v.data[0] + 1) / 2 * 100))
+                    (v.data[0, 0] + 1) / 2 * 100))
             else:
                 print("\nWhite's winrate: {:.1f}%".format(
-                    100 - ((v.data[0] + 1) / 2 * 100)))
+                    100 - ((v.data[0, 0] + 1) / 2 * 100)))
             print(
                 "\nProbability:\n{}".format(p.data.cpu().numpy()[0].reshape(
                     STATE_SIZE, STATE_SIZE).round(decimals=3)))
@@ -76,15 +77,18 @@ def self_play(num_episode):
             #     raise ValueError("no legal move!")
 
             if win_index != 0:
-                render_str(board, STATE_SIZE, action_index)
-                print("win is ", win_index, "in episode", episode + 1)
 
                 if win_index == 1:
-                    reward_black = 1
+                    reward_black = 1.
+                    win_color = 'Black'
                 elif win_index == 2:
-                    reward_black = -1
+                    reward_black = -1.
+                    win_color = 'White'
                 else:
-                    reward_black = 0
+                    reward_black = 0.
+
+                render_str(board, STATE_SIZE, action_index)
+                print("win is ", win_color, "in episode", episode + 1)
 
                 for i in range(len(samples)):
                     memory.appendleft(
@@ -108,18 +112,15 @@ def train(num_iter):
         z_batch = Variable(torch.cat(batch.z))
         p_batch, v_batch = agent.model(s_batch)
 
-        pi_flat = pi_batch.view(1, BATCH_SIZE * STATE_SIZE**2)
-        p_flat = p_batch.view(BATCH_SIZE * STATE_SIZE**2, 1)
-
-        loss = (z_batch - v_batch).pow(2).sum() - \
-            torch.matmul(pi_flat, torch.log(p_flat))
+        loss = F.mse_loss(v_batch, z_batch) + \
+            F.binary_cross_entropy(p_batch, pi_batch)
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         running_loss += loss.data[0]
         print('{:3} iterarion loss: {:.3f}'.format(
-            i + 1, running_loss[0] / (i + 1)))
+            i + 1, running_loss / (i + 1)))
 
 
 if __name__ == '__main__':
@@ -138,10 +139,10 @@ if __name__ == '__main__':
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
-        self_play(num_episode=12)
-        train(num_iter=10)
+        self_play(num_episode=100)
+        train(num_iter=80)
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
                 '{}train_model.pickle'.format(
-                    SAVE_CYCLE * BATCH_SIZE * 100))
+                    SAVE_CYCLE * BATCH_SIZE * 3))

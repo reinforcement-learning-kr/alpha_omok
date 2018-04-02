@@ -129,11 +129,11 @@ class Player:
             # If leaf node is terminal
             win_index = check_win(leaf_board, 5)
             if win_index == 1:
-                reward = 1.
+                reward = 1
             elif win_index == 2:
-                reward = -1.
+                reward = -1
             else:
-                reward = 0.
+                reward = 0
 
             return tree, reward
 
