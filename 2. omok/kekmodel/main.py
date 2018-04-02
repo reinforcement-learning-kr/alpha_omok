@@ -138,10 +138,10 @@ if __name__ == '__main__':
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
-        self_play(num_episode=12)
+        self_play(num_episode=10)
         train(num_iter=10)
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
-                'models/{}train_model.pickle'.format(
+                '{}train_model.pickle'.format(
                     SAVE_CYCLE * BATCH_SIZE * 100))
