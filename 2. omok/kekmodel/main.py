@@ -24,7 +24,7 @@ LR = 0.2
 L2 = 0.0001
 
 STATE_SIZE = 9
-NUM_MCTS = 100
+NUM_MCTS = 200
 
 
 def self_play(num_episode):
