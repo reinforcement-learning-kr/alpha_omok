@@ -139,7 +139,7 @@ if __name__ == '__main__':
         print(i + 1, 'th training process')
         print('-----------------------------------------')
         self_play(num_episode=12)
-        train(num_iter=100)
+        train(num_iter=10)
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
