@@ -17,13 +17,13 @@ from agent import Player
 N_BLOCKS = 20
 IN_PLANES = 5
 OUT_PLANES = 128
-BATCH_SIZE = 8
-SAVE_CYCLE = 10
+BATCH_SIZE = 32
+SAVE_CYCLE = 1
 LR = 0.2
 L2 = 0.0001
 
 STATE_SIZE = 9
-NUM_MCTS = 800
+NUM_MCTS = 100
 
 
 def self_play(num_episode):
@@ -41,30 +41,34 @@ def self_play(num_episode):
 
         while win_index == 0:
             render_str(board, STATE_SIZE, action_index)
-            # ====================  start mcts ======================
+            # ======================  start mcts ========================
             pi = agent.get_pi(board, turn)
-            print('')
-            print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=3))
+            # print('')
+            # print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=3))
             state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
-            state = Variable(Tensor([state]))
-
-            if step < tau_thres:
-                tau = 1
-            else:
-                tau = 0
-            # ====================== get_action ======================
-            action, action_index = get_action(pi, tau)
-            agent.root_id += (action_index,)
-
-            p, v = agent.model(state)
+            state = Tensor([state])
+            state_input = Variable(state)
+            samples.append((state, Tensor([pi])))
+            p, v = agent.model(state_input)
             if turn == 0:
                 print("\nBlack's winrate: {:.1f}%".format(
                     (v.data[0] + 1) / 2 * 100))
             else:
                 print("\nWhite's winrate: {:.1f}%".format(
                     100 - ((v.data[0] + 1) / 2 * 100)))
+            print(
+                "\nProbability:\n{}".format(p.data.cpu().numpy()[0].reshape(
+                    STATE_SIZE, STATE_SIZE).round(decimals=3)))
 
-            samples.append((state, Tensor([pi])))
+            if step < tau_thres:
+                tau = 1
+            else:
+                tau = 0
+            # ======================== get_action ========================
+            action, action_index = get_action(pi, tau)
+            agent.root_id += (action_index,)
+
+            # =========================== step ===========================
             board, _, win_index, turn, _ = env.step(action)
             step += 1
 
@@ -114,7 +118,7 @@ def train(num_iter):
         loss.backward()
         optimizer.step()
         running_loss += loss.data[0]
-        print('{:2} iterarion loss: {:.3f}'.format(
+        print('{:3} iterarion loss: {:.3f}'.format(
             i + 1, running_loss[0] / (i + 1)))
 
 
@@ -123,7 +127,7 @@ if __name__ == '__main__':
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
     NameTag = namedtuple('NameTag', ('s', 'pi', 'z'))
-    memory = deque(maxlen=100)
+    memory = deque(maxlen=10000)
 
     agent = Player(STATE_SIZE, NUM_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
@@ -134,10 +138,10 @@ if __name__ == '__main__':
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
-        self_play(num_episode=1)
-        train(num_iter=4)
+        self_play(num_episode=12)
+        train(num_iter=100)
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
                 'models/{}train_model.pickle'.format(
-                    SAVE_CYCLE * BATCH_SIZE * 4))
+                    SAVE_CYCLE * BATCH_SIZE * 100))
