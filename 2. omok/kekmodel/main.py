@@ -112,8 +112,10 @@ def train(num_iter):
         z_batch = Variable(torch.cat(batch.z))
         p_batch, v_batch = agent.model(s_batch)
 
-        loss = F.mse_loss(v_batch, z_batch) + \
-            F.binary_cross_entropy(p_batch, pi_batch)
+        loss = torch.sum((z_batch - v_batch)**2 -
+                         torch.bmm(
+            pi_batch.view(BATCH_SIZE, 1, STATE_SIZE**2),
+            torch.log(p_batch.view(BATCH_SIZE, STATE_SIZE**2, 1))).view(-1))
 
         optimizer.zero_grad()
         loss.backward()
@@ -135,14 +137,15 @@ if __name__ == '__main__':
     if use_cuda:
         agent.model.cuda()
 
+    num_iter = 16
     for i in range(100):
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
-        self_play(num_episode=100)
-        train(num_iter=80)
+        self_play(num_episode=20)
+        train(num_iter)
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
                 '{}train_model.pickle'.format(
-                    SAVE_CYCLE * BATCH_SIZE * 3))
+                    SAVE_CYCLE * BATCH_SIZE * num_iter))
