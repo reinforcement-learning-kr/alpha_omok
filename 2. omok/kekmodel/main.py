@@ -42,34 +42,34 @@ def self_play(num_episode):
 
         while win_index == 0:
             render_str(board, STATE_SIZE, action_index)
-            # ======================  start mcts ========================
+            # ====================== start mcts ============================
             pi = agent.get_pi(board, turn)
             print('\nPi:')
             print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=3))
+            # ===================== append samples =========================
             state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
             state = Tensor([state])
             state_input = Variable(state)
             samples.append((state, Tensor([pi])))
+            # ====================== print evaluation ======================
             p, v = agent.model(state_input)
+            print(
+                "\nProbability:\n{}".format(p.data.cpu().numpy()[0].reshape(
+                    STATE_SIZE, STATE_SIZE).round(decimals=3)))
             if turn == 0:
                 print("\nBlack's winrate: {:.1f}%".format(
                     (v.data[0, 0] + 1) / 2 * 100))
             else:
                 print("\nWhite's winrate: {:.1f}%".format(
                     100 - ((v.data[0, 0] + 1) / 2 * 100)))
-            print(
-                "\nProbability:\n{}".format(p.data.cpu().numpy()[0].reshape(
-                    STATE_SIZE, STATE_SIZE).round(decimals=3)))
-
+            # ======================== get_action ==========================
             if step < tau_thres:
                 tau = 1
             else:
                 tau = 0
-            # ======================== get_action ========================
             action, action_index = get_action(pi, tau)
             agent.root_id += (action_index,)
-
-            # =========================== step ===========================
+            # =========================== step =============================
             board, _, win_index, turn, _ = env.step(action)
             step += 1
 
@@ -89,7 +89,7 @@ def self_play(num_episode):
 
                 render_str(board, STATE_SIZE, action_index)
                 print("win is ", win_color, "in episode", episode + 1)
-
+            # ====================== append memory =========================
                 for i in range(len(samples)):
                     memory.appendleft(
                         NameTag(samples[i][0],
