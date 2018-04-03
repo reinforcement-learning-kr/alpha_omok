@@ -49,7 +49,7 @@ def self_play(num_episode):
             state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
             state = Tensor([state])
             state_input = Variable(state)
-            samples.append((state, Tensor([pi])))
+            samples.append((state, Tensor([torch.log(pi)])))
             p, v = agent.model(state_input)
             if turn == 0:
                 print("\nBlack's winrate: {:.1f}%".format(
