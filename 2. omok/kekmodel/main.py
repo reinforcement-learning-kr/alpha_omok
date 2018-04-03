@@ -10,7 +10,7 @@ import numpy as np
 from collections import deque, namedtuple
 import torch
 import torch.optim as optim
-import torch.nn.functional as F
+# import torch.nn.functional as F
 from torch.autograd import Variable
 import env_small as game
 from agent import Player
@@ -18,7 +18,7 @@ from agent import Player
 N_BLOCKS = 20
 IN_PLANES = 5
 OUT_PLANES = 128
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 SAVE_CYCLE = 1
 LR = 0.2
 L2 = 0.0001
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     if use_cuda:
         agent.model.cuda()
 
-    num_iter = 16
+    num_iter = 32
     for i in range(100):
         print('-----------------------------------------')
         print(i + 1, 'th training process')
