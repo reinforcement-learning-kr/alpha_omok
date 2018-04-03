@@ -18,7 +18,7 @@ from agent import Player
 N_BLOCKS = 20
 IN_PLANES = 5
 OUT_PLANES = 128
-BATCH_SIZE = 32
+BATCH_SIZE = 8
 SAVE_CYCLE = 1
 LR = 0.2
 L2 = 0.0001
@@ -44,12 +44,12 @@ def self_play(num_episode):
             render_str(board, STATE_SIZE, action_index)
             # ======================  start mcts ========================
             pi = agent.get_pi(board, turn)
-            # print('')
-            # print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=3))
+            print('\nPi:')
+            print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=3))
             state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
             state = Tensor([state])
             state_input = Variable(state)
-            samples.append((state, Tensor([np.log(pi)])))
+            samples.append((state, Tensor([pi])))
             p, v = agent.model(state_input)
             if turn == 0:
                 print("\nBlack's winrate: {:.1f}%".format(
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     if use_cuda:
         agent.model.cuda()
     num_episode = 30
-    num_iter = 25
+    num_iter = 50
     for i in range(100):
         print('-----------------------------------------')
         print(i + 1, 'th training process')
