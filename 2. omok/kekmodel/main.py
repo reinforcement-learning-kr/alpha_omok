@@ -18,7 +18,7 @@ from agent import Player
 N_BLOCKS = 20
 IN_PLANES = 5
 OUT_PLANES = 128
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 SAVE_CYCLE = 1
 LR = 0.2
 L2 = 0.0001
@@ -136,13 +136,13 @@ if __name__ == '__main__':
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     if use_cuda:
         agent.model.cuda()
-
-    num_iter = 32
+    num_episode = 30
+    num_iter = 25
     for i in range(100):
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
-        self_play(num_episode=20)
+        self_play(num_episode)
         train(num_iter)
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
