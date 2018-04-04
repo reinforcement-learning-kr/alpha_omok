@@ -18,13 +18,13 @@ from agent import Player
 N_BLOCKS = 20
 IN_PLANES = 5
 OUT_PLANES = 128
-BATCH_SIZE = 8
+BATCH_SIZE = 32
 SAVE_CYCLE = 1
 LR = 0.2
 L2 = 0.0001
 
 STATE_SIZE = 9
-NUM_MCTS = 200
+NUM_MCTS = 100
 
 
 def self_play(num_episode):
@@ -112,10 +112,11 @@ def train(num_iter):
         z_batch = Variable(torch.cat(batch.z))
         p_batch, v_batch = agent.model(s_batch)
 
-        loss = torch.sum((z_batch - v_batch)**2 -
-                         torch.bmm(
+        loss = (z_batch - v_batch).pow(2).sum() / BATCH_SIZE - \
+            torch.bmm(
             pi_batch.view(BATCH_SIZE, 1, STATE_SIZE**2),
-            torch.log(p_batch.view(BATCH_SIZE, STATE_SIZE**2, 1))).view(-1))
+            torch.log(p_batch.view(BATCH_SIZE, STATE_SIZE**2, 1))
+        ).view(-1).sum() / BATCH_SIZE
 
         optimizer.zero_grad()
         loss.backward()
@@ -137,7 +138,7 @@ if __name__ == '__main__':
     if use_cuda:
         agent.model.cuda()
     num_episode = 30
-    num_iter = 50
+    num_iter = 25
     for i in range(100):
         print('-----------------------------------------')
         print(i + 1, 'th training process')
