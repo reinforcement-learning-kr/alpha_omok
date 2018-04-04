@@ -93,7 +93,7 @@ class Player:
         is_expand = True
         state_input = Variable(Tensor([leaf_state]))
         policy, value = self.model(state_input)
-        policy = policy.data.cpu().numpy()[0]
+        policy = np.exp(policy.data.cpu().numpy()[0])
         value = value.data.cpu().numpy().flatten()
 
         if is_terminal == 0 and is_expand:
