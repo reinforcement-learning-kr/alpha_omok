@@ -24,7 +24,7 @@ LR = 0.2
 L2 = 0.0001
 
 STATE_SIZE = 9
-NUM_MCTS = 100
+NUM_MCTS = 400
 
 
 def self_play(num_episode):
@@ -135,8 +135,8 @@ if __name__ == '__main__':
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     if use_cuda:
         agent.model.cuda()
-    num_episode = 5
-    num_iter = 4
+    num_episode = 40
+    num_iter = 30
     for i in range(100):
         print('-----------------------------------------')
         print(i + 1, 'th training process')
