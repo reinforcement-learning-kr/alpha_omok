@@ -113,8 +113,11 @@ def train(num_iter):
         z_batch = Variable(torch.cat(batch.z))
         p_batch, v_batch = agent.model(s_batch)
 
-        loss = F.mse_loss(v_batch, z_batch, size_average=False) - \
-            torch.sum(pi_batch * p_batch)
+        # loss = F.mse_loss(v_batch, z_batch, size_average=False) - \
+        #     torch.sum(pi_batch * p_batch)
+
+        loss = F.mse_loss(v_batch, z_batch) + \
+            torch.mean(torch.sum(- pi_batch * p_batch, 1))
 
         optimizer.zero_grad()
         loss.backward()
@@ -128,6 +131,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
+    LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
     NameTag = namedtuple('NameTag', ('s', 'pi', 'z'))
     memory = deque(maxlen=10000)
 
@@ -135,9 +139,9 @@ if __name__ == '__main__':
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     if use_cuda:
         agent.model.cuda()
-    num_episode = 40
-    num_iter = 30
-    for i in range(100):
+    num_episode = 400
+    num_iter = 40
+    for i in range(1000):
         print('-----------------------------------------')
         print(i + 1, 'th training process')
         print('-----------------------------------------')
