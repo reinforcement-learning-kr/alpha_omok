@@ -10,7 +10,6 @@ import numpy as np
 from collections import deque, namedtuple
 import torch
 import torch.optim as optim
-import torch.nn.functional as F
 from torch.autograd import Variable
 import env_small as game
 from agent import Player
@@ -24,7 +23,7 @@ LR = 0.2
 L2 = 0.0001
 
 STATE_SIZE = 9
-NUM_MCTS = 400
+NUM_MCTS = 800
 
 
 def self_play(num_episode):
@@ -59,10 +58,10 @@ def self_play(num_episode):
                         STATE_SIZE, STATE_SIZE).round(decimals=3)))
             if turn == 0:
                 print("\nBlack's winrate: {:.1f}%".format(
-                    (v.data[0, 0] + 1) / 2 * 100))
+                    (v.data[0] + 1) / 2 * 100))
             else:
                 print("\nWhite's winrate: {:.1f}%".format(
-                    100 - ((v.data[0, 0] + 1) / 2 * 100)))
+                    100 - ((v.data[0] + 1) / 2 * 100)))
             # ======================== get_action ==========================
             if step < tau_thres:
                 tau = 1
@@ -107,16 +106,12 @@ def train(num_iter):
     for i in range(num_iter):
         batch = random.sample(memory, BATCH_SIZE)
         batch = NameTag(*zip(*batch))
-
         s_batch = Variable(torch.cat(batch.s))
         pi_batch = Variable(torch.cat(batch.pi))
         z_batch = Variable(torch.cat(batch.z))
         p_batch, v_batch = agent.model(s_batch)
 
-        # loss = F.mse_loss(v_batch, z_batch, size_average=False) - \
-        #     torch.sum(pi_batch * p_batch)
-
-        loss = F.mse_loss(v_batch, z_batch) + \
+        loss = torch.mean((z_batch - v_batch)**2) + \
             torch.mean(torch.sum(- pi_batch * p_batch, 1))
 
         optimizer.zero_grad()
@@ -139,8 +134,8 @@ if __name__ == '__main__':
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     if use_cuda:
         agent.model.cuda()
-    num_episode = 400
-    num_iter = 40
+    num_episode = 40
+    num_iter = 4
     for i in range(1000):
         print('-----------------------------------------')
         print(i + 1, 'th training process')
