@@ -64,7 +64,7 @@ class ValueHead(nn.Module):
         out = F.relu(out, inplace=True)
         out = self.value_fc2(out)
         out = F.tanh(out)
-        # out = out.view(out.size(0))
+        out = out.view(out.size(0))
         return out
 
 
