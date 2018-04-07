@@ -1,7 +1,5 @@
-from utils import valid_actions, check_win, render_str, get_state
-from copy import deepcopy
+from utils import *
 import numpy as np
-import random
 import time
 
 import env_small as game
