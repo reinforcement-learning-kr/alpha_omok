@@ -15,19 +15,20 @@ from torch.utils.data import DataLoader
 import env_small as game
 from agent import Player
 
+STATE_SIZE = 9
 N_BLOCKS = 20
 IN_PLANES = 9
 OUT_PLANES = 128
 BATCH_SIZE = 32
+TOTAL_ITER = 10000
+N_MCTS = 200
 N_EPISODE = 10
-N_ITER = 1
-STEPS = 0
+N_EPOCH = 1
 SAVE_CYCLE = 1
 LR = 0.2
 L2 = 0.0001
 
-STATE_SIZE = 9
-NUM_MCTS = 200
+STEPS = 0
 
 
 def self_play(num_episode):
@@ -146,7 +147,7 @@ if __name__ == '__main__':
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
     memory = deque(maxlen=10000)
 
-    agent = Player(STATE_SIZE, NUM_MCTS, IN_PLANES)
+    agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     if use_cuda:
         agent.model.cuda()
@@ -155,7 +156,7 @@ if __name__ == '__main__':
         print('{}th training process'.format(i + 1))
         print('-----------------------------------------')
         self_play(N_EPISODE)
-        train(N_ITER)
+        train(N_EPOCH)
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
