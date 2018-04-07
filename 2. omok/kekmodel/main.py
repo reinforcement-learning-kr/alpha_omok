@@ -22,17 +22,17 @@ OUT_PLANES = 128
 BATCH_SIZE = 32
 TOTAL_ITER = 10000
 N_MCTS = 200
-N_EPISODE = 10
-N_EPOCH = 1
+N_EPISODES = 10
+N_EPOCHS = 1
 SAVE_CYCLE = 1
 LR = 0.2
 L2 = 0.0001
 
 
-def self_play(num_episode):
+def self_play(n_episodes):
     tau_thres = 6
     # Game Loop
-    for episode in range(num_episode):
+    for episode in range(n_episodes):
         print('playing {}th episode by self-play'.format(episode + 1))
         env = game.GameState('text')
         board = np.zeros([STATE_SIZE, STATE_SIZE])
@@ -101,7 +101,7 @@ def self_play(num_episode):
 STEPS = 0
 
 
-def train(num_iter):
+def train(n_epochs):
     global STEPS
 
     if 2500 <= STEPS < 5000:
@@ -120,7 +120,7 @@ def train(num_iter):
                             drop_last=True,
                             pin_memory=use_cuda,
                             num_workers=4)
-    for itr in range(num_iter):
+    for epoch in range(n_epochs):
         running_loss = 0.
         for i, (s, pi, z) in enumerate(dataloader):
             s_batch = Variable(s.float())
@@ -137,7 +137,7 @@ def train(num_iter):
             optimizer.step()
             running_loss += loss.data[0]
             STEPS += 1
-            if (i + 1) % 1 == 0:
+            if (i + 1) % 10 == 0:
                 print('{:3} step loss: {:.3f}'.format(
                     STEPS, running_loss / (i + 1)))
 
@@ -156,8 +156,8 @@ if __name__ == '__main__':
         print('-----------------------------------------')
         print('{}th training process'.format(i + 1))
         print('-----------------------------------------')
-        self_play(N_EPISODE)
-        train(N_EPOCH)
+        self_play(N_EPISODES)
+        train(N_EPOCHS)
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
