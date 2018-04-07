@@ -28,8 +28,6 @@ SAVE_CYCLE = 1
 LR = 0.2
 L2 = 0.0001
 
-STEPS = 0
-
 
 def self_play(num_episode):
     tau_thres = 6
@@ -98,6 +96,9 @@ def self_play(num_episode):
                     memory.appendleft(
                         (samples[i][0], samples[i][1], reward_black))
                 agent.reset()
+
+
+STEPS = 0
 
 
 def train(num_iter):
