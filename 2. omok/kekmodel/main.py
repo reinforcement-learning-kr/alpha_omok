@@ -102,11 +102,11 @@ def self_play(num_episode):
 def train(num_iter):
     global STEPS
 
-    if 5000 <= STEPS < 10000:
+    if 2500 <= STEPS < 5000:
         LR = 0.02
-    if 10000 <= STEPS < 15000:
+    if 5000 <= STEPS < 7500:
         LR = 0.002
-    if STEPS >= 15000:
+    if STEPS >= 7500:
         LR = 0.0002
 
     optimizer = optim.SGD(
@@ -150,7 +150,7 @@ if __name__ == '__main__':
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     if use_cuda:
         agent.model.cuda()
-    for i in range(20000):
+    for i in range(10000):
         print('-----------------------------------------')
         print('{}th training process'.format(i + 1))
         print('-----------------------------------------')
