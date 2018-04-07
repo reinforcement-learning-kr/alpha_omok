@@ -19,7 +19,7 @@ N_BLOCKS = 20
 IN_PLANES = 9
 OUT_PLANES = 128
 BATCH_SIZE = 32
-N_EPISODE = 5
+N_EPISODE = 10
 N_ITER = 1
 STEPS = 0
 SAVE_CYCLE = 1
@@ -100,6 +100,15 @@ def self_play(num_episode):
 
 
 def train(num_iter):
+    global STEPS
+
+    if 5000 <= STEPS < 10000:
+        LR = 0.02
+    if 10000 <= STEPS < 15000:
+        LR = 0.002
+    if STEPS >= 15000:
+        LR = 0.0002
+
     optimizer = optim.SGD(
         agent.model.parameters(), lr=LR, momentum=0.9, weight_decay=L2)
     print('memory size:', len(memory))
@@ -110,7 +119,6 @@ def train(num_iter):
                             pin_memory=use_cuda,
                             num_workers=4)
     for itr in range(num_iter):
-        global STEPS
         running_loss = 0.
         for i, (s, pi, z) in enumerate(dataloader):
             s_batch = Variable(s.float())
@@ -142,7 +150,7 @@ if __name__ == '__main__':
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     if use_cuda:
         agent.model.cuda()
-    for i in range(10000):
+    for i in range(20000):
         print('-----------------------------------------')
         print('{}th training process'.format(i + 1))
         print('-----------------------------------------')
