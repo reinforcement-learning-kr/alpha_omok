@@ -5,7 +5,6 @@ Project : Make your own Alpha Zero
 '''
 from utils import render_str, get_state_pt, get_action
 from neural_net import PVNet
-# import random
 import numpy as np
 from collections import deque
 import torch
@@ -103,7 +102,7 @@ STEPS = 0
 
 def train(n_epochs):
     global STEPS
-
+    global LR
     if 2500 <= STEPS < 5000:
         LR = 0.02
     if 5000 <= STEPS < 7500:
@@ -123,9 +122,14 @@ def train(n_epochs):
     for epoch in range(n_epochs):
         running_loss = 0.
         for i, (s, pi, z) in enumerate(dataloader):
-            s_batch = Variable(s.float())
-            pi_batch = Variable(pi.float(), requires_grad=False)
-            z_batch = Variable(z.float(), requires_grad=False)
+            if use_cuda:
+                s_batch = Variable(s.float()).cuda()
+                pi_batch = Variable(pi.float(), requires_grad=False).cuda()
+                z_batch = Variable(z.float(), requires_grad=False).cuda()
+            else:
+                s_batch = Variable(s.float())
+                pi_batch = Variable(pi.float(), requires_grad=False)
+                z_batch = Variable(z.float(), requires_grad=False)
 
             p_batch, v_batch = agent.model(s_batch)
 
