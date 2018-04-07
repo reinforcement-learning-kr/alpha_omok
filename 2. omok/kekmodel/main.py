@@ -5,32 +5,36 @@ Project : Make your own Alpha Zero
 '''
 from utils import render_str, get_state_pt, get_action
 from neural_net import PVNet
-import random
+# import random
 import numpy as np
-from collections import deque, namedtuple
+from collections import deque
 import torch
 import torch.optim as optim
 from torch.autograd import Variable
+from torch.utils.data import DataLoader
 import env_small as game
 from agent import Player
 
 N_BLOCKS = 20
-IN_PLANES = 5
+IN_PLANES = 9
 OUT_PLANES = 128
 BATCH_SIZE = 32
+N_EPISODE = 5
+N_ITER = 1
+STEPS = 0
 SAVE_CYCLE = 1
 LR = 0.2
 L2 = 0.0001
 
 STATE_SIZE = 9
-NUM_MCTS = 800
+NUM_MCTS = 200
 
 
 def self_play(num_episode):
     tau_thres = 6
     # Game Loop
     for episode in range(num_episode):
-        print('playing ', episode + 1, 'th episode by self-play')
+        print('playing {}th episode by self-play'.format(episode + 1))
         env = game.GameState('text')
         board = np.zeros([STATE_SIZE, STATE_SIZE])
         samples = []
@@ -45,11 +49,10 @@ def self_play(num_episode):
             pi = agent.get_pi(board, turn)
             print('\nPi:')
             print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=3))
-            # ===================== append samples =========================
+            # ===================== collect samples ========================
             state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
-            state = Tensor([state])
-            state_input = Variable(state)
-            samples.append((state, Tensor([pi])))
+            state_input = Variable(Tensor([state]))
+            samples.append((state, pi))
             # ====================== print evaluation ======================
             p, v = agent.model(state_input)
             print(
@@ -62,7 +65,7 @@ def self_play(num_episode):
             else:
                 print("\nWhite's winrate: {:.1f}%".format(
                     100 - ((v.data[0] + 1) / 2 * 100)))
-            # ======================== get_action ==========================
+            # ======================== get action ==========================
             if step < tau_thres:
                 tau = 1
             else:
@@ -88,62 +91,64 @@ def self_play(num_episode):
                     reward_black = 0.
 
                 render_str(board, STATE_SIZE, action_index)
-                print("win is ", win_color, "in episode", episode + 1)
-            # ====================== append memory =========================
+                print("{} win in episode {}".format(win_color, episode + 1))
+            # ====================== store in memory =======================
                 for i in range(len(samples)):
                     memory.appendleft(
-                        NameTag(samples[i][0],
-                                samples[i][1],
-                                Tensor([reward_black])))
+                        (samples[i][0], samples[i][1], reward_black))
                 agent.reset()
 
 
 def train(num_iter):
     optimizer = optim.SGD(
         agent.model.parameters(), lr=LR, momentum=0.9, weight_decay=L2)
-    running_loss = 0.
     print('memory size:', len(memory))
-    for i in range(num_iter):
-        batch = random.sample(memory, BATCH_SIZE)
-        batch = NameTag(*zip(*batch))
-        s_batch = Variable(torch.cat(batch.s))
-        pi_batch = Variable(torch.cat(batch.pi))
-        z_batch = Variable(torch.cat(batch.z))
-        p_batch, v_batch = agent.model(s_batch)
+    dataloader = DataLoader(memory,
+                            batch_size=BATCH_SIZE,
+                            shuffle=True,
+                            drop_last=True,
+                            pin_memory=use_cuda,
+                            num_workers=4)
+    for itr in range(num_iter):
+        global STEPS
+        running_loss = 0.
+        for i, (s, pi, z) in enumerate(dataloader):
+            s_batch = Variable(s.float())
+            pi_batch = Variable(pi.float(), requires_grad=False)
+            z_batch = Variable(z.float(), requires_grad=False)
 
-        loss = torch.mean((z_batch - v_batch)**2) + \
-            torch.mean(torch.sum(- pi_batch * p_batch, 1))
+            p_batch, v_batch = agent.model(s_batch)
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        running_loss += loss.data[0]
-        print('{:3} iterarion loss: {:.3f}'.format(
-            i + 1, running_loss / (i + 1)))
+            loss = torch.mean((z_batch - v_batch)**2) + \
+                torch.mean(torch.sum(- pi_batch * p_batch, 1))
+
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.data[0]
+            STEPS += 1
+            if (i + 1) % 1 == 0:
+                print('{:3} step loss: {:.3f}'.format(
+                    STEPS, running_loss / (i + 1)))
 
 
 if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
-    NameTag = namedtuple('NameTag', ('s', 'pi', 'z'))
     memory = deque(maxlen=10000)
 
     agent = Player(STATE_SIZE, NUM_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
     if use_cuda:
         agent.model.cuda()
-    num_episode = 40
-    num_iter = 4
-    for i in range(1000):
+    for i in range(10000):
         print('-----------------------------------------')
-        print(i + 1, 'th training process')
+        print('{}th training process'.format(i + 1))
         print('-----------------------------------------')
-        self_play(num_episode)
-        train(num_iter)
+        self_play(N_EPISODE)
+        train(N_ITER)
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
-                '{}train_model.pickle'.format(
-                    SAVE_CYCLE * BATCH_SIZE * num_iter))
+                '{}_step_model.pickle'.format(STEPS * BATCH_SIZE))
