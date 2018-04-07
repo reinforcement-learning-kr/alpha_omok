@@ -21,7 +21,7 @@ IN_PLANES = 9  # history 4 + 4 + 1
 OUT_PLANES = 128
 BATCH_SIZE = 32
 TOTAL_ITER = 10000
-N_MCTS = 200
+N_MCTS = 400
 N_EPISODES = 10
 N_EPOCHS = 1
 SAVE_CYCLE = 10
@@ -161,4 +161,4 @@ if __name__ == '__main__':
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
-                '{}_step_model.pickle'.format(STEPS * BATCH_SIZE))
+                '{:0.0f}k_step_model.pickle'.format(STEPS * BATCH_SIZE / 1000))
