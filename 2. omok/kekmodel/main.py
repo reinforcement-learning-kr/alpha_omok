@@ -30,8 +30,6 @@ L2 = 0.0001
 
 
 def self_play(n_episodes):
-    global TAU_THRES
-
     for episode in range(n_episodes):
         print('playing {}th episode by self-play'.format(episode + 1))
         env = game.GameState('text')
@@ -58,6 +56,7 @@ def self_play(n_episodes):
                 "\nProbability:\n{}".format(
                     np.exp(p.data.cpu().numpy()[0]).reshape(
                         STATE_SIZE, STATE_SIZE).round(decimals=3)))
+
             if turn == 0:
                 print("\nBlack's winrate: {:.1f}%".format(
                     (v.data[0] + 1) / 2 * 100))
@@ -80,7 +79,6 @@ def self_play(n_episodes):
             #     raise ValueError("no legal move!")
 
             if win_index != 0:
-
                 if win_index == 1:
                     reward_black = 1.
                     win_color = 'Black'
@@ -103,7 +101,6 @@ STEPS = 0
 
 
 def train(n_epochs):
-    global BATCH_SIZE, N_EPISODES
     global STEPS
     global LR
 
@@ -114,18 +111,23 @@ def train(n_epochs):
     if STEPS >= 750:
         LR = 0.0002
 
-    optimizer = optim.SGD(
-        agent.model.parameters(), lr=LR, momentum=0.9, weight_decay=L2)
     print('memory size:', len(memory))
     print('learning rate:', LR)
+
     dataloader = DataLoader(memory,
                             batch_size=BATCH_SIZE,
                             shuffle=True,
                             drop_last=True,
                             pin_memory=use_cuda,
                             num_workers=4)
+    optimizer = optim.SGD(agent.model.parameters(),
+                          lr=LR,
+                          momentum=0.9,
+                          weight_decay=L2)
+
     for epoch in range(n_epochs):
         running_loss = 0.
+
         for i, (s, pi, z) in enumerate(dataloader):
             if use_cuda:
                 s_batch = Variable(s.float()).cuda()
@@ -146,6 +148,7 @@ def train(n_epochs):
             optimizer.step()
             running_loss += loss.data[0]
             STEPS += 1
+
             if (i + 1) % int(N_EPISODES/2) == 0:
                 print('{:3} step loss: {:.3f}'.format(
                     STEPS, running_loss / (i + 1)))
@@ -167,8 +170,10 @@ if __name__ == '__main__':
         print('-----------------------------------------')
         print('{}th training process'.format(i + 1))
         print('-----------------------------------------')
+
         self_play(N_EPISODES)
         train(N_EPOCHS)
+
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
