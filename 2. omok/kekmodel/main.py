@@ -19,9 +19,10 @@ N_BLOCKS = 20
 IN_PLANES = 9  # history 4 + 4 + 1
 OUT_PLANES = 128
 BATCH_SIZE = 32
-TOTAL_ITER = 10000
+TOTAL_ITER = 2000
 N_MCTS = 400
-N_EPISODES = 10
+TAU_THRES = 6
+N_EPISODES = 400
 N_EPOCHS = 1
 SAVE_CYCLE = 10
 LR = 0.2
@@ -29,8 +30,8 @@ L2 = 0.0001
 
 
 def self_play(n_episodes):
-    tau_thres = 6
-    # Game Loop
+    global TAU_THRES
+
     for episode in range(n_episodes):
         print('playing {}th episode by self-play'.format(episode + 1))
         env = game.GameState('text')
@@ -64,7 +65,7 @@ def self_play(n_episodes):
                 print("\nWhite's winrate: {:.1f}%".format(
                     100 - ((v.data[0] + 1) / 2 * 100)))
             # ======================== get action ==========================
-            if step < tau_thres:
+            if step < TAU_THRES:
                 tau = 1
             else:
                 tau = 0
@@ -74,6 +75,7 @@ def self_play(n_episodes):
             board, _, win_index, turn, _ = env.step(action)
             step += 1
 
+            # used for debugging
             # if not check_valid_pos:
             #     raise ValueError("no legal move!")
 
@@ -101,18 +103,21 @@ STEPS = 0
 
 
 def train(n_epochs):
+    global BATCH_SIZE, N_EPISODES
     global STEPS
     global LR
-    if 2500 <= STEPS < 5000:
+
+    if 250 <= STEPS < 500:
         LR = 0.02
-    if 5000 <= STEPS < 7500:
+    if 500 <= STEPS < 750:
         LR = 0.002
-    if STEPS >= 7500:
+    if STEPS >= 750:
         LR = 0.0002
 
     optimizer = optim.SGD(
         agent.model.parameters(), lr=LR, momentum=0.9, weight_decay=L2)
     print('memory size:', len(memory))
+    print('learning rate:', LR)
     dataloader = DataLoader(memory,
                             batch_size=BATCH_SIZE,
                             shuffle=True,
@@ -134,14 +139,14 @@ def train(n_epochs):
             p_batch, v_batch = agent.model(s_batch)
 
             loss = torch.mean((z_batch - v_batch)**2) + \
-                torch.mean(torch.sum(- pi_batch * p_batch, 1))
+                torch.mean(torch.sum(-pi_batch * p_batch, 1))
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             running_loss += loss.data[0]
             STEPS += 1
-            if (i + 1) % 10 == 0:
+            if (i + 1) % int(N_EPISODES/2) == 0:
                 print('{:3} step loss: {:.3f}'.format(
                     STEPS, running_loss / (i + 1)))
 
@@ -150,12 +155,14 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    memory = deque(maxlen=10000)
-
+    memory = deque(maxlen=10240)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
-    agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
+
     if use_cuda:
-        agent.model.cuda()
+        agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE).cuda()
+    else:
+        agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
+
     for i in range(TOTAL_ITER):
         print('-----------------------------------------')
         print('{}th training process'.format(i + 1))
