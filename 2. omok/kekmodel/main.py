@@ -16,7 +16,7 @@ from agent import Player
 
 STATE_SIZE = 9
 N_BLOCKS = 20
-IN_PLANES = 9  # history 4 + 4 + 1
+IN_PLANES = 17  # history * 2 + 1
 OUT_PLANES = 128
 BATCH_SIZE = 32
 TOTAL_ITER = 2000
