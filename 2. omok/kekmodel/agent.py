@@ -44,9 +44,6 @@ class Player:
                 return node_id
             else:
                 leaf_id = node_id
-                if leaf_id == self.root_id:
-                    noise = np.random.dirichlet(
-                        self.alpha * np.ones(num_child))
                 qu = {}
                 ids = []
                 for i in range(num_child):
@@ -56,9 +53,6 @@ class Player:
                     n = tree[child_id]['n']
                     p = tree[child_id]['p']
                     total_n = tree[tree[child_id]['parent']]['n'] - 1
-
-                    if leaf_id == self.root_id:
-                        p = 0.75 * p + 0.25 * noise[i]
 
                     if n == 0:
                         q = 0.
@@ -96,13 +90,20 @@ class Player:
         policy = np.exp(policy.data.cpu().numpy()[0])
         value = value.data.cpu().numpy()[0]
 
+        if leaf_id == self.root_id:
+            noise = np.random.dirichlet(
+                self.alpha * np.ones(len(actions)))
+
         if is_terminal == 0 and is_expand:
             # expansion for every possible actions
-            for action in actions:
+            for i, action in enumerate(actions):
                 board = deepcopy(tree[leaf_id]['board'])
                 action_index = action[1]
                 current_player = tree[leaf_id]['player']
                 prior = policy[action_index]
+
+                if leaf_id == self.root_id:
+                    prior = 0.75 * prior + 0.25 * noise[i]
 
                 if current_player == 0:
                     next_turn = 1
