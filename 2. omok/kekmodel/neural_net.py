@@ -79,13 +79,15 @@ class PVNet(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
+                # n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                nn.init.xavier_normal(m.weight.data)
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
-                nn.init.kaiming_normal(m.weight)
+                # m.weight.data.normal_(0, 0.01)
+                # nn.init.kaiming_normal(m.weight)
+                nn.init.xavier_normal(m.weight)
                 m.bias.data.zero_()
 
     def _make_layer(self, block, planes, n_block):
