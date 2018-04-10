@@ -76,27 +76,16 @@ class PVNet(nn.Module):
         self.layers = self._make_layer(ResBlock, planes, n_block)
         self.policy_head = PolicyHead(planes, board_size)
         self.value_head = ValueHead(planes, board_size)
-        """
+
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
                 m.weight.data.normal_(0, math.sqrt(2. / n))
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-        """
-        # xavier weight initialize
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-                if m.bias is not None:
-                    m.bias.data.zero_()
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
-                m.weight.data.normal_(0, 0.01)
+                nn.init.kaiming_normal(m.weight)
                 m.bias.data.zero_()
 
     def _make_layer(self, block, planes, n_block):

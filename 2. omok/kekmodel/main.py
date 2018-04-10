@@ -20,10 +20,10 @@ IN_PLANES = 17  # history * 2 + 1
 OUT_PLANES = 256
 BATCH_SIZE = 32
 TOTAL_ITER = 2000
-N_MCTS = 800
+N_MCTS = 200
 TAU_THRES = 6
-N_EPISODES = 300
-N_EPOCHS = 1
+N_EPISODES = 20
+N_EPOCHS = 4
 SAVE_CYCLE = 1
 LR = 0.2
 L2 = 0.0001
@@ -149,7 +149,7 @@ def train(n_epochs):
             running_loss += loss.data[0]
             STEPS += 1
 
-            if (i + 1) % int(N_EPISODES/2) == 0:
+            if (i + 1) % (N_EPISODES//2) == 0:
                 print('{:3} step loss: {:.3f}'.format(
                     STEPS, running_loss / (i + 1)))
 
@@ -160,11 +160,10 @@ if __name__ == '__main__':
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
     memory = deque(maxlen=10240)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
+    agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
 
     if use_cuda:
-        agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE).cuda()
-    else:
-        agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
+        agent.model.cuda()
 
     for i in range(TOTAL_ITER):
         print('-----------------------------------------')
@@ -177,4 +176,4 @@ if __name__ == '__main__':
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
-                '{:0.0f}k_step_model.pickle'.format(STEPS * BATCH_SIZE / 1000))
+                '{:.0f}k_step_model.pickle'.format(STEPS * BATCH_SIZE / 1000))
