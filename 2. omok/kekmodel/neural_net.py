@@ -1,6 +1,6 @@
 from torch import nn
+from torch.nn import init
 import torch.nn.functional as F
-from numpy import math
 
 
 def conv3x3(in_planes, out_planes):
@@ -79,15 +79,12 @@ class PVNet(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                # n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                nn.init.xavier_normal(m.weight.data)
+                init.kaiming_normal(m.weight.data)
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
             elif isinstance(m, nn.Linear):
-                # m.weight.data.normal_(0, 0.01)
-                # nn.init.kaiming_normal(m.weight)
-                nn.init.xavier_normal(m.weight)
+                init.xavier_uniform(m.weight)
                 m.bias.data.zero_()
 
     def _make_layer(self, block, planes, n_block):
