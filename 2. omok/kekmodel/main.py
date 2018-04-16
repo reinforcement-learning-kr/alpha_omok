@@ -9,6 +9,7 @@ import numpy as np
 from collections import deque
 import torch
 import torch.optim as optim
+from torch.nn import functional as F
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 import env_small as game
@@ -22,7 +23,7 @@ BATCH_SIZE = 32
 TOTAL_ITER = 400
 N_MCTS = 400
 TAU_THRES = 8
-N_EPISODES = 100
+N_EPISODES = 10
 N_EPOCHS = 1
 SAVE_CYCLE = 1
 LR = 0.2
@@ -131,16 +132,16 @@ def train(n_epochs):
         for i, (s, pi, z) in enumerate(dataloader):
             if use_cuda:
                 s_batch = Variable(s.float()).cuda()
-                pi_batch = Variable(pi.float(), requires_grad=False).cuda()
-                z_batch = Variable(z.float(), requires_grad=False).cuda()
+                pi_batch = Variable(pi.float()).cuda()
+                z_batch = Variable(z.float()).cuda()
             else:
                 s_batch = Variable(s.float())
-                pi_batch = Variable(pi.float(), requires_grad=False)
-                z_batch = Variable(z.float(), requires_grad=False)
+                pi_batch = Variable(pi.float())
+                z_batch = Variable(z.float())
 
             p_batch, v_batch = agent.model(s_batch)
 
-            loss = torch.mean((z_batch - v_batch)**2) + \
+            loss = F.mse_loss(v_batch, z_batch) + \
                 torch.mean(torch.sum(-pi_batch * p_batch, 1))
 
             optimizer.zero_grad()

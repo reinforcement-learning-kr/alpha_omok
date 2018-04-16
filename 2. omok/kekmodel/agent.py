@@ -16,7 +16,7 @@ class Player:
         self.num_mcts = num_mcts
         self.inplanes = inplanes
         self.win_mark = 5
-        self.alpha = 0.2
+        self.alpha = 0.15
         self.turn = 0
         self.board = np.zeros([self.state_size, self.state_size])
         self.root_id = (0,)
