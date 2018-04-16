@@ -19,11 +19,11 @@ N_BLOCKS = 20
 IN_PLANES = 17  # history * 2 + 1
 OUT_PLANES = 256
 BATCH_SIZE = 32
-TOTAL_ITER = 2000
-N_MCTS = 800
-TAU_THRES = 6
-N_EPISODES = 20
-N_EPOCHS = 4
+TOTAL_ITER = 400
+N_MCTS = 400
+TAU_THRES = 8
+N_EPISODES = 100
+N_EPOCHS = 1
 SAVE_CYCLE = 1
 LR = 0.2
 L2 = 0.0001
@@ -104,11 +104,11 @@ def train(n_epochs):
     global STEPS
     global LR
 
-    if 250 <= STEPS < 500:
+    if 5000 <= STEPS < 10000:
         LR = 0.02
-    if 500 <= STEPS < 750:
+    if 10000 <= STEPS < 15000:
         LR = 0.002
-    if STEPS >= 750:
+    if STEPS >= 15000:
         LR = 0.0002
 
     print('memory size:', len(memory))
@@ -176,4 +176,4 @@ if __name__ == '__main__':
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
-                '{:.0f}k_step_model.pickle'.format(STEPS * BATCH_SIZE / 1000))
+                '{}_step_model.pickle'.format(STEPS))
