@@ -49,18 +49,11 @@ class Player:
                 for i in range(num_child):
                     action = tree[leaf_id]['child'][i]
                     child_id = leaf_id + (action,)
-                    w = tree[child_id]['w']
                     n = tree[child_id]['n']
+                    q = tree[child_id]['q']
                     p = tree[child_id]['p']
                     total_n = tree[tree[child_id]['parent']]['n'] - 1
-
-                    if n == 0:
-                        q = 0.
-                        u = 5. * p * np.sqrt(total_n) / (n + 1)
-                    else:
-                        q = w / n
-                        u = 5. * p * np.sqrt(total_n) / (n + 1)
-
+                    u = 5. * p * np.sqrt(total_n) / (n + 1)
                     if tree[leaf_id]['player'] == 0:
                         qu[child_id] = q + u
                     else:
