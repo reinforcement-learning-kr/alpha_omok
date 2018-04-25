@@ -156,7 +156,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    memory = deque(maxlen=17920)
+    memory = deque(maxlen=25600)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
 
