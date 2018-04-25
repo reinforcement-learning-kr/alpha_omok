@@ -17,17 +17,17 @@ from agent import Player
 
 STATE_SIZE = 9
 N_BLOCKS = 20
-IN_PLANES = 17  # history * 2 + 1
-OUT_PLANES = 256
+IN_PLANES = 5  # history * 2 + 1
+OUT_PLANES = 128
 BATCH_SIZE = 32
-TOTAL_ITER = 400
-N_MCTS = 400
+TOTAL_ITER = 10000
+N_MCTS = 800
 TAU_THRES = 8
-N_EPISODES = 10
+N_EPISODES = 800
 N_EPOCHS = 1
 SAVE_CYCLE = 1
-LR = 0.2
-L2 = 0.0001
+LR = 1e-2
+L2 = 1e-4
 
 
 def self_play(n_episodes):
@@ -105,12 +105,10 @@ def train(n_epochs):
     global STEPS
     global LR
 
-    if 5000 <= STEPS < 10000:
-        LR = 0.02
-    if 10000 <= STEPS < 15000:
-        LR = 0.002
-    if STEPS >= 15000:
-        LR = 0.0002
+    if 12e6 <= STEPS < 18e6:
+        LR = 1e-3
+    if STEPS >= 18e6:
+        LR = 1e-4
 
     print('memory size:', len(memory))
     print('learning rate:', LR)
@@ -119,8 +117,7 @@ def train(n_epochs):
                             batch_size=BATCH_SIZE,
                             shuffle=True,
                             drop_last=True,
-                            pin_memory=use_cuda,
-                            num_workers=4)
+                            pin_memory=use_cuda)
     optimizer = optim.SGD(agent.model.parameters(),
                           lr=LR,
                           momentum=0.9,
@@ -159,7 +156,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    memory = deque(maxlen=10240)
+    memory = deque(maxlen=17920)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
 
