@@ -155,9 +155,9 @@ def train(n_epochs):
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
-    np.random.seed(42)
-    torch.manual_seed(42)
-    torch.cuda.manual_seed_all(42)
+    np.random.seed(0)
+    torch.manual_seed(0)
+    torch.cuda.manual_seed_all(0)
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
