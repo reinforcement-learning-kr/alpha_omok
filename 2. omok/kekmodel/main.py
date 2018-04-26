@@ -59,10 +59,10 @@ def self_play(n_episodes):
                         STATE_SIZE, STATE_SIZE).round(decimals=3)))
 
             if turn == 0:
-                print("\nBlack's winrate: {:.1f}%".format(
+                print("\nBlack's winrate: {:.2f}%".format(
                     (v.data[0] + 1) / 2 * 100))
             else:
-                print("\nWhite's winrate: {:.1f}%".format(
+                print("\nWhite's winrate: {:.2f}%".format(
                     100 - ((v.data[0] + 1) / 2 * 100)))
             # ======================== get action ==========================
             if step < TAU_THRES:
@@ -88,6 +88,7 @@ def self_play(n_episodes):
                     win_color = 'White'
                 else:
                     reward_black = 0.
+                    win_color = 'None'
 
                 render_str(board, STATE_SIZE, action_index)
                 print("{} win in episode {}".format(win_color, episode + 1))

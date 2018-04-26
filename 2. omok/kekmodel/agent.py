@@ -56,13 +56,14 @@ class Player:
                     u = 5. * p * np.sqrt(total_n) / (n + 1)
                     if tree[leaf_id]['player'] == 0:
                         qu[child_id] = q + u
+                        max_value = max(qu.values())
+                        ids = [key for key, value in qu.items() if value == max_value]
+                        node_id = ids[np.random.choice(len(ids))]
                     else:
-                        qu[child_id] = -q + u
-
-                # random choice of same values
-                max_value = max(qu.values())
-                ids = [key for key, value in qu.items() if value == max_value]
-                node_id = ids[np.random.choice(len(ids))]
+                        qu[child_id] = q - u
+                        min_value = min(qu.values())
+                        ids = [key for key, value in qu.items() if value == min_value]
+                        node_id = ids[np.random.choice(len(ids))]
 
     def expansion(self, tree, leaf_id):
         leaf_board = deepcopy(tree[leaf_id]['board'])
@@ -121,13 +122,12 @@ class Player:
 
         else:
             # If leaf node is terminal
-            win_index = check_win(leaf_board, 5)
-            if win_index == 1:
-                reward = 1
-            elif win_index == 2:
-                reward = -1
+            if is_terminal == 1:
+                reward = 1.
+            elif is_terminal == 2:
+                reward = -1.
             else:
-                reward = 0
+                reward = 0.
 
             return tree, reward
 
