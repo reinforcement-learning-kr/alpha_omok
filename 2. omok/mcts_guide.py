@@ -1,4 +1,4 @@
-from utils import valid_actions, check_win, render_str, get_state
+from utils import valid_actions, check_win, render_str
 from copy import deepcopy
 import numpy as np
 import random
@@ -6,15 +6,15 @@ import time
 
 import env_small as game
 
-
 import tree as MCTS_tree
 
 class MCTS_guide:
     def main(self):
         # Game mode: 'text', 'pygame'
-        game_mode = 'text'
+        game_mode = 'pygame'
         env = game.GameState(game_mode)
-        state_size, action_size, win_mark = game.Return_BoardParams()
+        state_size, action_size = game.Return_BoardParams()
+        win_mark = 5
         agent = MCTS_tree.MCTS(win_mark)
 
         board_shape = [state_size, state_size]
@@ -69,7 +69,6 @@ class MCTS_guide:
                     tree = agent.backup(tree, child_id, sim_result, root_id)
 
                 print("\n--> " + turn_str[tree[root_id]['player']] + "'s turn <--\n")
-                render_str(tree[root_id]['board'], state_size)
 
                 q_list = {}
 
@@ -82,17 +81,19 @@ class MCTS_guide:
                 max_row = int(max_action/state_size)
                 max_col = int(max_action%state_size)
 
-                print('max index: ' + '(row: ' + str(max_row) + ' , col: ' + str(max_col) + ')')
+                render_str(tree[root_id]['board'], state_size, max_action)
+
+                print('max index: ' + '(row: ' + str(max_row+1) + ' , col: ' + str(max_col+1) + ')')
                 do_mcts = False
 
             if game_mode == 'text':
                 row_num = int(input('Please type row index: '))
                 col_num = int(input('Please type col index: '))
-                action_idx = row_num * state_size + col_num
+                action_idx = (row_num-1) * state_size + (col_num-1)
                 action[action_idx] = 1
 
             # Take action and get info. for update
-            game_board, state, check_valid_pos, win_index, turn, coord = env.step(action)
+            game_board, check_valid_pos, win_index, turn, coord = env.step(action)
 
             # If one move is done
             if check_valid_pos:

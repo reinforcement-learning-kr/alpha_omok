@@ -158,7 +158,8 @@ if __name__ == '__main__':
     np.random.seed(0)
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
-    use_cuda = torch.cuda.is_available()
+    use_cuda = False
+    # use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
     memory = deque(maxlen=25600)
