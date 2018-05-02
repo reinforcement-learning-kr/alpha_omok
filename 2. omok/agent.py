@@ -40,7 +40,7 @@ class Player:
         while True:
             children = tree[node_id]['child']
             # check if current node is leaf node
-            if children is None:
+            if children == []:
                 return node_id
             else:
                 leaf_id = node_id
@@ -73,13 +73,9 @@ class Player:
         turn = tree[leaf_id]['player']
         leaf_state = get_state_pt(
             leaf_id, turn, self.state_size, self.inplanes)
-        # expand_thres = 10
-
-        # if leaf_id == (0,) or tree[leaf_id]['n'] > expand_thres:
-        #     is_expand = True
-        # else:
-        #    is_expand = False
         is_expand = True
+
+        # evaluate
         state_input = Variable(Tensor([leaf_state]))
         policy, value = self.model(state_input)
         policy = np.exp(policy.data.cpu().numpy()[0])
@@ -92,23 +88,21 @@ class Player:
         if is_terminal == 0 and is_expand:
             # expansion for every possible actions
             for i, action in enumerate(actions):
-                board = deepcopy(tree[leaf_id]['board'])
                 action_index = action[1]
-                current_player = tree[leaf_id]['player']
                 prior = policy[action_index]
 
                 # if leaf_id == self.root_id:
                 #     prior = 0.75 * prior + 0.25 * noise[i]
 
-                if current_player == 0:
+                if turn == 0:
                     next_turn = 1
-                    board[action[0]] = 1
+                    leaf_board[action[0]] = 1
                 else:
                     next_turn = 0
-                    board[action[0]] = -1
+                    leaf_board[action[0]] = -1
 
                 child_id = leaf_id + (action_index,)
-                tree[child_id] = {'board': board,
+                tree[child_id] = {'board': leaf_board,
                                   'player': next_turn,
                                   'child': [],
                                   'parent': leaf_id,
