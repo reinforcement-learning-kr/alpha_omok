@@ -20,7 +20,7 @@ N_BLOCKS = 20
 IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
 BATCH_SIZE = 32
-TOTAL_ITER = 10000
+TOTAL_ITER = 100000
 N_MCTS = 400
 TAU_THRES = 8
 N_EPISODES = 30
@@ -158,7 +158,6 @@ if __name__ == '__main__':
     np.random.seed(0)
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
-    use_cuda = False
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor

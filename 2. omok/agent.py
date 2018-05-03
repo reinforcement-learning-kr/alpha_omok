@@ -8,6 +8,10 @@ import numpy as np
 
 use_cuda = torch.cuda.is_available()
 Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
+np.set_printoptions(suppress=True)
+np.random.seed(0)
+torch.manual_seed(0)
+torch.cuda.manual_seed_all(0)
 
 
 class Player:
@@ -46,13 +50,25 @@ class Player:
                 leaf_id = node_id
                 qu = {}
                 ids = []
+
+                if leaf_id == self.root_id:
+                    noise = np.random.dirichlet(
+                        self.alpha * np.ones(num_child))
+
                 for i in range(num_child):
                     action = tree[leaf_id]['child'][i]
                     child_id = leaf_id + (action,)
                     n = tree[child_id]['n']
                     q = tree[child_id]['q']
-                    p = tree[child_id]['p']
+
+                    if leaf_id == self.root_id:
+                        p = tree[child_id]['p']
+                        p = 0.75 * p + 0.25 * noise[i]
+                    else:
+                        p = tree[child_id]['p']
+
                     total_n = tree[tree[child_id]['parent']]['n'] - 1
+
                     u = 5. * p * np.sqrt(total_n) / (n + 1)
 
                     if tree[leaf_id]['player'] == 0:
