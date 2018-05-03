@@ -21,12 +21,12 @@ IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
 BATCH_SIZE = 32
 TOTAL_ITER = 10000
-N_MCTS = 1600
+N_MCTS = 400
 TAU_THRES = 8
-N_EPISODES = 300
-N_EPOCHS = 4
+N_EPISODES = 30
+N_EPOCHS = 1
 SAVE_CYCLE = 1
-LR = 1e-2
+LR = 1e-5
 L2 = 1e-4
 
 
@@ -104,12 +104,12 @@ STEPS = 0
 
 def train(n_epochs):
     global STEPS
-    global LR
+    # global LR
 
-    if 12e6 <= STEPS < 18e6:
-        LR = 1e-3
-    if STEPS >= 18e6:
-        LR = 1e-4
+    # if 12e6 <= STEPS < 18e6:
+    #     LR = 1e-3
+    # if STEPS >= 18e6:
+    #     LR = 1e-4
 
     print('memory size:', len(memory))
     print('learning rate:', LR)
@@ -159,10 +159,10 @@ if __name__ == '__main__':
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
     use_cuda = False
-    # use_cuda = torch.cuda.is_available()
+    use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    memory = deque(maxlen=25600)
+    memory = deque(maxlen=4800)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
 

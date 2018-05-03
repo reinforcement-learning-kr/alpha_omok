@@ -38,25 +38,29 @@ class Player:
         node_id = self.root_id
 
         while True:
-            children = tree[node_id]['child']
+            num_child = len(tree[node_id]['child'])
             # check if current node is leaf node
-            if children == []:
+            if num_child == 0:
                 return node_id
             else:
                 leaf_id = node_id
                 qu = {}
                 ids = []
-                for action in children:
+                for i in range(num_child):
+                    action = tree[leaf_id]['child'][i]
                     child_id = leaf_id + (action,)
                     n = tree[child_id]['n']
                     q = tree[child_id]['q']
                     p = tree[child_id]['p']
-                    total_n = tree[tree[child_id]['parent']]['n']
+                    total_n = tree[tree[child_id]['parent']]['n'] - 1
                     u = 5. * p * np.sqrt(total_n) / (n + 1)
+
                     if tree[leaf_id]['player'] == 0:
                         qu[child_id] = q + u
+
                     else:
                         qu[child_id] = q - u
+
                 if tree[leaf_id]['player'] == 0:
                     max_value = max(qu.values())
                     ids = [key for key, value in qu.items() if value == max_value]
@@ -73,9 +77,13 @@ class Player:
         turn = tree[leaf_id]['player']
         leaf_state = get_state_pt(
             leaf_id, turn, self.state_size, self.inplanes)
-        is_expand = True
+        # expand_thres = 10
 
-        # evaluate
+        # if leaf_id == (0,) or tree[leaf_id]['n'] > expand_thres:
+        #     is_expand = True
+        # else:
+        #    is_expand = False
+        is_expand = True
         state_input = Variable(Tensor([leaf_state]))
         policy, value = self.model(state_input)
         policy = np.exp(policy.data.cpu().numpy()[0])
@@ -88,21 +96,23 @@ class Player:
         if is_terminal == 0 and is_expand:
             # expansion for every possible actions
             for i, action in enumerate(actions):
+                board = deepcopy(tree[leaf_id]['board'])
                 action_index = action[1]
+                current_player = tree[leaf_id]['player']
                 prior = policy[action_index]
 
                 # if leaf_id == self.root_id:
                 #     prior = 0.75 * prior + 0.25 * noise[i]
 
-                if turn == 0:
+                if current_player == 0:
                     next_turn = 1
-                    leaf_board[action[0]] = 1
+                    board[action[0]] = 1
                 else:
                     next_turn = 0
-                    leaf_board[action[0]] = -1
+                    board[action[0]] = -1
 
                 child_id = leaf_id + (action_index,)
-                tree[child_id] = {'board': leaf_board,
+                tree[child_id] = {'board': board,
                                   'player': next_turn,
                                   'child': [],
                                   'parent': leaf_id,
@@ -133,9 +143,8 @@ class Player:
         while True:
             if node_id == self.root_id:
                 tree[node_id]['n'] += 1
-                tree[node_id]['w'] += value
-                tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
                 return tree
+
             """
             if tree[node_id]['player'] == player:
                 tree[node_id]['w'] -= value
@@ -144,8 +153,10 @@ class Player:
             """
             tree[node_id]['n'] += 1
             tree[node_id]['w'] += value
+            # print('backup:', value)
             tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
             parent_id = tree[node_id]['parent']
+
             node_id = parent_id
 
     def mcts(self):
@@ -176,7 +187,7 @@ class Player:
             child_id = self.root_id + (action,)
             pi[action] = self.tree[child_id]['n']
 
-        pi /= self.tree[self.root_id]['n']  # ====== why "n" is error?
+        pi /= (self.tree[self.root_id]['n'] - 1)  # ====== why "n" is error?
         return pi
 
     def reset(self):
