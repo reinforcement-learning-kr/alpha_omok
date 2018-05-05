@@ -16,14 +16,14 @@ import env_small as game
 from agent import Player
 
 STATE_SIZE = 9
-N_BLOCKS = 20
+N_BLOCKS = 3
 IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
 BATCH_SIZE = 32
 TOTAL_ITER = 100000
 N_MCTS = 400
 TAU_THRES = 8
-N_EPISODES = 30
+N_EPISODES = 1
 N_EPOCHS = 1
 SAVE_CYCLE = 1
 LR = 1e-5
