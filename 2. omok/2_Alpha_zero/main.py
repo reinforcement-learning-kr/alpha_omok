@@ -12,8 +12,11 @@ import torch.optim as optim
 from torch.nn import functional as F
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
-import env_small as game
 from agent import Player
+
+import sys
+sys.path.append("env/")
+import env_small as game
 
 STATE_SIZE = 9
 N_BLOCKS = 3

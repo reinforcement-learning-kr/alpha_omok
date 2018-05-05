@@ -4,11 +4,11 @@ import numpy as np
 import random
 import time
 
-import env_small as game
-import env_regular
-import env_large
-
 import tree as MCTS_tree
+
+import sys
+sys.path.append("env/")
+import env_small as game
 
 class MCTS_vs:
     def main(self):
