@@ -53,7 +53,7 @@ def self_play(n_episodes):
             # ===================== collect samples ========================
             state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
             state_input = Variable(Tensor([state]))
-            samples.append((state, pi))
+            samples.append((state, np.log(pi)))
             # ====================== print evaluation ======================
             p, v = agent.model(state_input)
             print(
