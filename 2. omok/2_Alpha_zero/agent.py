@@ -9,9 +9,9 @@ import numpy as np
 use_cuda = torch.cuda.is_available()
 Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 np.set_printoptions(suppress=True)
-np.random.seed(0)
-torch.manual_seed(0)
-torch.cuda.manual_seed_all(0)
+# np.random.seed(0)
+# torch.manual_seed(0)
+# torch.cuda.manual_seed_all(0)
 
 
 class Player:

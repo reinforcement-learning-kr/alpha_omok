@@ -19,8 +19,8 @@ sys.path.append("env/")
 import env_small as game
 
 STATE_SIZE = 9
-N_BLOCKS = 3
-IN_PLANES = 10  # history * 2 + 1
+N_BLOCKS = 10
+IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
 BATCH_SIZE = 16
 TOTAL_ITER = 100000
@@ -29,7 +29,7 @@ TAU_THRES = 8
 N_EPISODES = 30
 N_EPOCHS = 1
 SAVE_CYCLE = 1
-LR = 2e-3
+LR = 1e-3
 L2 = 1e-4
 
 
@@ -49,17 +49,17 @@ def self_play(n_episodes):
             # ====================== start mcts ============================
             pi = agent.get_pi(board, turn)
             print('\nPi:')
-            print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=3))
+            print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=2))
             # ===================== collect samples ========================
             state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
             state_input = Variable(Tensor([state]))
-            samples.append((state, np.log(pi)))
+            samples.append((state, pi))
             # ====================== print evaluation ======================
             p, v = agent.model(state_input)
             print(
                 "\nProbability:\n{}".format(
                     np.exp(p.data.cpu().numpy()[0]).reshape(
-                        STATE_SIZE, STATE_SIZE).round(decimals=3)))
+                        STATE_SIZE, STATE_SIZE).round(decimals=2)))
 
             if turn == 0:
                 print("\nBlack's winrate: {:.2f}%".format(
@@ -143,7 +143,7 @@ def train(n_epochs):
             p_batch, v_batch = agent.model(s_batch)
 
             loss = F.mse_loss(v_batch, z_batch) + \
-                torch.mean(torch.sum(-pi_batch * p_batch, 1))
+                F.kl_div(p_batch, torch.exp(pi_batch))
 
             optimizer.zero_grad()
             loss.backward()
@@ -151,16 +151,16 @@ def train(n_epochs):
             running_loss += loss.data[0]
             STEPS += 1
 
-            if (i + 1) % (N_EPISODES//2) == 0:
+            if (i + 1) % (N_EPISODES) == 0:
                 print('{:3} step loss: {:.3f}'.format(
                     STEPS, running_loss / (i + 1)))
 
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
-    np.random.seed(0)
-    torch.manual_seed(0)
-    torch.cuda.manual_seed_all(0)
+    # np.random.seed(0)
+    # torch.manual_seed(0)
+    # torch.cuda.manual_seed_all(0)
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
