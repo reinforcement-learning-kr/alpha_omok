@@ -203,7 +203,7 @@ class Player:
             child_id = self.root_id + (action,)
             pi[action] = self.tree[child_id]['n']
 
-        pi /= (self.tree[self.root_id]['n'] - 1)  # ====== why "n" is error?
+        pi = np.exp(pi) / np.exp(pi).sum()
         return pi
 
     def reset(self):
