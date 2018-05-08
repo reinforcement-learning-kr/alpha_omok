@@ -147,7 +147,7 @@ def train(n_game, n_epochs):
             p_batch, v_batch = agent.model(s_batch)
 
             loss = F.mse_loss(v_batch, z_batch) + \
-                F.kl_div(p_batch, pi_batch)
+                F.kl_div(torch.exp(p_batch), pi_batch)
 
             loss_list.append(loss.data[0])
 
@@ -161,9 +161,10 @@ def train(n_game, n_epochs):
                 print('{:3} step loss: {:.3f}'.format(
                     STEPS, running_loss / (i + 1)))
 
-    plt.plot(n_game, np.average(loss_list), hold = True, marker = '*', ms = 5)
+    plt.plot(n_game, np.average(loss_list), hold=True, marker='*', ms=5)
     plt.draw()
     plt.pause(0.000001)
+
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
