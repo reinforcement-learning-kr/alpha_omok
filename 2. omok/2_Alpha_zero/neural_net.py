@@ -4,7 +4,6 @@ import torch.nn.functional as F
 
 
 def conv3x3(in_planes, out_planes):
-
     return nn.Conv2d(in_planes, out_planes,
                      kernel_size=3,
                      padding=1,
@@ -28,7 +27,6 @@ class ResBlock(nn.Module):
         out = self.bn2(out)
         out += residual
         out = F.relu(out)
-
         return out
 
 
@@ -47,7 +45,6 @@ class PolicyHead(nn.Module):
         out = self.policy_fc(out)
         out = F.log_softmax(out, dim=1)
         out = out.exp()
-
         return out
 
 
@@ -69,7 +66,6 @@ class ValueHead(nn.Module):
         out = self.value_fc2(out)
         out = F.tanh(out)
         out = out.view(out.size(0))
-
         return out
 
 
@@ -106,7 +102,6 @@ class PVNet(nn.Module):
         x = self.layers(x)
         p = self.policy_head(x)
         v = self.value_head(x)
-
         return p, v
 
 
