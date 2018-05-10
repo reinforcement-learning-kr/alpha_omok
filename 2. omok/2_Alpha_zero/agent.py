@@ -67,7 +67,7 @@ class Player:
                     else:
                         p = tree[child_id]['p']
 
-                    total_n = tree[tree[child_id]['parent']]['n'] - 1
+                    total_n = tree[tree[child_id]['parent']]['n']
 
                     u = 5. * p * np.sqrt(total_n) / (n + 1)
 
@@ -102,7 +102,7 @@ class Player:
         is_expand = True
         state_input = Variable(Tensor([leaf_state]))
         policy, value = self.model(state_input)
-        policy = np.exp(policy.data.cpu().numpy()[0])
+        policy = policy.data.cpu().numpy()[0]
         value = value.data.cpu().numpy()[0]
 
         # if leaf_id == self.root_id:

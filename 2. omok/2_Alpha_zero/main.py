@@ -28,7 +28,7 @@ TOTAL_ITER = 100000
 N_MCTS = 400
 TAU_THRES = 8
 N_EPISODES = 1
-N_EPOCHS = 10
+N_EPOCHS = 1
 SAVE_CYCLE = 10000
 LR = 1e-3
 L2 = 1e-4
@@ -59,7 +59,7 @@ def self_play(n_episodes):
             p, v = agent.model(state_input)
             print(
                 "\nProbability:\n{}".format(
-                    np.exp(p.data.cpu().numpy()[0]).reshape(
+                    p.data.cpu().numpy()[0].reshape(
                         STATE_SIZE, STATE_SIZE).round(decimals=2)))
 
             if turn == 0:
@@ -117,6 +117,7 @@ def train(n_game, n_epochs):
 
     print('memory size:', len(memory))
     print('learning rate:', LR)
+    print(memory)
 
     dataloader = DataLoader(memory,
                             batch_size=BATCH_SIZE,
@@ -161,9 +162,10 @@ def train(n_game, n_epochs):
                 print('{:3} step loss: {:.3f}'.format(
                     STEPS, running_loss / (i + 1)))
 
-    plt.plot(n_game, np.average(loss_list), hold = True, marker = '*', ms = 5)
+    plt.plot(n_game, np.average(loss_list), hold=True, marker='*', ms=5)
     plt.draw()
     plt.pause(0.000001)
+
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
@@ -173,7 +175,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    memory = deque(maxlen=50000)
+    memory = deque(maxlen=4800)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
 
@@ -187,7 +189,7 @@ if __name__ == '__main__':
 
         self_play(N_EPISODES)
 
-        if i > 100:
+        if (i + 1) >= 160:
             train(i, N_EPOCHS)
 
         if (i + 1) % SAVE_CYCLE == 0:
