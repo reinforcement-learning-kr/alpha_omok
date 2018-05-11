@@ -2,7 +2,7 @@ from torch import nn
 from torch.nn import init
 import torch.nn.functional as F
 
-
+'''
 def conv3x3(in_planes, out_planes):
     return nn.Conv2d(in_planes, out_planes,
                      kernel_size=3,
@@ -103,7 +103,42 @@ class PVNet(nn.Module):
         p = self.policy_head(x)
         v = self.value_head(x)
         return p, v
+'''
 
+
+class PVNet(nn.Module):
+    def __init__(self, in_channel, state_size):
+        super(PVNet, self).__init__()
+        self.feature = nn.Sequential(
+            nn.Conv2d(in_channel, 32, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+
+            nn.Conv2d(32, 32, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+
+            nn.Conv2d(32, 32, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+        )
+
+        self.policy = nn.Sequential(
+            nn.Linear(2592, state_size**2),
+            nn.Softmax()
+        )
+
+        self.value = nn.Sequential(
+            nn.Linear(2592, 1),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        x = self.feature(x)
+        x = x.view(x.size(0), -1)
+        p = self.policy(x)
+        v = self.value(x)
+        return p, v
 
 if __name__ == '__main__':
     # test
@@ -112,8 +147,8 @@ if __name__ == '__main__':
     import numpy as np
     use_cuda = torch.cuda.is_available()
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    model = PVNet(20, 17, 128, 3)
-    state = np.ones((17, 3, 3))
+    model = PVNet(in_channel=5, state_size=9)
+    state = np.ones((5, 9, 9))
     state_input = Variable(torch.FloatTensor([state]))
     p, v = model(state_input)
     print('cuda:', use_cuda)
