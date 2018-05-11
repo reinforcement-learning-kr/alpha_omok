@@ -147,7 +147,7 @@ def train(n_game, n_epochs):
             p_batch, v_batch = agent.model(s_batch)
 
             loss = F.mse_loss(v_batch, z_batch) + \
-                torch.mean(torch.sum(-p_batch * pi_batch, 1))
+                torch.mean(torch.sum(-pi_batch * torch.log(p_batch), 1))
 
             loss_list.append(loss.data[0])
 
