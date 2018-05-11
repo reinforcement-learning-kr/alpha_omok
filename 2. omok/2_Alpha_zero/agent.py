@@ -93,21 +93,12 @@ class Player:
         turn = tree[leaf_id]['player']
         leaf_state = get_state_pt(
             leaf_id, turn, self.state_size, self.inplanes)
-        # expand_thres = 10
 
-        # if leaf_id == (0,) or tree[leaf_id]['n'] > expand_thres:
-        #     is_expand = True
-        # else:
-        #    is_expand = False
         is_expand = True
         state_input = Variable(Tensor([leaf_state]))
         policy, value = self.model(state_input)
         policy = policy.data.cpu().numpy()[0]
         value = value.data.cpu().numpy()[0]
-
-        # if leaf_id == self.root_id:
-        #     noise = np.random.dirichlet(
-        #         self.alpha * np.ones(len(actions)))
 
         if is_terminal == 0 and is_expand:
             # expansion for every possible actions
@@ -116,9 +107,6 @@ class Player:
                 action_index = action[1]
                 current_player = tree[leaf_id]['player']
                 prior = policy[action_index]
-
-                # if leaf_id == self.root_id:
-                #     prior = 0.75 * prior + 0.25 * noise[i]
 
                 if current_player == 0:
                     next_turn = 1
@@ -161,18 +149,10 @@ class Player:
                 tree[node_id]['n'] += 1
                 return tree
 
-            """
-            if tree[node_id]['player'] == player:
-                tree[node_id]['w'] -= value
-            else:
-                tree[node_id]['w'] -= value
-            """
             tree[node_id]['n'] += 1
             tree[node_id]['w'] += value
-            # print('backup:', value)
             tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
             parent_id = tree[node_id]['parent']
-
             node_id = parent_id
 
     def mcts(self):
@@ -203,7 +183,8 @@ class Player:
             child_id = self.root_id + (action,)
             pi[action] = self.tree[child_id]['n']
 
-        pi = np.exp(pi) / np.exp(pi).sum()
+        # pi = np.exp(pi) / np.exp(pi).sum()
+        pi = pi / pi.sum()
         return pi
 
     def reset(self):
