@@ -22,11 +22,11 @@ class ResBlock(nn.Module):
         residual = x
         out = self.conv1(x)
         out = self.bn1(out)
-        out = F.relu(out, inplace=True)
+        out = F.relu(out)
         out = self.conv2(out)
         out = self.bn2(out)
         out += residual
-        out = F.relu(out, inplace=True)
+        out = F.relu(out)
         return out
 
 
@@ -40,10 +40,11 @@ class PolicyHead(nn.Module):
     def forward(self, x):
         out = self.policy_head(x)
         out = self.policy_bn(out)
-        out = F.relu(out, inplace=True)
+        out = F.relu(out)
         out = out.view(out.size(0), -1)
         out = self.policy_fc(out)
         out = F.log_softmax(out, dim=1)
+        out = out.exp()
         return out
 
 
@@ -58,10 +59,10 @@ class ValueHead(nn.Module):
     def forward(self, x):
         out = self.value_head(x)
         out = self.value_bn(out)
-        out = F.relu(out, inplace=True)
+        out = F.relu(out)
         out = out.view(out.size(0), -1)
         out = self.value_fc1(out)
-        out = F.relu(out, inplace=True)
+        out = F.relu(out)
         out = self.value_fc2(out)
         out = F.tanh(out)
         out = out.view(out.size(0))
@@ -91,12 +92,13 @@ class PVNet(nn.Module):
         blocks = []
         for i in range(n_block):
             blocks.append(block(planes, planes))
+
         return nn.Sequential(*blocks)
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
-        x = F.relu(x, inplace=True)
+        x = F.relu(x)
         x = self.layers(x)
         p = self.policy_head(x)
         v = self.value_head(x)

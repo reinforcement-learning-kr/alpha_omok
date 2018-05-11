@@ -20,7 +20,7 @@ sys.path.append("env/")
 import env_small as game
 
 STATE_SIZE = 9
-N_BLOCKS = 5
+N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
 BATCH_SIZE = 16
@@ -28,8 +28,8 @@ TOTAL_ITER = 100000
 N_MCTS = 400
 TAU_THRES = 8
 N_EPISODES = 1
-N_EPOCHS = 10
-SAVE_CYCLE = 10000
+N_EPOCHS = 1
+SAVE_CYCLE = 1000
 LR = 1e-3
 L2 = 1e-4
 
@@ -59,7 +59,7 @@ def self_play(n_episodes):
             p, v = agent.model(state_input)
             print(
                 "\nProbability:\n{}".format(
-                    np.exp(p.data.cpu().numpy()[0]).reshape(
+                    p.data.cpu().numpy()[0].reshape(
                         STATE_SIZE, STATE_SIZE).round(decimals=2)))
 
             if turn == 0:
@@ -147,7 +147,7 @@ def train(n_game, n_epochs):
             p_batch, v_batch = agent.model(s_batch)
 
             loss = F.mse_loss(v_batch, z_batch) + \
-                F.kl_div(p_batch, pi_batch)
+                torch.mean(torch.sum(-pi_batch * torch.log(p_batch), 1))
 
             loss_list.append(loss.data[0])
 
@@ -161,9 +161,10 @@ def train(n_game, n_epochs):
                 print('{:3} step loss: {:.3f}'.format(
                     STEPS, running_loss / (i + 1)))
 
-    plt.plot(n_game, np.average(loss_list), hold = True, marker = '*', ms = 5)
-    plt.draw()
-    plt.pause(0.000001)
+    # plt.plot(n_game, np.average(loss_list), hold=True, marker='*', ms=5)
+    # plt.draw()
+    # plt.pause(0.000001)
+
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
@@ -173,7 +174,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    memory = deque(maxlen=50000)
+    memory = deque(maxlen=5120)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
 
@@ -187,7 +188,7 @@ if __name__ == '__main__':
 
         self_play(N_EPISODES)
 
-        if i > 100:
+        if (i + 1) >= 160:
             train(i, N_EPOCHS)
 
         if (i + 1) % SAVE_CYCLE == 0:
