@@ -78,8 +78,8 @@ class Random_vs:
                     ai_turn = 1
                     turn = 0
 
-            # Delay for visualization
-            time.sleep(0.01)
+            # # Delay for visualization
+            # time.sleep(0.01)
 
 if __name__ == '__main__':
     agent = Random_vs()
