@@ -74,7 +74,7 @@ def self_play(n_episodes):
                     100 - ((v.data[0].numpy()[0] + 1) / 2 * 100)))
             '''
             # ======================== get action ==========================
-            p = p.data[0].numpy()
+            p = p.data[0].cpu().numpy()
             action, action_index = get_action(p)
             samples.append((state, action))
             agent.root_id += (action_index,)
