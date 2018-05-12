@@ -56,7 +56,7 @@ def Return_BoardParams():
 
 class GameState:
     def __init__(self, gamemode):
-        global DISPLAYSURF, BASIC_FONT, TITLE_FONT, GAMEOVER_FONT
+        global DISPLAYSURF, BASIC_FONT, TITLE_FONT, GAMEOVER_FONT, FPSCLOCK
 
         self.gamemode = gamemode
 
@@ -64,7 +64,7 @@ class GameState:
             pygame.init()
 
             DISPLAYSURF = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-
+            FPSCLOCK = pygame.time.Clock()
             pygame.display.set_caption('Mini Omok')
             # pygame.display.set_icon(pygame.image.load('./Qar_Sim/icon_resize2.png'))
 
@@ -185,7 +185,8 @@ class GameState:
             self.turn_msg()
 
             pygame.display.update()
-
+            FPSCLOCK.tick(FPS)
+            
         # Check_win 0: playing, 1: black win, 2: white win, 3: draw
         win_index = check_win(self.gameboard, WIN_STONES)
         self.display_win(win_index)
