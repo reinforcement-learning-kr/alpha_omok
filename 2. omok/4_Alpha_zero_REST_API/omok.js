@@ -16,6 +16,89 @@ for (var i = 0; i < game_board_size; i++) {
 	}
 }
 
+function reqAction(action_idx)
+{
+	var xhr = new XMLHttpRequest();
+
+	xhr.onload = function() 
+	{
+		if(xhr.status == 200) 
+		{
+			ret = JSON.parse(xhr.responseText);
+			
+			if (ret.curr_turn == 0) // black turn: 0, white turn: 1
+			{
+				turn = 1 // black
+			}
+			else 
+			{
+				turn = 2 // white
+			}
+
+			game_board_size = ret.game_board_size
+
+			for (var i = 0; i < game_board_size; i++) 
+			{
+				for (j = 0; j < game_board_size; j++) 
+				{ 
+					idx = i + j * game_board_size;
+
+					switch (ret.game_board_values[idx])
+					{
+						case 1:
+							boardArray[i][j] = 1;
+							break;
+						case -1:
+							boardArray[i][j] = 2;
+							break;		
+						case 0:
+							boardArray[i][j] = 0;
+							break;		
+					}
+				}
+			}
+
+			// Check_win 0: playing, 1: black win, 2: white win, 3: draw
+			switch (ret.win_index)
+			{
+				case 0:
+					break;
+				case 1:
+					alert('black win')
+					clearBoard();
+					break;
+				case 2:
+					alert('white win')
+					clearBoard();
+					break;
+				case 3:
+					alert('draw')
+					clearBoard();
+					break;
+				default:
+					break;
+			}
+
+			updateBoard();
+		}
+	};
+
+	xhr.open('GET', 'http://127.0.0.1:5000/step?action_idx=' + action_idx.toString(), true);
+	xhr.send();
+}
+
+function clearBoard()
+{
+	for (var i = 0; i < game_board_size; i++) 
+	{
+		for (j = 0; j < game_board_size; j++) 
+		{ 
+			boardArray[i][j] = 0;
+		}
+	}
+
+}
+
 function updateBoard(){
 	// board fill color
 	ctx.fillStyle="#ffcc66";
@@ -79,6 +162,7 @@ function updateBoard(){
 
 }
 
+reqAction(-1);
 updateBoard();
 
 /* Mouse Event */
@@ -138,10 +222,15 @@ function isClicked(xPos, yPos){
 	resultPos = getMouseRoundPos(xPos, yPos);
 	if (resultPos.x > -1 && resultPos.x < game_board_size && resultPos.y > -1
 	 && resultPos.y < game_board_size && boardArray[resultPos.x][resultPos.y] == 0){
-		boardArray[resultPos.x][resultPos.y] = turn;
-		checkOmok(turn, resultPos.x, resultPos.y);
-		turn = 3 - turn; //turn change
+		// boardArray[resultPos.x][resultPos.y] = turn;
+		// checkOmok(turn, resultPos.x, resultPos.y);
+		// turn = 3 - turn; //turn change
 	}
+
+	action_idx = resultPos.x + resultPos.y * game_board_size;
+
+	reqAction(action_idx)
+
 	updateBoard();
 }
 

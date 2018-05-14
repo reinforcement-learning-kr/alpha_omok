@@ -28,7 +28,7 @@ class Random_vs_server:
         state_size, action_size = game.Return_BoardParams()
         action = np.zeros([action_size])
 
-        if action_idx != None:
+        if action_idx != None and action_idx != -1:
             action_idx = int(action_idx)
             action[action_idx] = 1
         
@@ -114,7 +114,7 @@ class Random_vs_server:
 def step():
     
     action_idx = flask.request.args.get("action_idx")
-        
+    
     data = {"success": False}
 
     game_board, check_valid_pos, win_index, curr_turn, coord = agent.step(action_idx)
