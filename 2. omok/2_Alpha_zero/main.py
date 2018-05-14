@@ -6,6 +6,7 @@ Project : Make your own Alpha Zero
 from utils import render_str, get_state_pt, get_action
 from neural_net import PVNet
 import numpy as np
+import datetime
 from collections import deque
 import torch
 import torch.optim as optim
@@ -29,7 +30,7 @@ N_MCTS = 400
 TAU_THRES = 8
 N_EPISODES = 1
 N_EPOCHS = 1
-SAVE_CYCLE = 1000
+SAVE_CYCLE = 500
 LR = 1e-3
 L2 = 1e-4
 
@@ -178,6 +179,10 @@ if __name__ == '__main__':
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
 
+    datetime_now = str(datetime.date.today()) + '_' + \
+                   str(datetime.datetime.now().hour) + '_' + \
+                   str(datetime.datetime.now().minute)
+
     if use_cuda:
         agent.model.cuda()
 
@@ -194,4 +199,4 @@ if __name__ == '__main__':
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
-                '{}_step_model.pickle'.format(STEPS))
+                './models/{}_{}_step_model.pickle'.format(datetime_now, STEPS))
