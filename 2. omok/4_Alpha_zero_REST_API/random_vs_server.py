@@ -28,7 +28,7 @@ class Random_vs_server:
         state_size, action_size = game.Return_BoardParams()
         action = np.zeros([action_size])
 
-        if action_idx != None and action_idx != -1:
+        if action_idx != None and action_idx != '-1':
             action_idx = int(action_idx)
             action[action_idx] = 1
         
@@ -138,7 +138,7 @@ if __name__ == '__main__':
     agent.init()
     
     print("Run Application...")    
-    app_th = threading.Thread(target=app.run)
+    app_th = threading.Thread(target=app.run, kwargs={"host":"0.0.0.0", "port":5000})
     app_th.start()
     
     print("Run Agenet...")
