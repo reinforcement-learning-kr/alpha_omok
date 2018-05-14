@@ -182,6 +182,10 @@ if __name__ == '__main__':
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(IN_PLANES, STATE_SIZE)
 
+    datetime_now = str(datetime.date.today()) + '_' + \
+                   str(datetime.datetime.now().hour) + '_' + \
+                   str(datetime.datetime.now().minute)
+
     if use_cuda:
         agent.model.cuda()
 
@@ -200,6 +204,6 @@ if __name__ == '__main__':
         if (i + 1) % SAVE_CYCLE == 0:
             torch.save(
                 agent.model.state_dict(),
-                '{}_step_model.pickle'.format(STEPS))
+                './models/{}_{}_step_model.pickle'.format(datetime_now, STEPS))
 
         '''
