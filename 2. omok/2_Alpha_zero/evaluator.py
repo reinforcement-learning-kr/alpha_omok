@@ -1,5 +1,5 @@
-from utils import render_str, get_action, valid_actions
-from agent import Player
+from utils import render_str, get_action
+from agent import Player, PUCTAgent, RandomAgent
 from neural_net import PVNet
 import numpy as np
 import torch
@@ -13,110 +13,6 @@ IN_PLANES = 9
 OUT_PLANES = 64
 N_MCTS = 400
 N_MATCH = 30
-
-
-class RandomAgent:
-    def __init__(self, state_size):
-        self.state_size = state_size
-
-    def get_pi(self, board, turn):
-        action = valid_actions(board)
-        prob = 1 / len(action)
-        pi = np.zeros(self.state_size**2, 'float')
-
-        for loc, idx in action:
-            pi[idx] = prob
-
-        return pi
-
-    def reset(self):
-        pass
-
-
-class PUCTAgent:
-    def __init__(self, state_size, num_mcts, inplanes):
-        self.state_size = state_size
-        self.num_mcts = num_mcts
-        self.inplanes = inplanes
-        self.win_mark = 5
-        self.alpha = 0.15
-        self.turn = 0
-        self.board = np.zeros([self.state_size, self.state_size])
-        self.root_id = (0,)
-        self.model = None
-        self.tree = {self.root_id: {'board': self.board,
-                                    'player': self.turn,
-                                    'child': [],
-                                    'parent': None,
-                                    'n': 0.,
-                                    'w': 0.,
-                                    'q': 0.,
-                                    'p': None}}
-
-    def init_mcts(self, board, turn):
-        self.turn = turn
-        self.board = board
-
-    def selection(self, tree):
-        node_id = self.root_id
-
-        while True:
-            if node_id in tree:
-                num_child = len(tree[node_id]['child'])
-                # check if current node is leaf node
-                if num_child == 0:
-                    return node_id
-                else:
-                    leaf_id = node_id
-                    qu = {}
-                    ids = []
-
-                    if leaf_id == self.root_id:
-                        noise = np.random.dirichlet(
-                            self.alpha * np.ones(num_child))
-
-                    for i in range(num_child):
-                        action = tree[leaf_id]['child'][i]
-                        child_id = leaf_id + (action,)
-                        n = tree[child_id]['n']
-                        q = tree[child_id]['q']
-
-                        if leaf_id == self.root_id:
-                            p = tree[child_id]['p']
-                            p = 0.75 * p + 0.25 * noise[i]
-                        else:
-                            p = tree[child_id]['p']
-
-                        total_n = tree[tree[child_id]['parent']]['n'] - 1
-
-                        u = 5. * p * np.sqrt(total_n) / (n + 1)
-
-                        if tree[leaf_id]['player'] == 0:
-                            qu[child_id] = q + u
-
-                        else:
-                            qu[child_id] = q - u
-
-                    if tree[leaf_id]['player'] == 0:
-                        max_value = max(qu.values())
-                        ids = [key for key, value in qu.items() if value ==
-                               max_value]
-                        node_id = ids[np.random.choice(len(ids))]
-                    else:
-                        min_value = min(qu.values())
-                        ids = [key for key, value in qu.items() if value ==
-                               min_value]
-                        node_id = ids[np.random.choice(len(ids))]
-            else:
-                tree[node_id] = {'board': self.board,
-                                 'player': self.turn,
-                                 'child': [],
-                                 'parent': None,
-                                 'n': 0.,
-                                 'w': 0.,
-                                 'q': 0.,
-                                 'p': None}
-                return node_id
 
 
 class Evaluator:
@@ -150,7 +46,7 @@ class Evaluator:
 
         if USE_CUDA:
             self.player.model.cuda()
-            if model_path_b != 'random':
+            if model_path_b != 'random' and model_path_b != 'puct':
                 self.enemy.model.cuda()
 
     def get_action(self, i, board, turn):
@@ -175,7 +71,7 @@ def main():
     # input model path
     # 'random': no MCTS, 'puct': model free MCTS, None: random model MCTS
     player_model_path = None
-    enemy_model_path = 'random'
+    enemy_model_path = 'puct'
 
     evaluator = Evaluator(player_model_path, enemy_model_path)
 
@@ -194,11 +90,11 @@ def main():
             action, action_index = evaluator.get_action(i, board, turn)
 
             if turn == 0:
-                print("player turn")
+                # print("player turn")
                 node_id = evaluator.player.root_id + (action_index,)
                 evaluator.enemy.root_id = node_id
             else:
-                print("enemy turn")
+                # print("enemy turn")
                 node_id = evaluator.enemy.root_id + (action_index,)
                 evaluator.player.root_id = node_id
 
