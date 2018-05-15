@@ -180,8 +180,8 @@ if __name__ == '__main__':
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
 
     datetime_now = str(datetime.date.today()) + '_' + \
-                   str(datetime.datetime.now().hour) + '_' + \
-                   str(datetime.datetime.now().minute)
+        str(datetime.datetime.now().hour) + '_' + \
+        str(datetime.datetime.now().minute)
 
     if use_cuda:
         agent.model.cuda()
