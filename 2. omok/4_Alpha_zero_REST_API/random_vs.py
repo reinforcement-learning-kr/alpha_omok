@@ -7,6 +7,7 @@ import sys
 sys.path.append("env/")
 import env_small as game
 
+
 class Random_vs:
     def main(self):
         # Game mode: 'text', 'pygame'
@@ -22,8 +23,8 @@ class Random_vs:
         turn = 0
         ai_turn = 1
         turn_str = ['Black', 'White']
-        alphabet_list = ['A','B','C','D','E','F','G','H','I','J',
-                         'K','L','M','N','O','P','Q','R','S']
+        alphabet_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+                         'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S']
 
         print("\n--> Player's turn <--\n")
 
@@ -40,7 +41,7 @@ class Random_vs:
                 action_index = np.random.randint(len(valid_action_list))
                 random_action = valid_action_list[action_index][1]
                 action_row = int(random_action/state_size)
-                action_col = int(random_action%state_size)
+                action_col = int(random_action % state_size)
 
                 print('AI Stone Index: ' + '(row: ' + str(action_row+1) +
                       ' , col: ' + alphabet_list[action_col] + ')')
@@ -55,7 +56,8 @@ class Random_vs:
             #     action[action_idx] = 1
 
             # Take action and get info. for update
-            game_board, check_valid_pos, win_index, turn, coord = env.step(action)
+            game_board, check_valid_pos, win_index, turn, coord = env.step(
+                action)
 
             # If one move is done
             if check_valid_pos:
@@ -80,6 +82,7 @@ class Random_vs:
 
             # # Delay for visualization
             # time.sleep(0.01)
+
 
 if __name__ == '__main__':
     agent = Random_vs()

@@ -24,7 +24,7 @@ class MCTS:
                     child_id = leaf_id + (action,)
                     w = tree[child_id]['w']
                     n = tree[child_id]['n']
-                    total_n = tree[tree[child_id]['parent']]['n']
+                    total_n = tree[tree[child_id]['parent']]['n'] - 1
 
                     # for unvisited child, cannot compute u value
                     # so make n to be very small number

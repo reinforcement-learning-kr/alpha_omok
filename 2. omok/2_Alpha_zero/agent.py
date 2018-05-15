@@ -26,7 +26,7 @@ class Player:
         self.root_id = (0,)
         self.model = None
         self.tree = {self.root_id: {'board': self.board,
-                                    'player': self.turn,
+                                    'player': None,
                                     'child': [],
                                     'parent': None,
                                     'n': 0.,
@@ -42,49 +42,62 @@ class Player:
         node_id = self.root_id
 
         while True:
-            num_child = len(tree[node_id]['child'])
-            # check if current node is leaf node
-            if num_child == 0:
-                return node_id
-            else:
-                leaf_id = node_id
-                qu = {}
-                ids = []
-
-                if leaf_id == self.root_id:
-                    noise = np.random.dirichlet(
-                        self.alpha * np.ones(num_child))
-
-                for i in range(num_child):
-                    action = tree[leaf_id]['child'][i]
-                    child_id = leaf_id + (action,)
-                    n = tree[child_id]['n']
-                    q = tree[child_id]['q']
+            if node_id in tree:
+                num_child = len(tree[node_id]['child'])
+                # check if current node is leaf node
+                if num_child == 0:
+                    return node_id
+                else:
+                    leaf_id = node_id
+                    qu = {}
+                    ids = []
 
                     if leaf_id == self.root_id:
-                        p = tree[child_id]['p']
-                        p = 0.75 * p + 0.25 * noise[i]
-                    else:
-                        p = tree[child_id]['p']
+                        noise = np.random.dirichlet(
+                            self.alpha * np.ones(num_child))
 
-                    total_n = tree[tree[child_id]['parent']]['n']
+                    for i in range(num_child):
+                        action = tree[leaf_id]['child'][i]
+                        child_id = leaf_id + (action,)
+                        n = tree[child_id]['n']
+                        q = tree[child_id]['q']
 
-                    u = 5. * p * np.sqrt(total_n) / (n + 1)
+                        if leaf_id == self.root_id:
+                            p = tree[child_id]['p']
+                            p = 0.75 * p + 0.25 * noise[i]
+                        else:
+                            p = tree[child_id]['p']
+
+                        total_n = tree[tree[child_id]['parent']]['n'] - 1
+
+                        u = 5. * p * np.sqrt(total_n) / (n + 1)
+
+                        if tree[leaf_id]['player'] == 0:
+                            qu[child_id] = q + u
+
+                        else:
+                            qu[child_id] = q - u
 
                     if tree[leaf_id]['player'] == 0:
-                        qu[child_id] = q + u
-
+                        max_value = max(qu.values())
+                        ids = [key for key, value in qu.items() if value ==
+                               max_value]
+                        node_id = ids[np.random.choice(len(ids))]
                     else:
-                        qu[child_id] = q - u
-
-                if tree[leaf_id]['player'] == 0:
-                    max_value = max(qu.values())
-                    ids = [key for key, value in qu.items() if value == max_value]
-                    node_id = ids[np.random.choice(len(ids))]
-                else:
-                    min_value = min(qu.values())
-                    ids = [key for key, value in qu.items() if value == min_value]
-                    node_id = ids[np.random.choice(len(ids))]
+                        min_value = min(qu.values())
+                        ids = [key for key, value in qu.items() if value ==
+                               min_value]
+                        node_id = ids[np.random.choice(len(ids))]
+            else:
+                tree[node_id] = {'board': self.board,
+                                 'player': self.turn,
+                                 'child': [],
+                                 'parent': None,
+                                 'n': 0.,
+                                 'w': 0.,
+                                 'q': 0.,
+                                 'p': None}
+                return node_id
 
     def expansion(self, tree, leaf_id):
         leaf_board = deepcopy(tree[leaf_id]['board'])
@@ -93,7 +106,8 @@ class Player:
         turn = tree[leaf_id]['player']
         leaf_state = get_state_pt(
             leaf_id, turn, self.state_size, self.inplanes)
-
+        # print(leaf_id)
+        # print(leaf_state)
         is_expand = True
         state_input = Variable(Tensor([leaf_state]))
         policy, value = self.model(state_input)
@@ -183,12 +197,12 @@ class Player:
             child_id = self.root_id + (action,)
             pi[action] = self.tree[child_id]['n']
 
-        # pi = np.exp(pi) / np.exp(pi).sum()
-        pi = pi / pi.sum()
+        pi = np.exp(pi) / np.exp(pi).sum()
+        # pi = pi / pi.sum()
         return pi
 
     def reset(self):
-        self.turn = 0
+        self.turn = None
         self.board = np.zeros([self.state_size, self.state_size])
         self.root_id = (0,)
         self.tree = {self.root_id: {'board': self.board,
