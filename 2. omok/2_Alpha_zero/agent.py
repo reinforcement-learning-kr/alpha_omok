@@ -9,9 +9,6 @@ import numpy as np
 use_cuda = torch.cuda.is_available()
 Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 np.set_printoptions(suppress=True)
-# np.random.seed(0)
-# torch.manual_seed(0)
-# torch.cuda.manual_seed_all(0)
 
 
 class Player:
@@ -23,20 +20,14 @@ class Player:
         self.alpha = 0.15
         self.turn = 0
         self.board = np.zeros([self.state_size, self.state_size])
-        self.root_id = (0,)
+        self.root_id = None
         self.model = None
-        self.tree = {self.root_id: {'board': self.board,
-                                    'player': None,
-                                    'child': [],
-                                    'parent': None,
-                                    'n': 0.,
-                                    'w': 0.,
-                                    'q': 0.,
-                                    'p': None}}
+        self.tree = {}
 
-    def init_mcts(self, board, turn):
-        self.turn = turn
+    def init_mcts(self, root_id, board, turn):
+        self.root_id = root_id
         self.board = board
+        self.turn = turn
 
     def selection(self, tree):
         node_id = self.root_id
@@ -96,7 +87,7 @@ class Player:
                                  'n': 0.,
                                  'w': 0.,
                                  'q': 0.,
-                                 'p': None}
+                                 'p': 0.}
                 return node_id
 
     def expansion(self, tree, leaf_id):
@@ -181,8 +172,8 @@ class Player:
         finish = time.time() - start
         print("{} simulations end ({:0.0f}s)".format(i + 1, finish))
 
-    def get_pi(self, board, turn):
-        self.init_mcts(board, turn)
+    def get_pi(self, root_id, board, turn):
+        self.init_mcts(root_id, board, turn)
         self.mcts()
         root_node = self.tree[self.root_id]
         pi = np.zeros(self.state_size**2, 'float')
@@ -198,15 +189,8 @@ class Player:
     def reset(self):
         self.turn = None
         self.board = np.zeros([self.state_size, self.state_size])
-        self.root_id = (0,)
-        self.tree = {self.root_id: {'board': self.board,
-                                    'player': self.turn,
-                                    'child': [],
-                                    'parent': None,
-                                    'n': 0.,
-                                    'w': 0.,
-                                    'q': 0.,
-                                    'p': None}}
+        self.root_id = None
+        self.tree = {}
 
 
 class PUCTAgent(Player):
@@ -216,15 +200,8 @@ class PUCTAgent(Player):
         self.win_mark = 5
         self.turn = 0
         self.board = np.zeros([self.state_size, self.state_size])
-        self.root_id = (0,)
-        self.tree = {self.root_id: {'board': self.board,
-                                    'player': None,
-                                    'child': [],
-                                    'parent': None,
-                                    'n': 0.,
-                                    'w': 0.,
-                                    'q': 0.,
-                                    'p': None}}
+        self.root_id = None
+        self.tree = {}
 
     def selection(self, tree):
         node_id = self.root_id
@@ -262,11 +239,17 @@ class PUCTAgent(Player):
                         ids = [key for key, value in qu.items() if value ==
                                max_value]
                         node_id = ids[np.random.choice(len(ids))]
+                        # print('max:', max_value)
+                        # print('max ids:', ids)
+                        # print('selected id:', node_id)
                     else:
                         min_value = min(qu.values())
                         ids = [key for key, value in qu.items() if value ==
                                min_value]
                         node_id = ids[np.random.choice(len(ids))]
+                        # print('min:', min_value)
+                        # print('min ids:', ids)
+                        # print('selected id:', node_id)
             else:
                 tree[node_id] = {'board': self.board,
                                  'player': self.turn,
@@ -275,7 +258,7 @@ class PUCTAgent(Player):
                                  'n': 0.,
                                  'w': 0.,
                                  'q': 0.,
-                                 'p': None}
+                                 'p': 0.}
                 return node_id
 
     def expansion(self, tree, leaf_id):
@@ -347,6 +330,21 @@ class PUCTAgent(Player):
                     player = 0
                     board[action[0]] = -1
 
+    def backup(self, tree, leaf_id, value):
+        # print('backup')
+        node_id = leaf_id
+
+        while True:
+            if node_id == self.root_id:
+                tree[node_id]['n'] += 1
+                return tree
+
+            tree[node_id]['n'] += 1
+            tree[node_id]['w'] += value
+            tree[node_id]['q'] = tree[node_id]['w'] / tree[node_id]['n']
+            parent_id = tree[node_id]['parent']
+            node_id = parent_id
+
     def mcts(self):
         start = time.time()
         for i in range(self.num_mcts):
@@ -368,7 +366,8 @@ class RandomAgent:
     def __init__(self, state_size):
         self.state_size = state_size
 
-    def get_pi(self, board, turn):
+    def get_pi(self, root_id, board, turn):
+        self.root_id = root_id
         action = valid_actions(board)
         prob = 1 / len(action)
         pi = np.zeros(self.state_size**2, 'float')
