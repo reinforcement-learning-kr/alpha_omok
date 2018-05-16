@@ -42,6 +42,7 @@ def self_play(n_episodes):
         board = np.zeros([STATE_SIZE, STATE_SIZE])
         samples = []
         turn = 0
+        root_id = (0,)
         win_index = 0
         step = 0
         action_index = None
@@ -49,11 +50,11 @@ def self_play(n_episodes):
         while win_index == 0:
             render_str(board, STATE_SIZE, action_index)
             # ====================== start mcts ============================
-            pi = agent.get_pi(board, turn)
+            pi = agent.get_pi(root_id, board, turn)
             print('\nPi:')
             print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=2))
             # ===================== collect samples ========================
-            state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
+            state = get_state_pt(root_id, turn, STATE_SIZE, IN_PLANES)
             state_input = Variable(Tensor([state]))
             samples.append((state, pi))
             # ====================== print evaluation ======================
@@ -75,7 +76,7 @@ def self_play(n_episodes):
             else:
                 tau = 0
             action, action_index = get_action(pi, tau)
-            agent.root_id += (action_index,)
+            root_id += (action_index,)
             # =========================== step =============================
             board, _, win_index, turn, _ = env.step(action)
             step += 1
