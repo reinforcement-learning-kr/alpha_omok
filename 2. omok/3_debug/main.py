@@ -15,6 +15,7 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from agent import Player
 import matplotlib.pyplot as plt
+import datetime
 
 import sys
 sys.path.append("env/")
@@ -167,9 +168,9 @@ def train(n_game, n_epochs):
                 print('{:3} step loss: {:.3f}'.format(
                     STEPS, running_loss / (i + 1)))
 
-    plt.plot(n_game, np.average(loss_list), hold=True, marker='*', ms=5)
-    plt.draw()
-    plt.pause(0.000001)
+    # plt.plot(n_game, np.average(loss_list), hold=True, marker='*', ms=5)
+    # plt.draw()
+    # plt.pause(0.000001)
 
 
 if __name__ == '__main__':
