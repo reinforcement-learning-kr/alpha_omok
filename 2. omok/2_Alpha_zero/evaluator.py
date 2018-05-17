@@ -24,6 +24,8 @@ class Evaluator:
         elif model_path_a:
             print('load player model:', model_path_a)
             self.player = Player(STATE_SIZE, N_MCTS, IN_PLANES)
+            self.player.model = PVNet(
+                N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
             self.player.model.load_state_dict(torch.load(model_path_a))
         else:
             self.player = Player(STATE_SIZE, N_MCTS, IN_PLANES)
@@ -94,6 +96,10 @@ def main():
         root_id = (0,)
         win_index = 0
         action_index = None
+        if i % 2 == 0:
+            print("Player Color: Black")
+        else:
+            print("Player color: White")
 
         while win_index == 0:
             render_str(board, STATE_SIZE, action_index)
@@ -120,7 +126,7 @@ def main():
                 if turn == enemy_turn:
                     if win_index == 3:
                         result['Draw'] += 1
-                        print("Draw!")
+                        print("\nDraw!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -130,7 +136,7 @@ def main():
 
                     else:
                         result['Player'] += 1
-                        print("Player Win!")
+                        print("\nPlayer Win!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -140,7 +146,7 @@ def main():
                 else:
                     if win_index == 3:
                         result['Draw'] += 1
-                        print("Draw!")
+                        print("\nDraw!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -149,7 +155,7 @@ def main():
                         enemy_elo += 32 * (0.5 - ex_ew)
                     else:
                         result['Enemy'] += 1
-                        print("Enemy Win!")
+                        print("\nEnemy Win!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
