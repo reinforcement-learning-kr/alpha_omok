@@ -104,12 +104,12 @@ def self_play(n_episodes):
                 # result
                 bw, ww, dr = RESULT['Black'], RESULT['White'], RESULT['Draw']
                 print('')
-                print('=' * 20, " {}  Game End  ".format(episode + 1), '=' * 20)
+                print('=' * 20, " {:2} Game End  ".format(episode + 1), '=' * 20)
                 stats = (
                     'Black Win: {}  White Win: {}  Draw: {}  Winrate: {:.2f}%'.format(
                         bw, ww, dr, (bw + 0.5 * dr) / (bw + ww + dr) * 100))
+                print(stats)
                 print('memory size:', len(memory))
-                print(stats, '\n')
 
 
 STEPS = 0
@@ -204,7 +204,7 @@ if __name__ == '__main__':
         agent.model.cuda()
 
     for i in range(TOTAL_ITER):
-        print('=' * 20, " {} Iteration  ".format(i + 1), '=' * 20)
+        print('=' * 20, " {:2} Iteration  ".format(i + 1), '=' * 20)
         self_play(N_EPISODES)
 
         if len(memory) == 8000:
