@@ -96,6 +96,10 @@ def main():
         root_id = (0,)
         win_index = 0
         action_index = None
+        if i % 2 == 0:
+            print("Player Color: Black")
+        else:
+            print("Player color: White")
 
         while win_index == 0:
             render_str(board, STATE_SIZE, action_index)
