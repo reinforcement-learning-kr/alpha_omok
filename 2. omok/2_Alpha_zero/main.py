@@ -22,22 +22,20 @@ import env_small as game
 
 STATE_SIZE = 9
 N_BLOCKS = 10
-IN_PLANES = 5  # history * 2 + 1
-OUT_PLANES = 128
-BATCH_SIZE = 16
-TOTAL_ITER = 100000
+IN_PLANES = 17  # history * 2 + 1
+OUT_PLANES = 64
+BATCH_SIZE = 32
+TOTAL_ITER = 1000000
 N_MCTS = 400
 TAU_THRES = 8
 N_EPISODES = 1
-N_EPOCHS = 1
-SAVE_CYCLE = 500
-LR = 1e-3
+N_EPOCHS = 4
+LR = 2e-4
 L2 = 1e-4
 
 
 def self_play(n_episodes):
     for episode in range(n_episodes):
-        print('playing {}th episode by self-play'.format(episode + 1))
         env = game.GameState('text')
         board = np.zeros([STATE_SIZE, STATE_SIZE])
         samples = []
@@ -88,21 +86,30 @@ def self_play(n_episodes):
             if win_index != 0:
                 if win_index == 1:
                     reward_black = 1.
-                    win_color = 'Black'
+                    RESULT['Black'] += 1
                 elif win_index == 2:
                     reward_black = -1.
-                    win_color = 'White'
+                    RESULT['White'] += 1
                 else:
                     reward_black = 0.
-                    win_color = 'None'
+                    RESULT['Draw'] += 1
 
                 render_str(board, STATE_SIZE, action_index)
-                print("{} win in episode {}".format(win_color, episode + 1))
             # ====================== store in memory =======================
                 for i in range(len(samples)):
                     memory.appendleft(
                         (samples[i][0], samples[i][1], reward_black))
                 agent.reset()
+
+                # result
+                bw, ww, dr = RESULT['Black'], RESULT['White'], RESULT['Draw']
+                print('')
+                print('=' * 20, " {:2} Game End  ".format(bw + ww + dr), '=' * 20)
+                stats = (
+                    'Black Win: {}  White Win: {}  Draw: {}  Winrate: {:.2f}%'.format(
+                        bw, ww, dr, (bw + 0.5 * dr) / (bw + ww + dr) * 100))
+                print(stats)
+                print('memory size:', len(memory))
 
 
 STEPS = 0
@@ -116,7 +123,7 @@ def train(n_game, n_epochs):
     #     LR = 1e-3
     # if STEPS >= 18e6:
     #     LR = 1e-4
-
+    print('=' * 20, ' Start Learning ', '=' * 20,)
     print('memory size:', len(memory))
     print('learning rate:', LR)
 
@@ -131,7 +138,7 @@ def train(n_game, n_epochs):
                           momentum=0.9,
                           weight_decay=L2)
 
-    loss_list = []
+    # loss_list = []
 
     for epoch in range(n_epochs):
         running_loss = 0.
@@ -151,7 +158,7 @@ def train(n_game, n_epochs):
             loss = F.mse_loss(v_batch, z_batch) + \
                 torch.mean(torch.sum(-pi_batch * torch.log(p_batch), 1))
 
-            loss_list.append(loss.data[0])
+            # loss_list.append(loss.data[0])
 
             optimizer.zero_grad()
             loss.backward()
@@ -176,28 +183,34 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    memory = deque(maxlen=5120)
+    memory = deque(maxlen=8000)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
+
+    RESULT = {'Black': 0, 'White': 0, 'Draw': 0}
 
     datetime_now = str(datetime.date.today()) + '_' + \
         str(datetime.datetime.now().hour) + '_' + \
         str(datetime.datetime.now().minute)
 
+    model_path = None
+
+    if model_path:
+        print('load model: {}\n'.format(model_path))
+        agent.model.load_state_dict(torch.load(model_path))
+        SETPS = int(model_path.split('_')[3])
+
     if use_cuda:
         agent.model.cuda()
 
     for i in range(TOTAL_ITER):
-        print('-----------------------------------------')
-        print('{}th training process'.format(i + 1))
-        print('-----------------------------------------')
-
+        print('=' * 20, " {:2} Iteration  ".format(i + 1), '=' * 20)
         self_play(N_EPISODES)
 
-        if (i + 1) >= 160:
+        if len(memory) == 8000:
             train(i, N_EPOCHS)
-
-        if (i + 1) % SAVE_CYCLE == 0:
+            memory.clear()
+            RESULT = {'Black': 0, 'White': 0, 'Draw': 0}
             torch.save(
                 agent.model.state_dict(),
                 './models/{}_{}_step_model.pickle'.format(datetime_now, STEPS))
