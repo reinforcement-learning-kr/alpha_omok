@@ -23,15 +23,14 @@ import env_small as game
 STATE_SIZE = 9
 N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
-OUT_PLANES = 128
-BATCH_SIZE = 16
-TOTAL_ITER = 100000
+OUT_PLANES = 64
+BATCH_SIZE = 32
+TOTAL_ITER = 1000000
 N_MCTS = 400
 TAU_THRES = 8
 N_EPISODES = 1
-N_EPOCHS = 1
-SAVE_CYCLE = 500
-LR = 1e-3
+N_EPOCHS = 4
+LR = 2e-4
 L2 = 1e-4
 
 
@@ -131,7 +130,7 @@ def train(n_game, n_epochs):
                           momentum=0.9,
                           weight_decay=L2)
 
-    loss_list = []
+    # loss_list = []
 
     for epoch in range(n_epochs):
         running_loss = 0.
@@ -151,7 +150,7 @@ def train(n_game, n_epochs):
             loss = F.mse_loss(v_batch, z_batch) + \
                 torch.mean(torch.sum(-pi_batch * torch.log(p_batch), 1))
 
-            loss_list.append(loss.data[0])
+            # loss_list.append(loss.data[0])
 
             optimizer.zero_grad()
             loss.backward()
@@ -176,7 +175,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    memory = deque(maxlen=5120)
+    memory = deque(maxlen=8000)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
 
@@ -194,10 +193,9 @@ if __name__ == '__main__':
 
         self_play(N_EPISODES)
 
-        if (i + 1) >= 160:
+        if len(memory) == 8000:
             train(i, N_EPOCHS)
-
-        if (i + 1) % SAVE_CYCLE == 0:
+            memory.clear()
             torch.save(
                 agent.model.state_dict(),
                 './models/{}_{}_step_model.pickle'.format(datetime_now, STEPS))
