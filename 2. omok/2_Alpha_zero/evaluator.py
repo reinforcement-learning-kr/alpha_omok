@@ -9,7 +9,7 @@ USE_CUDA = torch.cuda.is_available()
 
 STATE_SIZE = 9
 N_BLOCKS = 10
-IN_PLANES = 9
+IN_PLANES = 5
 OUT_PLANES = 64
 N_MCTS = 400
 N_MATCH = 30
@@ -24,6 +24,8 @@ class Evaluator:
         elif model_path_a:
             print('load player model:', model_path_a)
             self.player = Player(STATE_SIZE, N_MCTS, IN_PLANES)
+            self.player.model = PVNet(
+                N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
             self.player.model.load_state_dict(torch.load(model_path_a))
         else:
             self.player = Player(STATE_SIZE, N_MCTS, IN_PLANES)
