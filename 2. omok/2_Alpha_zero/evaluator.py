@@ -9,7 +9,7 @@ USE_CUDA = torch.cuda.is_available()
 
 STATE_SIZE = 9
 N_BLOCKS = 10
-IN_PLANES = 5
+IN_PLANES = 9
 OUT_PLANES = 64
 N_MCTS = 400
 N_MATCH = 30
