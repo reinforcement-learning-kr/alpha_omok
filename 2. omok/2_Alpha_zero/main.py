@@ -104,7 +104,7 @@ def self_play(n_episodes):
                 # result
                 bw, ww, dr = RESULT['Black'], RESULT['White'], RESULT['Draw']
                 print('')
-                print('=' * 20, " {:2} Game End  ".format(episode + 1), '=' * 20)
+                print('=' * 20, " {:2} Game End  ".format(bw + ww + dr), '=' * 20)
                 stats = (
                     'Black Win: {}  White Win: {}  Draw: {}  Winrate: {:.2f}%'.format(
                         bw, ww, dr, (bw + 0.5 * dr) / (bw + ww + dr) * 100))
