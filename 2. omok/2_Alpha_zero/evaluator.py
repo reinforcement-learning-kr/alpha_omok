@@ -126,7 +126,7 @@ def main():
                 if turn == enemy_turn:
                     if win_index == 3:
                         result['Draw'] += 1
-                        print("Draw!")
+                        print("\nDraw!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -136,7 +136,7 @@ def main():
 
                     else:
                         result['Player'] += 1
-                        print("Player Win!")
+                        print("\nPlayer Win!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -146,7 +146,7 @@ def main():
                 else:
                     if win_index == 3:
                         result['Draw'] += 1
-                        print("Draw!")
+                        print("\nDraw!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -155,7 +155,7 @@ def main():
                         enemy_elo += 32 * (0.5 - ex_ew)
                     else:
                         result['Enemy'] += 1
-                        print("Enemy Win!")
+                        print("\nEnemy Win!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
