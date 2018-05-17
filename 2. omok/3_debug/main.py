@@ -42,6 +42,7 @@ def self_play(n_episodes):
         board = np.zeros([STATE_SIZE, STATE_SIZE])
         samples = []
         turn = 0
+        root_id = (0,)
         win_index = 0
         step = 0
         action_index = None
@@ -54,7 +55,7 @@ def self_play(n_episodes):
             # print('\nPi:')
             # print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=2))
             # ===================== collect samples ========================
-            state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
+            state = get_state_pt(root_id, turn, STATE_SIZE, IN_PLANES)
             state_input = Variable(Tensor([state]))
 
             # ====================== print evaluation ======================
@@ -77,25 +78,25 @@ def self_play(n_episodes):
             p = p.data[0].cpu().numpy()
             action, action_index = get_action(p)
             samples.append((state, action))
-            agent.root_id += (action_index,)
+            root_id += (action_index,)
             # =========================== step =============================
-            board, _, win_index, turn, _ = env.step(action)
+            board, check_valid_pos, win_index, turn, _ = env.step(action)
             step += 1
 
             # used for debugging
-            # if not check_valid_pos:
-            #     raise ValueError("no legal move!")
+            if not check_valid_pos:
+                raise ValueError("no legal move!")
 
             if win_index != 0:
                 if win_index == 1:
                     reward_black = 1.
-                    win_color = 'Black'
+                    # win_color = 'Black'
                 elif win_index == 2:
                     reward_black = -1.
-                    win_color = 'White'
+                    # win_color = 'White'
                 else:
                     reward_black = 0.
-                    win_color = 'None'
+                    # win_color = 'None'
 
                 # render_str(board, STATE_SIZE, action_index)
                 # print("{} win in episode {}".format(win_color, episode + 1))
@@ -151,7 +152,8 @@ def train(n_game, n_epochs):
             loss_v = F.mse_loss(v_batch, z_batch)
             p_action = a_batch * p_batch
             p_action = torch.sum(p_action, 1)
-            loss_p = torch.mean(torch.sum(-z_batch * torch.log(p_action + 0.00001)))
+            loss_p = torch.mean(
+                torch.sum(-z_batch * torch.log(p_action + 1e-5)))
             loss = loss_v + loss_p
             loss_list.append(loss.data[0])
 
@@ -183,8 +185,8 @@ if __name__ == '__main__':
     agent.model = PVNet(IN_PLANES, STATE_SIZE)
 
     datetime_now = str(datetime.date.today()) + '_' + \
-                   str(datetime.datetime.now().hour) + '_' + \
-                   str(datetime.datetime.now().minute)
+        str(datetime.datetime.now().hour) + '_' + \
+        str(datetime.datetime.now().minute)
 
     if use_cuda:
         agent.model.cuda()

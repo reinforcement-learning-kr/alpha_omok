@@ -125,7 +125,7 @@ class PVNet(nn.Module):
 
         self.policy = nn.Sequential(
             nn.Linear(2592, state_size**2),
-            nn.Softmax()
+            nn.Softmax(dim=1)
         )
 
         self.value = nn.Sequential(
