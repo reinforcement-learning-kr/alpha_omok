@@ -83,9 +83,13 @@ class Random_vs_server:
             #     action_idx = (row_num-1) * state_size + (col_num-1)
             #     action[action_idx] = 1
 
+            self.env_lock.acquire()
+
             # Take action and get info. for update
             game_board, check_valid_pos, win_index, curr_turn, coord = self.env.step(action)
     
+            self.env_lock.release()
+            
             # If one move is done
             if check_valid_pos:
                 last_action = state_size * coord[0] + coord[1]
