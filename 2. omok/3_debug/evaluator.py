@@ -9,10 +9,10 @@ USE_CUDA = torch.cuda.is_available()
 
 STATE_SIZE = 9
 N_BLOCKS = 10
-IN_PLANES = 9
+IN_PLANES = 17
 OUT_PLANES = 64
-N_MCTS = 300
-N_MATCH = 5
+N_MCTS = 200
+N_MATCH = 30
 
 
 class Evaluator:
@@ -45,8 +45,7 @@ class Evaluator:
 
         else:
             self.enemy = Player(STATE_SIZE, N_MCTS, IN_PLANES)
-            self.enemy.model = PVNet(
-                N_BLOCKS, IN_PLANES, OUT_PLANES, STATE_SIZE)
+            self.enemy.model = PVNet(IN_PLANES, STATE_SIZE)
 
         if USE_CUDA:
             if model_path_a != 'puct':
@@ -73,10 +72,10 @@ def main():
     import env_small as game
     print("CUDA:", USE_CUDA)
 
-    # ======================== input model path ===================== #
+    # ========================== input model path ======================= #
     # 'random': no MCTS, 'puct': model free MCTS, None: random model MCTS
     player_model_path = None
-    enemy_model_path = 'random'
+    enemy_model_path = None
 
     evaluator = Evaluator(player_model_path, enemy_model_path)
 
@@ -97,7 +96,7 @@ def main():
         if i % 2 == 0:
             print("Player Color: Black")
         else:
-            print("Player color: White")
+            print("Player Color: White")
 
         while win_index == 0:
             render_str(board, STATE_SIZE, action_index)
@@ -180,4 +179,6 @@ def main():
 
 if __name__ == '__main__':
     np.random.seed(0)
+    torch.manual_seed(0)
+    torch.cuda.manual_seed_all(0)
     main()

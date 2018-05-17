@@ -181,9 +181,9 @@ class Player:
         for action in root_node['child']:
             child_id = self.root_id + (action,)
             pi[action] = self.tree[child_id]['n']
-
-        pi = np.exp(pi) / np.exp(pi).sum()
-        # pi = pi / pi.sum()
+            
+        # pi = np.exp(pi) / np.exp(pi).sum()
+        pi /= pi.sum()
         return pi
 
     def reset(self):
