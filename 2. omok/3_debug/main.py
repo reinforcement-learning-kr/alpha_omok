@@ -15,6 +15,7 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from agent import Player
 import matplotlib.pyplot as plt
+import datetime
 
 import sys
 sys.path.append("env/")
@@ -42,6 +43,7 @@ def self_play(n_episodes):
         board = np.zeros([STATE_SIZE, STATE_SIZE])
         samples = []
         turn = 0
+        root_id = (0,)
         win_index = 0
         step = 0
         action_index = None
@@ -54,7 +56,7 @@ def self_play(n_episodes):
             # print('\nPi:')
             # print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=2))
             # ===================== collect samples ========================
-            state = get_state_pt(agent.root_id, turn, STATE_SIZE, IN_PLANES)
+            state = get_state_pt(root_id, turn, STATE_SIZE, IN_PLANES)
             state_input = Variable(Tensor([state]))
 
             # ====================== print evaluation ======================
@@ -77,7 +79,7 @@ def self_play(n_episodes):
             p = p.data[0].cpu().numpy()
             action, action_index = get_action(p)
             samples.append((state, action))
-            agent.root_id += (action_index,)
+            root_id += (action_index,)
             # =========================== step =============================
             board, _, win_index, turn, _ = env.step(action)
             step += 1
@@ -165,9 +167,9 @@ def train(n_game, n_epochs):
                 print('{:3} step loss: {:.3f}'.format(
                     STEPS, running_loss / (i + 1)))
 
-    plt.plot(n_game, np.average(loss_list), hold=True, marker='*', ms=5)
-    plt.draw()
-    plt.pause(0.000001)
+    # plt.plot(n_game, np.average(loss_list), hold=True, marker='*', ms=5)
+    # plt.draw()
+    # plt.pause(0.000001)
 
 
 if __name__ == '__main__':
