@@ -183,11 +183,21 @@ def get_state_pt(id, turn, state_size, channel_size):
     return state
 
 
-def get_action(pi):
+def get_action(pi, board):
     # need to be fixed!! apply temperature as control exploration.
     # do not select action greedily
     action_size = len(pi)
     action = np.zeros(action_size)
+
+    valid_action = valid_actions(board)
+    valid_indicator = np.zeros(action_size)
+    for i in range(len(valid_action)):
+        action_idx = valid_action[i][1]
+        valid_indicator[action_idx] = 1
+
+    pi = pi * valid_indicator
+    pi /= np.sum(pi)
+
     action_index = np.random.choice(action_size, p=pi)
     action[action_index] = 1
     return action, action_index

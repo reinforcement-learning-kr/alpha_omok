@@ -1,23 +1,24 @@
-from utils import render_str, get_action
+from utils import render_str, get_action, get_state_pt
 from agent import Player, PUCTAgent, RandomAgent
 from neural_net import PVNet
+from torch.autograd import Variable
 import numpy as np
 import torch
 import sys
 sys.path.append("env/")
 USE_CUDA = torch.cuda.is_available()
-
+Tensor = torch.cuda.FloatTensor if USE_CUDA else torch.FloatTensor
 STATE_SIZE = 9
-N_BLOCKS = 10
-IN_PLANES = 17
-OUT_PLANES = 64
+N_BLOCKS = 3
+IN_PLANES = 5
+OUT_PLANES = 32
 N_MCTS = 200
 N_MATCH = 30
 
 
 class Evaluator:
     def __init__(self, model_path_a, model_path_b):
-
+        self.model_path_b = model_path_b
         if model_path_a == 'puct':
             print('load player model:', model_path_a)
             self.player = PUCTAgent(STATE_SIZE, N_MCTS)
@@ -41,6 +42,7 @@ class Evaluator:
         elif model_path_b:
             print('load enemy model:', model_path_b)
             self.enemy = Player(STATE_SIZE, N_MCTS, IN_PLANES)
+            self.enemy.model = PVNet(IN_PLANES, STATE_SIZE)
             self.enemy.model.load_state_dict(torch.load(model_path_b))
 
         else:
@@ -55,11 +57,21 @@ class Evaluator:
 
     def get_action(self, root_id, board, turn, enemy_turn):
         if turn != enemy_turn:
-            pi = self.player.get_pi(root_id, board, turn)
-            action, action_index = get_action(pi)
+            state = get_state_pt(root_id, turn, STATE_SIZE, IN_PLANES)
+            state_input = Variable(Tensor([state]))
+            p, v = self.player.model(state_input)
+            p = p.data[0].cpu().numpy()
+            action, action_index = get_action(p, board)
         else:
-            pi = self.enemy.get_pi(root_id, board, turn)
-            action, action_index = get_action(pi)
+            if self.model_path_b == 'random':
+                pi = self.enemy.get_pi(root_id, board, turn)
+                action, action_index = get_action(pi, board)
+            else:
+                state = get_state_pt(root_id, turn, STATE_SIZE, IN_PLANES)
+                state_input = Variable(Tensor([state]))
+                p, v = self.enemy.model(state_input)
+                p = p.data[0].cpu().numpy()
+                action, action_index = get_action(p, board)
 
         return action, action_index
 

@@ -4,7 +4,7 @@ Data : 2018.03.12, 2018.03.28, 2018.05.11
 Project : Make your own Alpha Zero
 Objective : find the problem of code. Let's Debugging!!
 '''
-from utils import render_str, get_state_pt, get_action
+from utils import render_str, get_state_pt, get_action, valid_actions
 from neural_net import PVNet
 import numpy as np
 from collections import deque
@@ -20,6 +20,7 @@ import datetime
 import sys
 sys.path.append("env/")
 import env_small as game
+from evaluator import Evaluator
 
 STATE_SIZE = 9
 N_BLOCKS = 3
@@ -30,10 +31,11 @@ TOTAL_ITER = 100000
 N_MCTS = 400
 TAU_THRES = 8
 N_EPISODES = 10
-N_EPOCHS = 1
+N_EPOCHS = 10
 SAVE_CYCLE = 1000
 LR = 1e-3
 L2 = 1e-4
+N_MATCH = 10
 
 
 def self_play(n_episodes):
@@ -77,11 +79,13 @@ def self_play(n_episodes):
             '''
             # ======================== get action ==========================
             p = p.data[0].cpu().numpy()
-            action, action_index = get_action(p)
-            samples.append((state, action))
+            action, action_index = get_action(p, board)
+
             root_id += (action_index,)
             # =========================== step =============================
             board, check_valid_pos, win_index, turn, _ = env.step(action)
+            if turn == 1:
+                samples.append((state, action))
             step += 1
 
             # used for debugging
@@ -149,8 +153,9 @@ def train(n_game, n_epochs):
                 z_batch = Variable(z.float())
 
             p_batch, v_batch = agent.model(s_batch)
-
+            v_batch = v_batch.view(v_batch.size(0))
             loss_v = F.mse_loss(v_batch, z_batch)
+
             p_action = a_batch * p_batch
             p_action = torch.sum(p_action, 1)
             loss_p = torch.mean(
@@ -167,10 +172,116 @@ def train(n_game, n_epochs):
             if (i + 1) % (N_EPISODES) == 0:
                 print('{:3} step loss: {:.3f}'.format(
                     STEPS, running_loss / (i + 1)))
+    torch.save(
+        agent.model.state_dict(),
+        './models/model_{}.pickle'.format(n_game))
 
     # plt.plot(n_game, np.average(loss_list), hold=True, marker='*', ms=5)
     # plt.draw()
     # plt.pause(0.000001)
+
+
+def eval_model(player_model_path, enemy_model_path):
+    evaluator = Evaluator(player_model_path, enemy_model_path)
+
+    env = game.GameState('text')
+    result = {'Player': 0, 'Enemy': 0, 'Draw': 0}
+    turn = 0
+    enemy_turn = 1
+    player_elo = 1500
+    enemy_elo = 1500
+    print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
+        player_elo, enemy_elo))
+
+    for i in range(N_MATCH):
+        board = np.zeros([STATE_SIZE, STATE_SIZE])
+        root_id = (0,)
+        evaluator.player.root_id = root_id
+        evaluator.enemy.root_id = root_id
+        win_index = 0
+        action_index = None
+        if i % 2 == 0:
+            print("Player Color: Black")
+        else:
+            print("Player Color: White")
+
+        while win_index == 0:
+            # render_str(board, STATE_SIZE, action_index)
+            action, action_index = evaluator.get_action(
+                root_id, board, turn, enemy_turn)
+
+            if turn != enemy_turn:
+                # print("player turn")
+                root_id = evaluator.player.root_id + (action_index,)
+                evaluator.enemy.root_id = root_id
+            else:
+                # print("enemy turn")
+                root_id = evaluator.enemy.root_id + (action_index,)
+                evaluator.player.root_id = root_id
+
+            board, check_valid_pos, win_index, turn, _ = env.step(action)
+
+            # used for debugging
+            if not check_valid_pos:
+                raise ValueError("no legal move!")
+
+            if win_index != 0:
+
+                if turn == enemy_turn:
+                    if win_index == 3:
+                        result['Draw'] += 1
+                        print("\nDraw!")
+
+                        elo_diff = enemy_elo - player_elo
+                        ex_pw = 1 / (1 + 10**(elo_diff / 400))
+                        ex_ew = 1 / (1 + 10**(-elo_diff / 400))
+                        player_elo += 32 * (0.5 - ex_pw)
+                        enemy_elo += 32 * (0.5 - ex_ew)
+
+                    else:
+                        result['Player'] += 1
+                        print("\nPlayer Win!")
+
+                        elo_diff = enemy_elo - player_elo
+                        ex_pw = 1 / (1 + 10**(elo_diff / 400))
+                        ex_ew = 1 / (1 + 10**(-elo_diff / 400))
+                        player_elo += 32 * (1 - ex_pw)
+                        enemy_elo += 32 * (0 - ex_ew)
+                else:
+                    if win_index == 3:
+                        result['Draw'] += 1
+                        print("\nDraw!")
+
+                        elo_diff = enemy_elo - player_elo
+                        ex_pw = 1 / (1 + 10**(elo_diff / 400))
+                        ex_ew = 1 / (1 + 10**(-elo_diff / 400))
+                        player_elo += 32 * (0.5 - ex_pw)
+                        enemy_elo += 32 * (0.5 - ex_ew)
+                    else:
+                        result['Enemy'] += 1
+                        print("\nEnemy Win!")
+
+                        elo_diff = enemy_elo - player_elo
+                        ex_pw = 1 / (1 + 10**(elo_diff / 400))
+                        ex_ew = 1 / (1 + 10**(-elo_diff / 400))
+                        player_elo += 32 * (0 - ex_pw)
+                        enemy_elo += 32 * (1 - ex_ew)
+
+                # Change turn
+                enemy_turn = abs(enemy_turn - 1)
+                turn = 0
+
+                # render_str(board, STATE_SIZE, action_index)
+
+                pw, ew, dr = result['Player'], result['Enemy'], result['Draw']
+                winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
+                print('')
+                print('=' * 20, " {}  Game End  ".format(i + 1), '=' * 20)
+                print('Player Win: {}  Enemy Win: {}  Draw: {}  Winrate: {:.2f}%'.format(
+                    pw, ew, dr, winrate))
+                print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
+                    player_elo, enemy_elo))
+                evaluator.reset()
 
 
 if __name__ == '__main__':
@@ -198,8 +309,16 @@ if __name__ == '__main__':
         print('-----------------------------------------')
 
         self_play(N_EPISODES)
-        print(len(memory))
         train(i, N_EPOCHS)
+
+        player_model_path = "./models/model_{}.pickle".format(i)
+        if i == 0:
+            enemy_model_path = 'random'
+        else:
+            enemy_model_path = "./models/model_{}.pickle".format(i-1)
+
+        eval_model(player_model_path, enemy_model_path)
+
         '''
         if (i + 1) >= 160:
             train(i, N_EPOCHS)
