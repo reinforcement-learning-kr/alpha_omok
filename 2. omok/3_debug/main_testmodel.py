@@ -325,8 +325,6 @@ if __name__ == '__main__':
         player_model_path = "./models/model_{}.pickle".format(i)
         if i == 0:
             best_model_path = 'random'
-        else:
-            best_model_path = "./models/model_{}.pickle".format(i-1)
 
         winrate = eval_model(player_model_path, best_model_path)
         if winrate > 50:
