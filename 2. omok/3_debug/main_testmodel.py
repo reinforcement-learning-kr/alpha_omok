@@ -30,15 +30,16 @@ BATCH_SIZE = 16
 TOTAL_ITER = 100000
 N_MCTS = 400
 TAU_THRES = 8
-N_EPISODES = 10
+N_EPISODES = 300
 N_EPOCHS = 10
 SAVE_CYCLE = 1000
-LR = 1e-3
+LR = 2e-4
 L2 = 1e-4
 N_MATCH = 10
-
+beta = 0.001
 
 def self_play(n_episodes):
+    print('self play for {} games'.format(n_episodes))
     for episode in range(n_episodes):
         # print('playing {}th episode by self-play'.format(episode + 1))
         env = game.GameState('text')
@@ -84,6 +85,8 @@ def self_play(n_episodes):
             root_id += (action_index,)
             # =========================== step =============================
             board, check_valid_pos, win_index, turn, _ = env.step(action)
+            # turn = 1(흑), 0(백)
+            # 일단 흑돌의 데이터만 저장
             if turn == 1:
                 samples.append((state, action))
             step += 1
@@ -111,18 +114,7 @@ def self_play(n_episodes):
                 agent.reset()
 
 
-STEPS = 0
-
-
 def train(n_game, n_epochs):
-    global STEPS
-    # global LR
-
-    # if 12e6 <= STEPS < 18e6:
-    #     LR = 1e-3
-    # if STEPS >= 18e6:
-    #     LR = 1e-4
-
     print('memory size:', len(memory))
     print('learning rate:', LR)
 
@@ -132,6 +124,7 @@ def train(n_game, n_epochs):
                             drop_last=True,
                             pin_memory=use_cuda)
 
+    # use SGD + momentum optimizer according to the alphago zero paper
     optimizer = optim.SGD(agent.model.parameters(),
                           lr=LR,
                           momentum=0.9,
@@ -141,7 +134,8 @@ def train(n_game, n_epochs):
 
     for epoch in range(n_epochs):
         running_loss = 0.
-
+        entropy = 0.
+        step = 0
         for i, (s, a, z) in enumerate(dataloader):
             if use_cuda:
                 s_batch = Variable(s.float()).cuda()
@@ -158,20 +152,26 @@ def train(n_game, n_epochs):
 
             p_action = a_batch * p_batch
             p_action = torch.sum(p_action, 1)
-            loss_p = torch.mean(
-                torch.sum(-z_batch * torch.log(p_action + 1e-5)))
-            loss = loss_v + loss_p
+            loss_p = torch.mean(torch.mul(-z_batch, torch.log(p_action + 1e-5)))
+            entropy_p = torch.mean(torch.mul(-p_batch, torch.log(p_batch + 1e-5)))
+
+            loss = loss_v + loss_p - beta * entropy_p
             loss_list.append(loss.data[0])
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            running_loss += loss.data[0]
-            STEPS += 1
+            running_loss += loss_v.data[0]
+            entropy += entropy_p.data[0]
+            step += 1
 
-            if (i + 1) % (N_EPISODES) == 0:
-                print('{:3} step loss: {:.3f}'.format(
-                    STEPS, running_loss / (i + 1)))
+        # loss for the value head
+        print('{:3} epoch loss: {:.3f}'.format(
+            epoch + 1, running_loss / step))
+        # entropy of current policy
+        print('{:3} epoch policy entropy: {:.3f}'.format(
+            epoch + 1, entropy / step))
+
     torch.save(
         agent.model.state_dict(),
         './models/model_{}.pickle'.format(n_game))
@@ -286,8 +286,8 @@ def eval_model(player_model_path, enemy_model_path):
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
-    # np.random.seed(0)
-    # torch.manual_seed(0)
+    np.random.seed(0)
+    torch.manual_seed(0)
     # torch.cuda.manual_seed_all(0)
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
@@ -318,7 +318,7 @@ if __name__ == '__main__':
             enemy_model_path = "./models/model_{}.pickle".format(i-1)
 
         eval_model(player_model_path, enemy_model_path)
-
+        memory = deque(maxlen=50000)
         '''
         if (i + 1) >= 160:
             train(i, N_EPOCHS)
