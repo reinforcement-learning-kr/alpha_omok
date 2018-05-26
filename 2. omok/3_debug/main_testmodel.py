@@ -38,6 +38,7 @@ L2 = 1e-4
 N_MATCH = 10
 beta = 0.001
 
+
 def self_play(n_episodes):
     print('self play for {} games'.format(n_episodes))
     for episode in range(n_episodes):
@@ -200,11 +201,12 @@ def eval_model(player_model_path, enemy_model_path):
         evaluator.enemy.root_id = root_id
         win_index = 0
         action_index = None
+        '''
         if i % 2 == 0:
             print("Player Color: Black")
         else:
             print("Player Color: White")
-
+        '''
         while win_index == 0:
             # render_str(board, STATE_SIZE, action_index)
             action, action_index = evaluator.get_action(
@@ -230,7 +232,7 @@ def eval_model(player_model_path, enemy_model_path):
                 if turn == enemy_turn:
                     if win_index == 3:
                         result['Draw'] += 1
-                        print("\nDraw!")
+                        # print("\nDraw!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -240,7 +242,7 @@ def eval_model(player_model_path, enemy_model_path):
 
                     else:
                         result['Player'] += 1
-                        print("\nPlayer Win!")
+                        # print("\nPlayer Win!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -250,7 +252,7 @@ def eval_model(player_model_path, enemy_model_path):
                 else:
                     if win_index == 3:
                         result['Draw'] += 1
-                        print("\nDraw!")
+                        # print("\nDraw!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -259,7 +261,7 @@ def eval_model(player_model_path, enemy_model_path):
                         enemy_elo += 32 * (0.5 - ex_ew)
                     else:
                         result['Enemy'] += 1
-                        print("\nEnemy Win!")
+                        # print("\nEnemy Win!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -275,13 +277,19 @@ def eval_model(player_model_path, enemy_model_path):
 
                 pw, ew, dr = result['Player'], result['Enemy'], result['Draw']
                 winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
+                '''
                 print('')
                 print('=' * 20, " {}  Game End  ".format(i + 1), '=' * 20)
                 print('Player Win: {}  Enemy Win: {}  Draw: {}  Winrate: {:.2f}%'.format(
                     pw, ew, dr, winrate))
                 print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
                     player_elo, enemy_elo))
+                
+                '''
                 evaluator.reset()
+    winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
+    print('winrate:', winrate)
+    return winrate
 
 
 if __name__ == '__main__':
@@ -308,16 +316,22 @@ if __name__ == '__main__':
         print('{}th training process'.format(i + 1))
         print('-----------------------------------------')
 
+        if i > 0:
+            agent.model.load_state_dict(torch.load(best_model_path))
+            print('load model from ' + best_model_path)
         self_play(N_EPISODES)
         train(i, N_EPOCHS)
 
         player_model_path = "./models/model_{}.pickle".format(i)
         if i == 0:
-            enemy_model_path = 'random'
+            best_model_path = 'random'
         else:
-            enemy_model_path = "./models/model_{}.pickle".format(i-1)
+            best_model_path = "./models/model_{}.pickle".format(i-1)
 
-        eval_model(player_model_path, enemy_model_path)
+        winrate = eval_model(player_model_path, best_model_path)
+        if winrate > 50:
+            best_model_path = player_model_path
+
         memory = deque(maxlen=50000)
         '''
         if (i + 1) >= 160:
