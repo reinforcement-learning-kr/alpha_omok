@@ -8,15 +8,17 @@ import utils
 
 
 BOARD_SIZE = 9
-N_BLOCKS = 5
-IN_PLANES = 3
-OUT_PLANES = 8
+N_BLOCKS = 20
+IN_PLANES = 3  # history * 2 + 1
+OUT_PLANES = 64
 N_MCTS = 400
 N_MATCH = 30
 
 
 class Evaluator(object):
+
     def __init__(self, model_path_a, model_path_b):
+
         if model_path_a == 'random':
             print('load player model:', model_path_a)
             self.player = agents.RandomAgent(BOARD_SIZE)
@@ -25,22 +27,27 @@ class Evaluator(object):
             print('load player model:', model_path_a)
             self.player = agents.PUCTAgent(BOARD_SIZE, N_MCTS)
 
+        elif model_path_a == 'uct':
+            print('load player model:', model_path_a)
+            self.player = agents.UCTAgent(BOARD_SIZE, N_MCTS)
+
         elif model_path_a == 'human':
             print('load player model:', model_path_a)
             self.player = agents.HumanAgent(BOARD_SIZE)
 
         elif model_path_a:
             print('load player model:', model_path_a)
-            self.player = agents.Player(BOARD_SIZE, N_MCTS, IN_PLANES)
+            self.player = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
             self.player.model = PVNet(
                 N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
 
             if use_cuda:
                 self.player.model.cuda()
-
             self.player.model.load_state_dict(torch.load(model_path_a))
+
         else:
-            self.player = agents.Player(BOARD_SIZE, N_MCTS, IN_PLANES)
+            print('load player model:', model_path_a)
+            self.player = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
             self.player.model = PVNet(
                 N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
 
@@ -55,22 +62,27 @@ class Evaluator(object):
             print('load enemy model:', model_path_b)
             self.enemy = agents.PUCTAgent(BOARD_SIZE, N_MCTS)
 
+        elif model_path_b == 'uct':
+            print('load enemy model:', model_path_b)
+            self.enemy = agents.UCTAgent(BOARD_SIZE, N_MCTS)
+
         elif model_path_b == 'human':
             print('load enemy model:', model_path_b)
             self.enemy = agents.HumanAgent(BOARD_SIZE)
 
         elif model_path_b:
             print('load enemy model:', model_path_b)
-            self.enemy = agents.Player(BOARD_SIZE, N_MCTS, IN_PLANES)
+            self.enemy = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
             self.enemy.model = PVNet(
                 N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
 
             if use_cuda:
                 self.enemy.model.cuda()
-
             self.enemy.model.load_state_dict(torch.load(model_path_b))
+
         else:
-            self.enemy = agents.Player(BOARD_SIZE, N_MCTS, IN_PLANES)
+            print('load enemy model:', model_path_b)
+            self.enemy = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
             self.enemy.model = PVNet(
                 N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
 
@@ -99,11 +111,12 @@ def main():
     print("CUDA:", use_cuda)
 
     # =========================== input model path ======================== #
-    # 'human': play, 'random': random, 'puct': MCTS, None: raw model MCTS   #
+    #    'human': human play    'random': random    None: raw model MCTS    #
+    #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
     # ===================================================================== #
 
-    player_model_path = 'puct'
-    enemy_model_path = 'puct'
+    player_model_path = None
+    enemy_model_path = None
 
     # ===================================================================== #
 
@@ -114,6 +127,7 @@ def main():
     enemy_turn = 1
     player_elo = 1500
     enemy_elo = 1500
+
     print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
         player_elo, enemy_elo))
 

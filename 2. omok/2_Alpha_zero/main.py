@@ -1,6 +1,7 @@
 from collections import deque
 import datetime
 import pickle
+# from pprint import pprint
 
 # import matplotlib.pyplot as plt
 import numpy as np
@@ -32,7 +33,7 @@ L2 = 1e-4
 
 def self_play():
     env = game.GameState('text')
-    board = np.zeros([BOARD_SIZE, BOARD_SIZE])
+    board = np.zeros((BOARD_SIZE, BOARD_SIZE))
     samples_black = []
     samples_white = []
     turn = 0
@@ -44,12 +45,14 @@ def self_play():
     while win_index == 0:
         render_str(board, BOARD_SIZE, action_index)
         # ====================== start mcts ============================
-        pi = Agent.get_pi(root_id, turn)
+
+        pi = Agent.get_pi(root_id, board, turn)
         print('\nPi:')
         print(pi.reshape(BOARD_SIZE, BOARD_SIZE).round(decimals=2))
 
         # ===================== collect samples ========================
-        state = get_state_pt(root_id, turn, BOARD_SIZE, IN_PLANES)
+
+        state = get_state_pt(root_id, BOARD_SIZE, IN_PLANES)
         state_input = Variable(Tensor([state]))
 
         if turn == 0:
@@ -58,6 +61,7 @@ def self_play():
             samples_white.append((state, pi))
 
         # ====================== print evaluation ======================
+
         p, v = Agent.model(state_input)
         print(
             "\nProbability:\n{}".format(
@@ -72,6 +76,7 @@ def self_play():
                 (v.data[0] + 1) / 2 * 100))
 
         # ======================== get action ==========================
+
         if step < TAU_THRES:
             tau = 1
         else:
@@ -80,6 +85,7 @@ def self_play():
         root_id += (action_index,)
 
         # =========================== step =============================
+
         board, _, win_index, turn, _ = env.step(action)
         step += 1
 
@@ -112,10 +118,10 @@ def self_play():
                                samples_white[j][1],
                                reward_white))
 
+        # =========================  result  ===========================
+
             render_str(board, BOARD_SIZE, action_index)
             Agent.reset()
-
-            # result
             bw, ww, dr = result['Black'], result['White'], result['Draw']
             print('')
             print('=' * 18,
@@ -128,6 +134,7 @@ def self_play():
                       bw, ww, dr,
                       (bw + 0.5 * dr) / (bw + ww + dr) * 100))
             print('memory size:', len(memory))
+            # pprint(memory)
 
 
 def train(n_epochs):
@@ -207,14 +214,14 @@ def train(n_epochs):
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
-    # np.random.seed(0)
-    # torch.manual_seed(0)
-    # torch.cuda.manual_seed_all(0)
+    np.random.seed(0)
+    torch.manual_seed(0)
+    torch.cuda.manual_seed_all(0)
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
     memory = deque(maxlen=8000)
-    Agent = agents.Player(BOARD_SIZE, N_MCTS, IN_PLANES)
+    Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
     Agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
     step = 0
     # steps = []
@@ -240,7 +247,7 @@ if __name__ == '__main__':
         if len(memory) == 8000:
             train(N_EPOCHS)
 
-            if step % (250 * N_EPOCHS) == 0:
+            if step % 250 == 0:
                 datetime_now = datetime.datetime.now().strftime('%y%m%d_%H%M')
                 torch.save(
                     Agent.model.state_dict(),
