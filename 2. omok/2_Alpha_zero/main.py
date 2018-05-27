@@ -195,7 +195,6 @@ def train(n_epochs):
                   'VLoss: {:.4f}   '
                   'PLoss: {:.4f}'.format(
                       step, loss.item(), v_loss.item(), p_loss.item()))
-            break
 
     print('-' * 58)
     print('min Loss: {:.4f}  '
