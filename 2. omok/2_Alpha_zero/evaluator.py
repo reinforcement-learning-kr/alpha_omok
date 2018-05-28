@@ -92,12 +92,12 @@ class Evaluator(object):
     def get_action(self, root_id, board, turn, enemy_turn):
 
         if turn != enemy_turn:
-            pi = self.player.get_pi(root_id, board, turn)
-            action, action_index = utils.get_action(pi, tau=0)
+            pi = self.player.get_pi(root_id, board, turn, tau=0.01)
+            action, action_index = utils.get_action(pi)
             # print(pi.reshape(BOARD_SIZE, BOARD_SIZE).round(decimals=2))
         else:
-            pi = self.enemy.get_pi(root_id, board, turn)
-            action, action_index = utils.get_action(pi, tau=0)
+            pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
+            action, action_index = utils.get_action(pi)
             # print(pi.reshape(BOARD_SIZE, BOARD_SIZE).round(decimals=2))
 
         return action, action_index
@@ -115,8 +115,8 @@ def main():
     #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
     # ===================================================================== #
 
-    player_model_path = None
-    enemy_model_path = None
+    player_model_path = 'uct'
+    enemy_model_path = 'puct'
 
     # ===================================================================== #
 

@@ -44,7 +44,7 @@ class PolicyHead(nn.Module):
         out = self.relu(out)
         out = out.view(out.size(0), -1)
         out = self.policy_fc(out)
-        out = self.log_softmax(out)
+        out = self.log_softmax(out / 0.67)
         out = out.exp()
         return out
 

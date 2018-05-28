@@ -36,18 +36,18 @@ class ZeroAgent(object):
         self.turn = None
         self.tree.clear()
 
-    def get_pi(self, root_id, board, turn):
+    def get_pi(self, root_id, board, turn, tau):
         self._init_mcts(root_id, board, turn)
         self._mcts(self.root_id)
 
         root_node = self.tree[self.root_id]
-        pi = np.zeros(self.board_size**2, 'float')
+        visit = np.zeros(self.board_size**2, 'float')
 
         for action_index in root_node['child']:
             child_id = self.root_id + (action_index,)
-            pi[action_index] = self.tree[child_id]['n']
+            visit[action_index] = self.tree[child_id]['n']
 
-        # pi = np.exp(pi) / np.exp(pi).sum()
+        pi = visit**(1 / tau)
         pi /= pi.sum()
         return pi
 
@@ -146,7 +146,7 @@ class ZeroAgent(object):
                 child_id = leaf_id + (action_index,)
                 child_board = utils.get_board(child_id, self.board_size)
                 next_turn = utils.get_turn(child_id)
-                prior_prob = policy[i]
+                prior_prob = policy[action_index]
 
                 self.tree[child_id] = {'board': child_board,
                                        'player': next_turn,
@@ -212,18 +212,18 @@ class PUCTAgent(object):
         self.turn = None
         self.tree.clear()
 
-    def get_pi(self, root_id, board, turn):
+    def get_pi(self, root_id, board, turn, tau):
         self._init_mcts(root_id, board, turn)
         self._mcts(self.root_id)
 
         root_node = self.tree[self.root_id]
-        pi = np.zeros(self.board_size**2, 'float')
+        visit = np.zeros(self.board_size**2, 'float')
 
         for action_index in root_node['child']:
             child_id = self.root_id + (action_index,)
-            pi[action_index] = self.tree[child_id]['n']
+            visit[action_index] = self.tree[child_id]['n']
 
-        # pi = np.exp(pi) / np.exp(pi).sum()
+        pi = visit**(1 / tau)
         pi /= pi.sum()
         return pi
 
@@ -388,17 +388,20 @@ class UCTAgent(object):
         self.turn = None
         self.tree.clear()
 
-    def get_pi(self, root_id, board, turn):
+    def get_pi(self, root_id, board, turn, tau):
         self._init_mcts(root_id, board, turn)
         self._mcts(self.root_id)
 
         root_node = self.tree[self.root_id]
+        q = np.zeros(self.board_size**2, 'float')
         pi = np.zeros(self.board_size**2, 'float')
 
         for action_index in root_node['child']:
             child_id = self.root_id + (action_index,)
-            pi[action_index] = self.tree[child_id]['q']
+            q[action_index] = self.tree[child_id]['q']
 
+        max_idx = np.argmax(q)
+        pi[max_idx] = 1
         return pi
 
     def _init_mcts(self, root_id, board, turn):
@@ -547,7 +550,7 @@ class RandomAgent(object):
     def __init__(self, board_size):
         self.board_size = board_size
 
-    def get_pi(self, root_id, board, turn):
+    def get_pi(self, root_id, board, turn, tau):
         self.root_id = root_id
         action = utils.legal_actions(board)
         prob = 1 / len(action)
@@ -574,7 +577,7 @@ class HumanAgent(object):
         self.board_size = board_size
         self._init_board_label()
 
-    def get_pi(self, root_id, board, turn):
+    def get_pi(self, root_id, board, turn, tau):
         self.root_id = root_id
 
         while True:

@@ -205,16 +205,10 @@ def get_turn(node_id):
         return 1
 
 
-def get_action(pi, tau):
+def get_action(pi):
     action_size = len(pi)
     action = np.zeros(action_size)
-
-    if tau == 0:
-        actions = np.argwhere(pi == pi.max()).flatten()
-        action_index = actions[np.random.choice(len(actions))]
-    else:
-        action_index = np.random.choice(action_size, p=pi)
-
+    action_index = np.random.choice(action_size, p=pi)
     action[action_index] = 1
     return action, action_index
 
