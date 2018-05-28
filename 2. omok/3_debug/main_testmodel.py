@@ -30,15 +30,17 @@ BATCH_SIZE = 16
 TOTAL_ITER = 100000
 N_MCTS = 400
 TAU_THRES = 8
-N_EPISODES = 10
+N_EPISODES = 300
 N_EPOCHS = 10
 SAVE_CYCLE = 1000
-LR = 1e-3
+LR = 2e-4
 L2 = 1e-4
 N_MATCH = 10
+beta = 0.001
 
 
 def self_play(n_episodes):
+    print('self play for {} games'.format(n_episodes))
     for episode in range(n_episodes):
         # print('playing {}th episode by self-play'.format(episode + 1))
         env = game.GameState('text')
@@ -84,6 +86,8 @@ def self_play(n_episodes):
             root_id += (action_index,)
             # =========================== step =============================
             board, check_valid_pos, win_index, turn, _ = env.step(action)
+            # turn = 1(흑), 0(백)
+            # 일단 흑돌의 데이터만 저장
             if turn == 1:
                 samples.append((state, action))
             step += 1
@@ -111,18 +115,7 @@ def self_play(n_episodes):
                 agent.reset()
 
 
-STEPS = 0
-
-
 def train(n_game, n_epochs):
-    global STEPS
-    # global LR
-
-    # if 12e6 <= STEPS < 18e6:
-    #     LR = 1e-3
-    # if STEPS >= 18e6:
-    #     LR = 1e-4
-
     print('memory size:', len(memory))
     print('learning rate:', LR)
 
@@ -132,6 +125,7 @@ def train(n_game, n_epochs):
                             drop_last=True,
                             pin_memory=use_cuda)
 
+    # use SGD + momentum optimizer according to the alphago zero paper
     optimizer = optim.SGD(agent.model.parameters(),
                           lr=LR,
                           momentum=0.9,
@@ -141,7 +135,8 @@ def train(n_game, n_epochs):
 
     for epoch in range(n_epochs):
         running_loss = 0.
-
+        entropy = 0.
+        step = 0
         for i, (s, a, z) in enumerate(dataloader):
             if use_cuda:
                 s_batch = Variable(s.float()).cuda()
@@ -158,20 +153,26 @@ def train(n_game, n_epochs):
 
             p_action = a_batch * p_batch
             p_action = torch.sum(p_action, 1)
-            loss_p = torch.mean(
-                torch.sum(-z_batch * torch.log(p_action + 1e-5)))
-            loss = loss_v + loss_p
+            loss_p = torch.mean(torch.mul(-z_batch, torch.log(p_action + 1e-5)))
+            entropy_p = torch.mean(torch.mul(-p_batch, torch.log(p_batch + 1e-5)))
+
+            loss = loss_v + loss_p - beta * entropy_p
             loss_list.append(loss.data[0])
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            running_loss += loss.data[0]
-            STEPS += 1
+            running_loss += loss_v.data[0]
+            entropy += entropy_p.data[0]
+            step += 1
 
-            if (i + 1) % (N_EPISODES) == 0:
-                print('{:3} step loss: {:.3f}'.format(
-                    STEPS, running_loss / (i + 1)))
+        # loss for the value head
+        print('{:3} epoch loss: {:.3f}'.format(
+            epoch + 1, running_loss / step))
+        # entropy of current policy
+        print('{:3} epoch policy entropy: {:.3f}'.format(
+            epoch + 1, entropy / step))
+
     torch.save(
         agent.model.state_dict(),
         './models/model_{}.pickle'.format(n_game))
@@ -200,11 +201,12 @@ def eval_model(player_model_path, enemy_model_path):
         evaluator.enemy.root_id = root_id
         win_index = 0
         action_index = None
+        '''
         if i % 2 == 0:
             print("Player Color: Black")
         else:
             print("Player Color: White")
-
+        '''
         while win_index == 0:
             # render_str(board, STATE_SIZE, action_index)
             action, action_index = evaluator.get_action(
@@ -230,7 +232,7 @@ def eval_model(player_model_path, enemy_model_path):
                 if turn == enemy_turn:
                     if win_index == 3:
                         result['Draw'] += 1
-                        print("\nDraw!")
+                        # print("\nDraw!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -240,7 +242,7 @@ def eval_model(player_model_path, enemy_model_path):
 
                     else:
                         result['Player'] += 1
-                        print("\nPlayer Win!")
+                        # print("\nPlayer Win!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -250,7 +252,7 @@ def eval_model(player_model_path, enemy_model_path):
                 else:
                     if win_index == 3:
                         result['Draw'] += 1
-                        print("\nDraw!")
+                        # print("\nDraw!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -259,7 +261,7 @@ def eval_model(player_model_path, enemy_model_path):
                         enemy_elo += 32 * (0.5 - ex_ew)
                     else:
                         result['Enemy'] += 1
-                        print("\nEnemy Win!")
+                        # print("\nEnemy Win!")
 
                         elo_diff = enemy_elo - player_elo
                         ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -275,19 +277,25 @@ def eval_model(player_model_path, enemy_model_path):
 
                 pw, ew, dr = result['Player'], result['Enemy'], result['Draw']
                 winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
+                '''
                 print('')
                 print('=' * 20, " {}  Game End  ".format(i + 1), '=' * 20)
                 print('Player Win: {}  Enemy Win: {}  Draw: {}  Winrate: {:.2f}%'.format(
                     pw, ew, dr, winrate))
                 print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
                     player_elo, enemy_elo))
+                
+                '''
                 evaluator.reset()
+    winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
+    print('winrate:', winrate)
+    return winrate
 
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
-    # np.random.seed(0)
-    # torch.manual_seed(0)
+    np.random.seed(0)
+    torch.manual_seed(0)
     # torch.cuda.manual_seed_all(0)
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
@@ -308,17 +316,21 @@ if __name__ == '__main__':
         print('{}th training process'.format(i + 1))
         print('-----------------------------------------')
 
+        if i > 0:
+            agent.model.load_state_dict(torch.load(best_model_path))
+            print('load model from ' + best_model_path)
         self_play(N_EPISODES)
         train(i, N_EPOCHS)
 
         player_model_path = "./models/model_{}.pickle".format(i)
         if i == 0:
-            enemy_model_path = 'random'
-        else:
-            enemy_model_path = "./models/model_{}.pickle".format(i-1)
+            best_model_path = 'random'
 
-        eval_model(player_model_path, enemy_model_path)
+        winrate = eval_model(player_model_path, best_model_path)
+        if winrate > 50:
+            best_model_path = player_model_path
 
+        memory = deque(maxlen=50000)
         '''
         if (i + 1) >= 160:
             train(i, N_EPOCHS)

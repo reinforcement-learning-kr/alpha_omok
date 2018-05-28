@@ -379,3 +379,49 @@ class RandomAgent:
 
     def reset(self):
         pass
+
+
+class HumanAgent:
+
+   COLUMN = {"a": 0, "b": 1, "c": 2,
+             "d": 3, "e": 4, "f": 5,
+             "g": 6, "h": 7, "i": 8,
+             "j": 9, "k": 10, "l": 11,
+             "m": 12, "n": 13, "o": 14}
+
+   def __init__(self, board_size):
+       self.board_size = board_size
+
+   def get_pi(self, root_id, board, turn):
+       self.root_id = root_id
+       last_label = self.init_board_label()
+
+       while True:
+           try:
+               action_index = self.input_action(last_label)
+           except Exception:
+               continue
+           else:
+               pi = np.zeros(self.board_size**2, 'float')
+               pi[action_index] = 1
+               return pi
+
+   def init_board_label(self):
+       last_label = str(self.board_size)
+
+       for k, v in self.COLUMN.items():
+           if v == self.board_size - 1:
+               last_label += k
+               break
+
+       return last_label
+
+   def input_action(self, last_label):
+       action_coord = input('1a ~ {}: '.format(last_label)).rstrip().lower()
+       row = int(action_coord[0]) - 1
+       col = self.COLUMN[action_coord[2]]
+       action_index = row * self.board_size + col
+       return action_index
+
+   def reset(self):
+       pass
