@@ -7,11 +7,16 @@ boardsize: 9 x 9
 # By KyushikMin kyushikmin@gamil.com
 # http://mmc.hanyang.ac.kr
 
-from utils import check_win
 import sys
+
+import numpy as np
 import pygame
 from pygame.locals import *
-import numpy as np
+
+from utils import check_win
+
+GAMEBOARD_SIZE = 9
+WIN_STONES = 5
 
 # Window Information
 FPS = 30
@@ -20,9 +25,7 @@ WINDOW_HEIGHT = 450
 TOP_MARGIN = 160
 MARGIN = 10
 BOARD_MARGIN = 20
-GAMEBOARD_SIZE = 9
-INPUT_CHANNEL = 17
-WIN_STONES = 5
+INPUT_CHANNEL = 3
 GRID_SIZE = WINDOW_WIDTH - 2 * (BOARD_MARGIN + MARGIN)
 
 HALF_WINDOW_WIDTH = int(WINDOW_WIDTH / 2)
@@ -63,7 +66,8 @@ class GameState:
         if self.gamemode == 'pygame':
             pygame.init()
 
-            DISPLAYSURF = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+            DISPLAYSURF = pygame.display.set_mode(
+                (WINDOW_WIDTH, WINDOW_HEIGHT))
 
             pygame.display.set_caption('Mini Omok')
             # pygame.display.set_icon(pygame.image.load('./Qar_Sim/icon_resize2.png'))
@@ -93,7 +97,8 @@ class GameState:
         self.Y_coord = []
 
         for i in range(GAMEBOARD_SIZE):
-            self.X_coord.append(MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)))
+            self.X_coord.append(MARGIN + BOARD_MARGIN +
+                                i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)))
             self.Y_coord.append(TOP_MARGIN + BOARD_MARGIN + i *
                                 int(GRID_SIZE / (GAMEBOARD_SIZE - 1)))
 
@@ -239,12 +244,14 @@ class GameState:
 
     # Display rule
     def rule_msg(self):
-        ruleSurf1 = BASIC_FONT.render('Win: Stones has to be 5 in a row', True, WHITE)
+        ruleSurf1 = BASIC_FONT.render(
+            'Win: Stones has to be 5 in a row', True, WHITE)
         ruleRect1 = ruleSurf1.get_rect()
         ruleRect1.topleft = (MARGIN, 50)
         DISPLAYSURF.blit(ruleSurf1, ruleRect1)
 
-        ruleSurf2 = BASIC_FONT.render('(horizontal, vertical, diagonal)', True, WHITE)
+        ruleSurf2 = BASIC_FONT.render(
+            '(horizontal, vertical, diagonal)', True, WHITE)
         ruleRect2 = ruleSurf1.get_rect()
         ruleRect2.topleft = (MARGIN + 35, 70)
         DISPLAYSURF.blit(ruleSurf2, ruleRect2)
@@ -256,17 +263,20 @@ class GameState:
         scoreRect1.topleft = (MARGIN, 105)
         DISPLAYSURF.blit(scoreSurf1, scoreRect1)
 
-        scoreSurf2 = BASIC_FONT.render('Black = ' + str(self.black_win) + '  vs  ', True, WHITE)
+        scoreSurf2 = BASIC_FONT.render(
+            'Black = ' + str(self.black_win) + '  vs  ', True, WHITE)
         scoreRect2 = scoreSurf2.get_rect()
         scoreRect2.topleft = (scoreRect1.midright[0], 105)
         DISPLAYSURF.blit(scoreSurf2, scoreRect2)
 
-        scoreSurf3 = BASIC_FONT.render('White = ' + str(self.white_win) + '  vs  ', True, WHITE)
+        scoreSurf3 = BASIC_FONT.render(
+            'White = ' + str(self.white_win) + '  vs  ', True, WHITE)
         scoreRect3 = scoreSurf3.get_rect()
         scoreRect3.topleft = (scoreRect2.midright[0], 105)
         DISPLAYSURF.blit(scoreSurf3, scoreRect3)
 
-        scoreSurf4 = BASIC_FONT.render('Draw = ' + str(self.count_draw), True, WHITE)
+        scoreSurf4 = BASIC_FONT.render(
+            'Draw = ' + str(self.count_draw), True, WHITE)
         scoreRect4 = scoreSurf4.get_rect()
         scoreRect4.topleft = (scoreRect3.midright[0], 105)
         DISPLAYSURF.blit(scoreSurf4, scoreRect4)
