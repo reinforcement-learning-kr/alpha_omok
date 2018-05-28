@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 import agents
 from env import env_small as game
 from neural_net import PVNet
-from utils import render_str, get_state_pt, get_action
+from utils
 
 
 BOARD_SIZE = 9
@@ -29,6 +29,11 @@ N_EPISODES = 1
 N_EPOCHS = 1
 LR = 2e-3
 L2 = 1e-4
+MEMORY_SIZE = 8000
+TRAIN_START_SIZE = 8000
+SAVE_CYCLE = 250
+ONLINE_TRAIN = False  # True: Update every episode when training begins
+EMPTY_MEMORY = True   # whether to empty memory after saving the memory
 
 
 def self_play():
@@ -43,16 +48,16 @@ def self_play():
     action_index = None
 
     while win_index == 0:
-        render_str(board, BOARD_SIZE, action_index)
-        # ====================== start mcts ============================
+        utils.render_str(board, BOARD_SIZE, action_index)
+        # ====================== start mcts ============================ #
 
         pi = Agent.get_pi(root_id, board, turn)
         print('\nPi:')
         print(pi.reshape(BOARD_SIZE, BOARD_SIZE).round(decimals=2))
 
-        # ===================== collect samples ========================
+        # ===================== collect samples ======================== #
 
-        state = get_state_pt(root_id, BOARD_SIZE, IN_PLANES)
+        state = utils.get_state_pt(root_id, BOARD_SIZE, IN_PLANES)
         state_input = Variable(Tensor([state]))
 
         if turn == 0:
@@ -60,7 +65,7 @@ def self_play():
         else:
             samples_white.append((state, pi))
 
-        # ====================== print evaluation ======================
+        # ====================== print evaluation ====================== #
 
         p, v = Agent.model(state_input)
         print(
@@ -75,16 +80,16 @@ def self_play():
             print("\nWhite's win%: {:.2f}%".format(
                 (v.data[0] + 1) / 2 * 100))
 
-        # ======================== get action ==========================
+        # ======================== get action ========================== #
 
         if step < TAU_THRES:
             tau = 1
         else:
             tau = 0
-        action, action_index = get_action(pi, tau)
+        action, action_index = utils.get_action(pi, tau)
         root_id += (action_index,)
 
-        # =========================== step =============================
+        # =========================== step ============================= #
 
         board, _, win_index, turn, _ = env.step(action)
         step += 1
@@ -106,7 +111,7 @@ def self_play():
                 reward_white = 0.
                 result['Draw'] += 1
 
-        # ====================== store in memory =======================
+        # ====================== store in memory ======================= #
 
             for i in range(len(samples_black)):
                 memory.append((samples_black[i][0],
@@ -118,9 +123,9 @@ def self_play():
                                samples_white[j][1],
                                reward_white))
 
-        # =========================  result  ===========================
+        # =========================  result  =========================== #
 
-            render_str(board, BOARD_SIZE, action_index)
+            utils.render_str(board, BOARD_SIZE, action_index)
             Agent.reset()
             bw, ww, dr = result['Black'], result['White'], result['Draw']
             print('')
@@ -165,7 +170,6 @@ def train(n_epochs):
                                 pin_memory=use_cuda)
 
         for (s, pi, z) in dataloader:
-
             if use_cuda:
                 s_batch = Variable(s.float()).cuda()
                 pi_batch = Variable(pi.float()).cuda()
@@ -196,6 +200,9 @@ def train(n_epochs):
                   'PLoss: {:.4f}'.format(
                       step, loss.item(), v_loss.item(), p_loss.item()))
 
+            if ONLINE_TRAIN:
+                break
+
     print('-' * 58)
     print('min Loss: {:.4f}  '
           'min VLoss: {:.4f}  '
@@ -213,13 +220,13 @@ def train(n_epochs):
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
-    np.random.seed(0)
-    torch.manual_seed(0)
-    torch.cuda.manual_seed_all(0)
+    # np.random.seed(0)
+    # torch.manual_seed(0)
+    # torch.cuda.manual_seed_all(0)
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    memory = deque(maxlen=8000)
+    memory = deque(maxlen=MEMORY_SIZE)
     Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
     Agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
     step = 0
@@ -229,12 +236,22 @@ if __name__ == '__main__':
     loss_p = deque(maxlen=1000)
     result = {'Black': 0, 'White': 0, 'Draw': 0}
 
+    # ==================== load model & dataset ======================== #
+
     model_path = None
+    dataset_path = None
 
     if model_path:
         print('load model: {}\n'.format(model_path[5:]))
         Agent.model.load_state_dict(torch.load(model_path))
         step = int(model_path.split('_')[2])
+
+    if dataset_path:
+        print('load dataset: {}\n'.format(dataset_path))
+        with open(dataset_path, 'rb') as f:
+            memory = pickle.load(f)
+
+    # =================================================================== #
 
     if use_cuda:
         Agent.model.cuda()
@@ -243,16 +260,21 @@ if __name__ == '__main__':
         print('=' * 20, " {:4} Iteration ".format(i + 1), '=' * 20)
         self_play()
 
-        if len(memory) == 8000:
+        if len(memory) == TRAIN_START_SIZE:
             train(N_EPOCHS)
 
-            if step % 250 == 0:
+            if step % SAVE_CYCLE == 0:
                 datetime_now = datetime.datetime.now().strftime('%y%m%d_%H%M')
+                # save model
                 torch.save(
                     Agent.model.state_dict(),
                     'data/{}_{}_step_model.pickle'.format(datetime_now, step))
+                # save dataset
                 with open('data/{}_{}_step_dataset.pickle'.format(
                         datetime_now, step), 'wb') as f:
                     pickle.dump(memory, f, pickle.HIGHEST_PROTOCOL)
-                memory.clear()
+                # reset result
                 result = {'Black': 0, 'White': 0, 'Draw': 0}
+
+                if EMPTY_MEMORY:
+                    memory.clear()
