@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 import agents
 from env import env_small as game
 from neural_net import PVNet
-from utils
+import utils
 
 
 BOARD_SIZE = 9
