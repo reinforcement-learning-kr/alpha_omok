@@ -19,19 +19,19 @@ import utils
 
 BOARD_SIZE = 9
 N_BLOCKS = 10
-IN_PLANES = 3  # history * 2 + 1
+IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 64
 BATCH_SIZE = 32
 TOTAL_ITER = 1000000
 N_MCTS = 400
-TAU_THRES = 8
+TAU_THRES = 6
 N_EPISODES = 1
 N_EPOCHS = 1
-LR = 2e-3
+LR = 0.01
 L2 = 1e-4
 MEMORY_SIZE = 6400
 TRAIN_START_SIZE = 6400
-SAVE_CYCLE = 100
+SAVE_CYCLE = 200
 ONLINE_TRAIN = True  # True: Update every episode when training begins
 EMPTY_MEMORY = False   # whether to empty memory after saving the memory
 
@@ -207,9 +207,11 @@ def train(n_epochs):
                 break
 
     print('-' * 58)
-    print('min Loss: {:.4f}  '
-          'min VLoss: {:.4f}  '
-          'min PLoss: {:.4f}'.format(min(loss_pv), min(loss_v), min(loss_p)))
+    print('mean Loss: {:.4f}  '
+          'mean VLoss: {:.4f}  '
+          'mean PLoss: {:.4f}'.format(sum(loss_pv) / len(loss_pv),
+                                      sum(loss_v) / len(loss_v),
+                                      sum(loss_p) / len(loss_p)))
 
     # plt.plot(STEPS, V_LOSS, marker='o', ms=3, label='V Loss')
     # plt.plot(STEPS, P_LOSS, marker='o', ms=3, label='P Loss')
@@ -237,9 +239,9 @@ if __name__ == '__main__':
 
     # global variable
     memory = deque(maxlen=MEMORY_SIZE)
-    loss_pv = deque(maxlen=1000)
-    loss_v = deque(maxlen=1000)
-    loss_p = deque(maxlen=1000)
+    loss_pv = deque(maxlen=200)
+    loss_v = deque(maxlen=200)
+    loss_p = deque(maxlen=200)
     result = {'Black': 0, 'White': 0, 'Draw': 0}
     step = 0
 
@@ -248,6 +250,9 @@ if __name__ == '__main__':
     # init agent & model
     Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
     Agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
+
+    if use_cuda:
+        Agent.model.cuda()
 
     model_path = None
     dataset_path = None
@@ -262,21 +267,17 @@ if __name__ == '__main__':
         with open(dataset_path, 'rb') as f:
             memory = pickle.load(f)
 
-    if use_cuda:
-        Agent.model.cuda()
-
     # ====================== self-play & training ====================== #
 
     for i in range(TOTAL_ITER):
         print('=' * 20, " {:4} Iteration ".format(i + 1), '=' * 20)
 
         for e in range(N_EPISODES):
-            self_play()
 
             if len(memory) == TRAIN_START_SIZE:
                 train(N_EPOCHS)
 
-                # ====================== save & reset  ====================== #
+            # ====================== save & reset  ====================== #
 
                 if step % SAVE_CYCLE == 0:
                     datetime_now = datetime.now().strftime('%y%m%d_%H%M')
@@ -297,3 +298,5 @@ if __name__ == '__main__':
 
                     if EMPTY_MEMORY:
                         memory.clear()
+
+            self_play()

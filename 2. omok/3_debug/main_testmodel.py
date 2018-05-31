@@ -153,8 +153,10 @@ def train(n_game, n_epochs):
 
             p_action = a_batch * p_batch
             p_action = torch.sum(p_action, 1)
-            loss_p = torch.mean(torch.mul(-z_batch, torch.log(p_action + 1e-5)))
-            entropy_p = torch.mean(torch.mul(-p_batch, torch.log(p_batch + 1e-5)))
+            loss_p = torch.mean(
+                torch.mul(-z_batch, torch.log(p_action + 1e-5)))
+            entropy_p = torch.mean(
+                torch.mul(-p_batch, torch.log(p_batch + 1e-5)))
 
             loss = loss_v + loss_p - beta * entropy_p
             loss_list.append(loss.data[0])

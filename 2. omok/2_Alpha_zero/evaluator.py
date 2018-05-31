@@ -8,11 +8,11 @@ import utils
 
 
 BOARD_SIZE = 9
-N_BLOCKS = 20
-IN_PLANES = 3  # history * 2 + 1
+N_BLOCKS = 10
+IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 64
 N_MCTS = 400
-N_MATCH = 30
+N_MATCH = 12
 
 
 class Evaluator(object):
@@ -43,6 +43,7 @@ class Evaluator(object):
 
             if use_cuda:
                 self.player.model.cuda()
+
             self.player.model.load_state_dict(torch.load(model_path_a))
 
         else:
@@ -78,6 +79,7 @@ class Evaluator(object):
 
             if use_cuda:
                 self.enemy.model.cuda()
+
             self.enemy.model.load_state_dict(torch.load(model_path_b))
 
         else:
@@ -115,8 +117,8 @@ def main():
     #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
     # ===================================================================== #
 
-    player_model_path = 'uct'
-    enemy_model_path = 'puct'
+    player_model_path = 'data/180531_1306_200_step_model.pickle'
+    enemy_model_path = None
 
     # ===================================================================== #
 

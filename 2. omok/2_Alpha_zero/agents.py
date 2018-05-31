@@ -1,6 +1,5 @@
 import sys
 import time
-# from pprint import pprint
 
 import numpy as np
 import torch
@@ -15,8 +14,6 @@ Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 
 class ZeroAgent(object):
 
-    C_PUCT = 5
-
     def __init__(self, board_size, num_mcts, inplanes, noise=True):
         self.board_size = board_size
         self.num_mcts = num_mcts
@@ -24,6 +21,7 @@ class ZeroAgent(object):
         # tictactoe and omok
         self.win_mark = 3 if board_size == 3 else 5
         self.alpha = 10 / self.board_size**2
+        self.c_puct = 5
         self.noise = noise
         self.root_id = None
         self.board = None
@@ -40,10 +38,9 @@ class ZeroAgent(object):
         self._init_mcts(root_id, board, turn)
         self._mcts(self.root_id)
 
-        root_node = self.tree[self.root_id]
         visit = np.zeros(self.board_size**2, 'float')
 
-        for action_index in root_node['child']:
+        for action_index in self.tree[self.root_id]['child']:
             child_id = self.root_id + (action_index,)
             visit[action_index] = self.tree[child_id]['n']
 
@@ -66,6 +63,16 @@ class ZeroAgent(object):
                                        'w': 0.,
                                        'q': 0.,
                                        'p': 0.}
+        elif self.noise:
+            children = self.tree[self.root_id]['child']
+            noise_probs = np.random.dirichlet(
+                self.alpha * np.ones(len(children)))
+
+            for i, action_index in enumerate(children):
+                child_id = self.root_id + (action_index,)
+                self.tree[child_id]['p'] = 0.75 * \
+                    self.tree[child_id]['p'] + 0.25 * noise_probs[i]
+                # print("add noise no expansion")
 
     def _mcts(self, root_id):
         start = time.time()
@@ -94,12 +101,6 @@ class ZeroAgent(object):
             ids = []
             total_n = 0
 
-            if self.noise:
-                if node_id == self.root_id:
-                    actions = utils.legal_actions(self.tree[node_id]['board'])
-                    prior_probs = np.random.dirichlet(
-                        self.alpha * np.ones(len(actions)))
-
             for action_idx in self.tree[node_id]['child']:
                 edge_id = node_id + (action_idx,)
                 n = self.tree[edge_id]['n']
@@ -110,12 +111,7 @@ class ZeroAgent(object):
                 n = self.tree[child_id]['n']
                 q = self.tree[child_id]['q']
                 p = self.tree[child_id]['p']
-
-                if self.noise:
-                    if node_id == self.root_id:
-                        p = p * 0.75 + prior_probs[i] * 0.25
-
-                u = self.C_PUCT * p * np.sqrt(total_n) / (n + 1)
+                u = self.c_puct * p * np.sqrt(total_n) / (n + 1)
                 qu[child_id] = q + u
 
             max_value = max(qu.values())
@@ -141,12 +137,24 @@ class ZeroAgent(object):
             # print("expansion")
             actions = utils.legal_actions(leaf_board)
 
+            if self.noise:
+                if leaf_id == self.root_id:
+                    noise_probs = np.random.dirichlet(
+                        self.alpha * np.ones(len(actions)))
+
             for i, action in enumerate(actions):
                 action_index = action[1]
                 child_id = leaf_id + (action_index,)
                 child_board = utils.get_board(child_id, self.board_size)
                 next_turn = utils.get_turn(child_id)
+
                 prior_prob = policy[action_index]
+
+                if self.noise:
+                    if leaf_id == self.root_id:
+                        prior_prob = 0.75 * policy[action_index] + \
+                            0.25 * noise_probs[i]
+                        # print("add noise expansion")
 
                 self.tree[child_id] = {'board': child_board,
                                        'player': next_turn,
@@ -475,9 +483,6 @@ class UCTAgent(object):
         if win_index == 0:
             # print("expansion")
             actions = utils.legal_actions(leaf_board)
-            # prior_probs = np.random.dirichlet(
-            #     self.alpha * np.ones(len(actions)))
-            # prior_prob = 1 / len(actions)
 
             for action in actions:
                 action_index = action[1]
@@ -562,7 +567,7 @@ class RandomAgent(object):
         return pi
 
     def reset(self):
-        pass
+        self.root_id = None
 
 
 class HumanAgent(object):
@@ -606,10 +611,4 @@ class HumanAgent(object):
         return action_index
 
     def reset(self):
-        pass
-
-
-if __name__ == '__main__':
-    # test
-    human = HumanAgent(9)
-    human.get_pi(1, 1, 1)
+        self.root_id = None

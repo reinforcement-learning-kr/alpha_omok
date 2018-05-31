@@ -1,5 +1,5 @@
 from utils import render_str, get_action
-from agent import Player, PUCTAgent, RandomAgent
+from agent import Player, PUCTAgent, UCTAgent, HumanAgent
 from neural_net import PVNet
 import numpy as np
 import torch
@@ -8,10 +8,10 @@ sys.path.append("env/")
 USE_CUDA = torch.cuda.is_available()
 
 STATE_SIZE = 9
-N_BLOCKS = 10
-IN_PLANES = 17
-OUT_PLANES = 64
-N_MCTS = 200
+N_BLOCKS = 3
+IN_PLANES = 5
+OUT_PLANES = 32
+N_MCTS = 400
 N_MATCH = 30
 
 
@@ -20,7 +20,7 @@ class Evaluator:
 
         if model_path_a == 'puct':
             print('load player model:', model_path_a)
-            self.player = PUCTAgent(STATE_SIZE, N_MCTS)
+            self.player = UCTAgent(STATE_SIZE, N_MCTS)
         elif model_path_a:
             print('load player model:', model_path_a)
             self.player = Player(STATE_SIZE, N_MCTS, IN_PLANES)
@@ -30,9 +30,9 @@ class Evaluator:
             self.player = Player(STATE_SIZE, N_MCTS, IN_PLANES)
             self.player.model = PVNet(IN_PLANES, STATE_SIZE)
 
-        if model_path_b == 'random':
+        if model_path_b == 'human':
             print('load enemy model:', model_path_b)
-            self.enemy = RandomAgent(STATE_SIZE)
+            self.enemy = HumanAgent(STATE_SIZE)
 
         elif model_path_b == 'puct':
             print('load enemy model:', model_path_b)
@@ -41,6 +41,7 @@ class Evaluator:
         elif model_path_b:
             print('load enemy model:', model_path_b)
             self.enemy = Player(STATE_SIZE, N_MCTS, IN_PLANES)
+            self.enemy.model = PVNet(IN_PLANES, STATE_SIZE)
             self.enemy.model.load_state_dict(torch.load(model_path_b))
 
         else:
@@ -74,8 +75,8 @@ def main():
 
     # ========================== input model path ======================= #
     # 'random': no MCTS, 'puct': model free MCTS, None: random model MCTS
-    player_model_path = None
-    enemy_model_path = 'random'
+    player_model_path = 'puct'
+    enemy_model_path = 'models/model_22.pickle'
 
     evaluator = Evaluator(player_model_path, enemy_model_path)
 
@@ -91,6 +92,8 @@ def main():
     for i in range(N_MATCH):
         board = np.zeros([STATE_SIZE, STATE_SIZE])
         root_id = (0,)
+        evaluator.player.root_id = root_id
+        evaluator.enemy.root_id = root_id
         win_index = 0
         action_index = None
         if i % 2 == 0:
@@ -106,11 +109,11 @@ def main():
             if turn != enemy_turn:
                 # print("player turn")
                 root_id = evaluator.player.root_id + (action_index,)
-                # evaluator.enemy.root_id = node_id
+                evaluator.enemy.root_id = root_id
             else:
                 # print("enemy turn")
                 root_id = evaluator.enemy.root_id + (action_index,)
-                # evaluator.player.root_id = node_id
+                evaluator.player.root_id = root_id
 
             board, check_valid_pos, win_index, turn, _ = env.step(action)
 
