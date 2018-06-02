@@ -14,7 +14,7 @@ from torch.nn import functional as F
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from agent import Player
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import datetime
 
 import sys
