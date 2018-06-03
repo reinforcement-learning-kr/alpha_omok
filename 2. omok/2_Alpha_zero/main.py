@@ -1,5 +1,5 @@
 from collections import deque
-import datetime
+from datetime import datetime
 import pickle
 # from pprint import pprint
 
@@ -14,26 +14,26 @@ from torch.utils.data import DataLoader
 import agents
 from env import env_small as game
 from neural_net import PVNet
-from utils
+import utils
 
 
 BOARD_SIZE = 9
-N_BLOCKS = 20
-IN_PLANES = 3  # history * 2 + 1
+N_BLOCKS = 10
+IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 64
 BATCH_SIZE = 32
 TOTAL_ITER = 1000000
 N_MCTS = 400
-TAU_THRES = 8
+TAU_THRES = 6
 N_EPISODES = 1
 N_EPOCHS = 1
-LR = 2e-3
+LR = 0.01
 L2 = 1e-4
-MEMORY_SIZE = 8000
-TRAIN_START_SIZE = 8000
-SAVE_CYCLE = 250
-ONLINE_TRAIN = False  # True: Update every episode when training begins
-EMPTY_MEMORY = True   # whether to empty memory after saving the memory
+MEMORY_SIZE = 6400
+TRAIN_START_SIZE = 6400
+SAVE_CYCLE = 200
+ONLINE_TRAIN = True  # True: Update every episode when training begins
+EMPTY_MEMORY = False   # whether to empty memory after saving the memory
 
 
 def self_play():
@@ -44,14 +44,20 @@ def self_play():
     turn = 0
     root_id = (0,)
     win_index = 0
-    step = 0
+    time_step = 0
     action_index = None
 
     while win_index == 0:
         utils.render_str(board, BOARD_SIZE, action_index)
         # ====================== start mcts ============================ #
 
-        pi = Agent.get_pi(root_id, board, turn)
+        if time_step < TAU_THRES:
+            tau = 1
+        else:
+            tau = 0.01
+
+        pi = Agent.get_pi(root_id, board, turn, tau)
+
         print('\nPi:')
         print(pi.reshape(BOARD_SIZE, BOARD_SIZE).round(decimals=2))
 
@@ -68,6 +74,7 @@ def self_play():
         # ====================== print evaluation ====================== #
 
         p, v = Agent.model(state_input)
+
         print(
             "\nProbability:\n{}".format(
                 p.data.cpu().numpy()[0].reshape(
@@ -82,17 +89,13 @@ def self_play():
 
         # ======================== get action ========================== #
 
-        if step < TAU_THRES:
-            tau = 1
-        else:
-            tau = 0
-        action, action_index = utils.get_action(pi, tau)
+        action, action_index = utils.get_action(pi)
         root_id += (action_index,)
 
         # =========================== step ============================= #
 
         board, _, win_index, turn, _ = env.step(action)
-        step += 1
+        time_step += 1
 
         if win_index != 0:
 
@@ -126,7 +129,6 @@ def self_play():
         # =========================  result  =========================== #
 
             utils.render_str(board, BOARD_SIZE, action_index)
-            Agent.reset()
             bw, ww, dr = result['Black'], result['White'], result['Draw']
             print('')
             print('=' * 18,
@@ -139,6 +141,8 @@ def self_play():
                       bw, ww, dr,
                       (bw + 0.5 * dr) / (bw + ww + dr) * 100))
             print('memory size:', len(memory))
+
+            Agent.reset()
             # pprint(memory)
 
 
@@ -185,7 +189,6 @@ def train(n_epochs):
             p_loss = torch.mean(torch.sum(-pi_batch * p_batch.log(), 1))
             loss = v_loss + p_loss
 
-            # steps.append(step)
             loss_v.append(v_loss.item())
             loss_p.append(p_loss.item())
             loss_pv.append(loss.item())
@@ -204,9 +207,11 @@ def train(n_epochs):
                 break
 
     print('-' * 58)
-    print('min Loss: {:.4f}  '
-          'min VLoss: {:.4f}  '
-          'min PLoss: {:.4f}'.format(min(loss_pv), min(loss_v), min(loss_p)))
+    print('mean Loss: {:.4f}  '
+          'mean VLoss: {:.4f}  '
+          'mean PLoss: {:.4f}'.format(sum(loss_pv) / len(loss_pv),
+                                      sum(loss_v) / len(loss_v),
+                                      sum(loss_p) / len(loss_p)))
 
     # plt.plot(STEPS, V_LOSS, marker='o', ms=3, label='V Loss')
     # plt.plot(STEPS, P_LOSS, marker='o', ms=3, label='P Loss')
@@ -219,24 +224,35 @@ def train(n_epochs):
 
 
 if __name__ == '__main__':
+    # numpy printing style
     np.set_printoptions(suppress=True)
-    # np.random.seed(0)
-    # torch.manual_seed(0)
-    # torch.cuda.manual_seed_all(0)
+
+    # set random seeds
+    np.random.seed(0)
+    torch.manual_seed(0)
+    torch.cuda.manual_seed_all(0)
+
+    # gpu or cpu
     use_cuda = torch.cuda.is_available()
-    print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
+    print('CUDA:', use_cuda)
+
+    # global variable
     memory = deque(maxlen=MEMORY_SIZE)
-    Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-    Agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
-    step = 0
-    # steps = []
-    loss_pv = deque(maxlen=1000)
-    loss_v = deque(maxlen=1000)
-    loss_p = deque(maxlen=1000)
+    loss_pv = deque(maxlen=200)
+    loss_v = deque(maxlen=200)
+    loss_p = deque(maxlen=200)
     result = {'Black': 0, 'White': 0, 'Draw': 0}
+    step = 0
 
     # ==================== load model & dataset ======================== #
+
+    # init agent & model
+    Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
+    Agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
+
+    if use_cuda:
+        Agent.model.cuda()
 
     model_path = None
     dataset_path = None
@@ -251,30 +267,36 @@ if __name__ == '__main__':
         with open(dataset_path, 'rb') as f:
             memory = pickle.load(f)
 
-    # =================================================================== #
-
-    if use_cuda:
-        Agent.model.cuda()
+    # ====================== self-play & training ====================== #
 
     for i in range(TOTAL_ITER):
         print('=' * 20, " {:4} Iteration ".format(i + 1), '=' * 20)
-        self_play()
 
-        if len(memory) == TRAIN_START_SIZE:
-            train(N_EPOCHS)
+        for e in range(N_EPISODES):
 
-            if step % SAVE_CYCLE == 0:
-                datetime_now = datetime.datetime.now().strftime('%y%m%d_%H%M')
-                # save model
-                torch.save(
-                    Agent.model.state_dict(),
-                    'data/{}_{}_step_model.pickle'.format(datetime_now, step))
-                # save dataset
-                with open('data/{}_{}_step_dataset.pickle'.format(
-                        datetime_now, step), 'wb') as f:
-                    pickle.dump(memory, f, pickle.HIGHEST_PROTOCOL)
-                # reset result
-                result = {'Black': 0, 'White': 0, 'Draw': 0}
+            if len(memory) == TRAIN_START_SIZE:
+                train(N_EPOCHS)
 
-                if EMPTY_MEMORY:
-                    memory.clear()
+            # ====================== save & reset  ====================== #
+
+                if step % SAVE_CYCLE == 0:
+                    datetime_now = datetime.now().strftime('%y%m%d_%H%M')
+
+                    # save model
+                    torch.save(
+                        Agent.model.state_dict(),
+                        'data/{}_{}_step_model.pickle'.format(
+                            datetime_now, step))
+
+                    # save dataset
+                    with open('data/{}_{}_step_dataset.pickle'.format(
+                            datetime_now, step), 'wb') as f:
+                        pickle.dump(memory, f, pickle.HIGHEST_PROTOCOL)
+
+                    # reset result
+                    result = {'Black': 0, 'White': 0, 'Draw': 0}
+
+                    if EMPTY_MEMORY:
+                        memory.clear()
+
+            self_play()

@@ -8,11 +8,11 @@ import utils
 
 
 BOARD_SIZE = 9
-N_BLOCKS = 20
-IN_PLANES = 3  # history * 2 + 1
+N_BLOCKS = 10
+IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 64
 N_MCTS = 400
-N_MATCH = 30
+N_MATCH = 12
 
 
 class Evaluator(object):
@@ -43,6 +43,7 @@ class Evaluator(object):
 
             if use_cuda:
                 self.player.model.cuda()
+
             self.player.model.load_state_dict(torch.load(model_path_a))
 
         else:
@@ -78,6 +79,7 @@ class Evaluator(object):
 
             if use_cuda:
                 self.enemy.model.cuda()
+
             self.enemy.model.load_state_dict(torch.load(model_path_b))
 
         else:
@@ -92,12 +94,12 @@ class Evaluator(object):
     def get_action(self, root_id, board, turn, enemy_turn):
 
         if turn != enemy_turn:
-            pi = self.player.get_pi(root_id, board, turn)
-            action, action_index = utils.get_action(pi, tau=0)
+            pi = self.player.get_pi(root_id, board, turn, tau=0.01)
+            action, action_index = utils.get_action(pi)
             # print(pi.reshape(BOARD_SIZE, BOARD_SIZE).round(decimals=2))
         else:
-            pi = self.enemy.get_pi(root_id, board, turn)
-            action, action_index = utils.get_action(pi, tau=0)
+            pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
+            action, action_index = utils.get_action(pi)
             # print(pi.reshape(BOARD_SIZE, BOARD_SIZE).round(decimals=2))
 
         return action, action_index
@@ -115,7 +117,7 @@ def main():
     #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
     # ===================================================================== #
 
-    player_model_path = None
+    player_model_path = 'data/180531_1306_200_step_model.pickle'
     enemy_model_path = None
 
     # ===================================================================== #

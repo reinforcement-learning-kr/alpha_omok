@@ -201,3 +201,63 @@ def get_action(pi, board):
     action_index = np.random.choice(action_size, p=pi)
     action[action_index] = 1
     return action, action_index
+
+
+def get_board(node_id, board_size):
+    board = np.zeros(board_size**2)
+
+    for i, action_index in enumerate(node_id):
+
+        if i == 0:
+            if action_index == ():
+                # board is none
+                return None
+        else:
+            if i % 2 == 1:
+                board[action_index] = 1
+            else:
+                board[action_index] = -1
+
+    return board.reshape(board_size, board_size)
+
+
+def get_turn(node_id):
+    if len(node_id) % 2 == 1:
+        return 0
+    else:
+        return 1
+
+
+def get_reward(win_index, leaf_id):
+    turn = get_turn(leaf_id)
+
+    if win_index == 1:
+        if turn == 1:
+            # print('leaf id: {}, '
+            #       'win: black, '
+            #       'reward: 1'.format(leaf_id))
+            reward = 1.
+        else:
+            # print('leaf id: {}, '
+            #       'win: black, '
+            #       'reward: -1'.format(leaf_id))
+            reward = -1.
+
+    elif win_index == 2:
+        if turn == 1:
+            # print('leaf id: {}, '
+            #       'win: white, '
+            #       'reward: -1'.format(leaf_id))
+            reward = -1.
+        else:
+            # print('leaf id: {}, '
+            #       'win: white, '
+            #       'reward: 1'.format(leaf_id))
+            reward = 1.
+    else:
+        # print('leaf id: {}, '
+        #       'win: draw, '
+        #       'reward: 0'.format(leaf_id))
+        reward = 0.
+
+    return reward
