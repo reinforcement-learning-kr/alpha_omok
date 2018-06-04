@@ -42,7 +42,8 @@ beta = 0.001
 def self_play(n_episodes):
     print('self play for {} games'.format(n_episodes))
     for episode in range(n_episodes):
-        # print('playing {}th episode by self-play'.format(episode + 1))
+        # if (episode + 1)%100 == 0:
+        #     print('playing {}th episode by self-play'.format(episode + 1))
         env = game.GameState('text')
         board = np.zeros([STATE_SIZE, STATE_SIZE])
         samples = []
@@ -302,6 +303,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
+
     memory = deque(maxlen=50000)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(IN_PLANES, STATE_SIZE)
