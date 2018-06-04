@@ -1,6 +1,6 @@
 '''
 Author : Woonwon Lee, Jungdae Kim, Kyushik Min
-Data : 2018.03.12, 2018.03.28, 2018.05.11
+Data : 2018.03.12, 2018.03.28, 2018.05.11, 2018.06.04
 Project : Make your own Alpha Zero
 Objective : find the problem of code. Let's Debugging!!
 '''
@@ -24,28 +24,30 @@ from evaluator import Evaluator
 
 STATE_SIZE = 9
 N_BLOCKS = 3
-IN_PLANES = 5  # history * 2 + 1
+IN_PLANES = 7  # history * 2 + 1
 OUT_PLANES = 32
 BATCH_SIZE = 16
 TOTAL_ITER = 100000
 N_MCTS = 400
 TAU_THRES = 8
-N_EPISODES = 300
+N_EPISODES = 500
 N_EPOCHS = 10
 SAVE_CYCLE = 1000
 LR = 2e-4
 L2 = 1e-4
-N_MATCH = 10
+N_MATCH = 30
 beta = 0.001
 
 
 def self_play(n_episodes):
     print('self play for {} games'.format(n_episodes))
     for episode in range(n_episodes):
-        # print('playing {}th episode by self-play'.format(episode + 1))
+        # if (episode + 1)%100 == 0:
+        #     print('playing {}th episode by self-play'.format(episode + 1))
         env = game.GameState('text')
         board = np.zeros([STATE_SIZE, STATE_SIZE])
-        samples = []
+        samples_black = []
+        samples_white = []
         turn = 0
         root_id = (0,)
         win_index = 0
@@ -60,7 +62,7 @@ def self_play(n_episodes):
             # print('\nPi:')
             # print(pi.reshape(STATE_SIZE, STATE_SIZE).round(decimals=2))
             # ===================== collect samples ========================
-            state = get_state_pt(root_id, turn, STATE_SIZE, IN_PLANES)
+            state = get_state_pt(root_id, STATE_SIZE, IN_PLANES)
             state_input = Variable(Tensor([state]))
 
             # ====================== print evaluation ======================
@@ -82,14 +84,14 @@ def self_play(n_episodes):
             # ======================== get action ==========================
             p = p.data[0].cpu().numpy()
             action, action_index = get_action(p, board)
-
+            # turn = 1(흑), 0(백)
+            if turn == 1:
+                samples_black.append((state, action))
+            else:
+                samples_white.append((state, action))
             root_id += (action_index,)
             # =========================== step =============================
             board, check_valid_pos, win_index, turn, _ = env.step(action)
-            # turn = 1(흑), 0(백)
-            # 일단 흑돌의 데이터만 저장
-            if turn == 1:
-                samples.append((state, action))
             step += 1
 
             # used for debugging
@@ -99,19 +101,25 @@ def self_play(n_episodes):
             if win_index != 0:
                 if win_index == 1:
                     reward_black = 1.
+                    reward_white = -1.
                     # win_color = 'Black'
                 elif win_index == 2:
                     reward_black = -1.
+                    reward_white = 1.
                     # win_color = 'White'
                 else:
                     reward_black = 0.
+                    reward_white = 0.
                     # win_color = 'None'
 
                 # render_str(board, STATE_SIZE, action_index)
                 # print("{} win in episode {}".format(win_color, episode + 1))
             # ====================== store in memory =======================
-                for i in range(len(samples)):
-                    memory.append((samples[i][0], samples[i][1], reward_black))
+                for i in range(len(samples_black)):
+                    memory.append((samples_black[i][0], samples_black[i][1], reward_black))
+                for i in range(len(samples_white)):
+                    memory.append((samples_white[i][0], samples_white[i][1],
+                                   reward_white))
                 agent.reset()
 
 
@@ -302,6 +310,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     print('cuda:', use_cuda)
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
+
     memory = deque(maxlen=50000)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(IN_PLANES, STATE_SIZE)

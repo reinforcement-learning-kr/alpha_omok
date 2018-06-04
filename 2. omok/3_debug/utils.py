@@ -1,7 +1,7 @@
 __all__ = ["valid_actions", "check_win", "update_state",
            "render_str", "get_state_tf", "get_state_pt", "get_action"]
 import numpy as np
-
+from collections import deque
 ALPHABET = ' A B C D E F G H I J K L M N O P Q R S'
 
 
@@ -148,40 +148,35 @@ def get_state_tf(id, turn, state_size, channel_size):
     return state
 
 
-def get_state_pt(id, turn, state_size, channel_size):
-    state = np.zeros([channel_size, state_size, state_size], 'float')
-    length_game = len(id)
+def get_state_pt(node_id, board_size, channel_size):
+    state_b = np.zeros((board_size, board_size))
+    state_w = np.zeros((board_size, board_size))
+    color = np.ones((board_size, board_size))
+    color_idx = 1
+    history = deque(
+        [np.zeros((board_size, board_size)) for _ in range(channel_size)],
+        maxlen=channel_size)
 
-    state_1 = np.zeros([state_size, state_size], 'float')
-    state_2 = np.zeros([state_size, state_size], 'float')
+    for i, action_idx in enumerate(node_id):
+        if i == 0:
+            history.append(state_b.copy())
+            history.append(state_w.copy())
+        else:
+            row = action_idx // board_size
+            col = action_idx % board_size
 
-    channel_idx = channel_size - 1
-
-    for i in range(length_game):
-        row_idx = int(id[i] / state_size)
-        col_idx = int(id[i] % state_size)
-
-        if i != 0:
-            if i % 2 == 0:
-                state_1[row_idx, col_idx] = 1
+            if i % 2 == 1:
+                state_b[row, col] = 1
+                history.append(state_b.copy())
+                color_idx = 0
             else:
-                state_2[row_idx, col_idx] = 1
+                state_w[:][row, col] = 1
+                history.append(state_w.copy())
+                color_idx = 1
 
-        if length_game - i < channel_size:
-            channel_idx = length_game - i - 1
-
-            if i % 2 == 0:
-                state[channel_idx] = state_1
-            else:
-                state[channel_idx] = state_2
-
-    if turn == 0:
-        state[channel_size - 1] = 0
-    else:
-        state[channel_size - 1] = 1
-
+    history.append(color * color_idx)
+    state = np.stack(history)
     return state
-
 
 def get_action(pi, board):
     # need to be fixed!! apply temperature as control exploration.

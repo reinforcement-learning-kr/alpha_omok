@@ -140,6 +140,7 @@ class PVNet(nn.Module):
         v = self.value(x)
         return p, v
 
+
 if __name__ == '__main__':
     # test
     import torch

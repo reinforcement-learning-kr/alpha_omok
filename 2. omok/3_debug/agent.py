@@ -361,6 +361,19 @@ class PUCTAgent(Player):
         finish = time.time() - start
         print("{} simulations end ({:0.0f}s)".format(i + 1, finish))
 
+    def get_pi(self, root_id, board, turn):
+        self.init_mcts(root_id, board, turn)
+        self.mcts()
+        root_node = self.tree[self.root_id]
+        pi = np.zeros(self.state_size**2, 'float')
+
+        for action in root_node['child']:
+            child_id = self.root_id + (action,)
+            pi[action] = self.tree[child_id]['n']
+        pi = pi**(1 / 0.01)
+        pi /= pi.sum()
+        return pi
+
 
 class RandomAgent:
     def __init__(self, state_size):

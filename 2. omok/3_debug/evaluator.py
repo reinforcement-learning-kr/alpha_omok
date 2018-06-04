@@ -39,6 +39,10 @@ class Evaluator:
             print('load enemy model:', model_path_b)
             self.enemy = PUCTAgent(STATE_SIZE, N_MCTS)
 
+        elif model_path_b == 'random':
+            print('load enemy model:', model_path_b)
+            self.enemy = RandomAgent(STATE_SIZE)
+
         elif model_path_b:
             print('load enemy model:', model_path_b)
             self.enemy = Player(STATE_SIZE, N_MCTS, IN_PLANES)
@@ -66,6 +70,9 @@ class Evaluator:
             if self.model_path_b == 'random':
                 pi = self.enemy.get_pi(root_id, board, turn)
                 action, action_index = get_action(pi, board)
+            elif self.model_path_b == 'puct':
+                pi = self.enemy.get_pi(root_id, board, turn)
+                action, action_index = get_action(pi, board)
             else:
                 state = get_state_pt(root_id, turn, STATE_SIZE, IN_PLANES)
                 state_input = Variable(Tensor([state]))
@@ -86,8 +93,8 @@ def main():
 
     # ========================== input model path ======================= #
     # 'random': no MCTS, 'puct': model free MCTS, None: random model MCTS
-    player_model_path = 'puct'
-    enemy_model_path = 'models/model_22.pickle'
+    player_model_path = 'models/model_51.pickle'
+    enemy_model_path = 'puct'
 
     evaluator = Evaluator(player_model_path, enemy_model_path)
 
