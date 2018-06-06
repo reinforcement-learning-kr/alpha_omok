@@ -10,15 +10,14 @@ import utils
 BOARD_SIZE = 9
 N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
-OUT_PLANES = 64
+OUT_PLANES = 16
 N_MCTS = 400
-N_MATCH = 12
+N_MATCH = 10
 
 
 class Evaluator(object):
 
     def __init__(self, model_path_a, model_path_b):
-
         if model_path_a == 'random':
             print('load player model:', model_path_a)
             self.player = agents.RandomAgent(BOARD_SIZE)
@@ -37,10 +36,14 @@ class Evaluator(object):
 
         elif model_path_a:
             print('load player model:', model_path_a)
-            self.player = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-            self.player.model = PVNet(
-                N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
-
+            self.player = agents.ZeroAgent(BOARD_SIZE,
+                                           N_MCTS,
+                                           IN_PLANES,
+                                           noise=False)
+            self.player.model = PVNet(N_BLOCKS,
+                                      IN_PLANES,
+                                      OUT_PLANES,
+                                      BOARD_SIZE)
             if use_cuda:
                 self.player.model.cuda()
 
@@ -48,10 +51,14 @@ class Evaluator(object):
 
         else:
             print('load player model:', model_path_a)
-            self.player = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-            self.player.model = PVNet(
-                N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
-
+            self.player = agents.ZeroAgent(BOARD_SIZE,
+                                           N_MCTS,
+                                           IN_PLANES,
+                                           noise=False)
+            self.player.model = PVNet(N_BLOCKS,
+                                      IN_PLANES,
+                                      OUT_PLANES,
+                                      BOARD_SIZE)
             if use_cuda:
                 self.player.model.cuda()
 
@@ -73,10 +80,14 @@ class Evaluator(object):
 
         elif model_path_b:
             print('load enemy model:', model_path_b)
-            self.enemy = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-            self.enemy.model = PVNet(
-                N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
-
+            self.enemy = agents.ZeroAgent(BOARD_SIZE,
+                                          N_MCTS,
+                                          IN_PLANES,
+                                          noise=False)
+            self.enemy.model = PVNet(N_BLOCKS,
+                                     IN_PLANES,
+                                     OUT_PLANES,
+                                     BOARD_SIZE)
             if use_cuda:
                 self.enemy.model.cuda()
 
@@ -84,10 +95,14 @@ class Evaluator(object):
 
         else:
             print('load enemy model:', model_path_b)
-            self.enemy = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-            self.enemy.model = PVNet(
-                N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
-
+            self.enemy = agents.ZeroAgent(BOARD_SIZE,
+                                          N_MCTS,
+                                          IN_PLANES,
+                                          noise=False)
+            self.enemy.model = PVNet(N_BLOCKS,
+                                     IN_PLANES,
+                                     OUT_PLANES,
+                                     BOARD_SIZE)
             if use_cuda:
                 self.enemy.model.cuda()
 
@@ -117,7 +132,7 @@ def main():
     #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
     # ===================================================================== #
 
-    player_model_path = 'data/180531_1306_200_step_model.pickle'
+    player_model_path = None
     enemy_model_path = None
 
     # ===================================================================== #

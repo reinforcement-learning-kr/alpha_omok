@@ -248,6 +248,99 @@ def get_reward(win_index, leaf_id):
     return reward
 
 
+def symmetry_choice(state, pi):
+    s_shape = state.shape
+    history = state[:-1]
+    c = state[-1]
+
+    pi_shape = pi.shape
+    p = pi.reshape(s_shape[1], s_shape[1])
+
+    sym_state = []
+    rand_i = np.random.choice(8)
+
+    if rand_i == 0:
+        return state, pi
+
+    elif rand_i == 1:
+        for s in history:
+            sym_state.append(np.rot90(s, 1))
+
+        sym_state.append(c)
+        state = np.asarray(sym_state).reshape(s_shape)
+
+        p = np.rot90(p, 1)
+        pi = p.reshape(pi_shape)
+
+    elif rand_i == 2:
+        for s in history:
+            sym_state.append(np.rot90(s, 2))
+
+        sym_state.append(c)
+        state = np.asarray(sym_state).reshape(s_shape)
+
+        p = np.rot90(p, 2)
+        pi = p.reshape(pi_shape)
+
+    elif rand_i == 3:
+        for s in history:
+            sym_state.append(np.rot90(s, 3))
+
+        sym_state.append(c)
+        state = np.asarray(sym_state).reshape(s_shape)
+
+        p = np.rot90(p, 3)
+        pi = p.reshape(pi_shape)
+
+    elif rand_i == 4:
+        for s in history:
+            sym_state.append(np.fliplr(s))
+
+        sym_state.append(c)
+        state = np.asarray(sym_state).reshape(s_shape)
+
+        p = np.fliplr(s)
+        pi = p.reshape(pi_shape)
+
+    elif rand_i == 5:
+        for s in history:
+            rot_s = np.rot90(s, 1)
+            sym_state.append(np.fliplr(rot_s))
+
+        sym_state.append(c)
+        state = np.asarray(sym_state).reshape(s_shape)
+
+        rot_p = np.rot90(p, 1)
+        p = np.fliplr(rot_p)
+        pi = p.reshape(pi_shape)
+
+    elif rand_i == 6:
+        for s in history:
+            rot_s = np.rot90(s, 2)
+            sym_state.append(np.fliplr(rot_s))
+
+        sym_state.append(c)
+        state = np.asarray(sym_state).reshape(s_shape)
+
+        rot_p = np.rot90(p, 2)
+        p = np.fliplr(rot_p)
+        pi = p.reshape(pi_shape)
+
+    elif rand_i == 7:
+        for s in history:
+            rot_s = np.rot90(s, 3)
+            sym_state.append(np.fliplr(rot_s))
+
+        sym_state.append(c)
+        state = np.asarray(sym_state).reshape(s_shape)
+
+        rot_p = np.rot90(p, 3)
+        p = np.fliplr(rot_p)
+        pi = p.reshape(pi_shape)
+
+    return state, pi
+
+
 if __name__ == '__main__':
     # test
     node_id = (0, 1, 2, 3, 5, 4, 7)
