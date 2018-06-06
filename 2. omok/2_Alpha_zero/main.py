@@ -1,10 +1,9 @@
 from collections import deque
 from datetime import datetime
 import pickle
-# from pprint import pprint
 
-# import matplotlib.pyplot as plt
 import numpy as np
+from tensorboardX import SummaryWriter
 import torch
 import torch.optim as optim
 from torch.nn import functional as F
@@ -13,150 +12,150 @@ from torch.utils.data import DataLoader
 
 import agents
 from env import env_small as game
-from neural_net import PVNet
+import neural_net
 import utils
 
-
+# Game
 BOARD_SIZE = 9
+N_MCTS = 400
+TAU_THRES = 8
+
+# Net
 N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
-OUT_PLANES = 64
-BATCH_SIZE = 32
+OUT_PLANES = 16
+
+# Training
 TOTAL_ITER = 1000000
-N_MCTS = 400
-TAU_THRES = 6
-N_EPISODES = 1
+N_SELFPLAY = 300
 N_EPOCHS = 1
+BATCH_SIZE = 32
 LR = 0.01
 L2 = 1e-4
-MEMORY_SIZE = 6400
-TRAIN_START_SIZE = 6400
-SAVE_CYCLE = 200
-ONLINE_TRAIN = True  # True: Update every episode when training begins
-EMPTY_MEMORY = False   # whether to empty memory after saving the memory
+
+# Data
+DATASET_SAVE = True
 
 
-def self_play():
-    env = game.GameState('text')
-    board = np.zeros((BOARD_SIZE, BOARD_SIZE))
-    samples_black = []
-    samples_white = []
-    turn = 0
-    root_id = (0,)
-    win_index = 0
-    time_step = 0
-    action_index = None
+def self_play(n_selfplay):
+    state_black = deque()
+    state_white = deque()
+    pi_black = deque()
+    pi_white = deque()
 
-    while win_index == 0:
-        utils.render_str(board, BOARD_SIZE, action_index)
-        # ====================== start mcts ============================ #
+    for episode in range(n_selfplay):
+        env = game.GameState('text')
+        board = np.zeros((BOARD_SIZE, BOARD_SIZE))
+        turn = 0
+        root_id = (0,)
+        win_index = 0
+        time_step = 0
+        action_index = None
 
-        if time_step < TAU_THRES:
-            tau = 1
-        else:
-            tau = 0.01
-
-        pi = Agent.get_pi(root_id, board, turn, tau)
-
-        print('\nPi:')
-        print(pi.reshape(BOARD_SIZE, BOARD_SIZE).round(decimals=2))
-
-        # ===================== collect samples ======================== #
-
-        state = utils.get_state_pt(root_id, BOARD_SIZE, IN_PLANES)
-        state_input = Variable(Tensor([state]))
-
-        if turn == 0:
-            samples_black.append((state, pi))
-        else:
-            samples_white.append((state, pi))
-
-        # ====================== print evaluation ====================== #
-
-        p, v = Agent.model(state_input)
-
-        print(
-            "\nProbability:\n{}".format(
-                p.data.cpu().numpy()[0].reshape(
-                    BOARD_SIZE, BOARD_SIZE).round(decimals=2)))
-
-        if turn == 0:
-            print("\nBlack's win%: {:.2f}%".format(
-                (v.data[0] + 1) / 2 * 100))
-        else:
-            print("\nWhite's win%: {:.2f}%".format(
-                (v.data[0] + 1) / 2 * 100))
-
-        # ======================== get action ========================== #
-
-        action, action_index = utils.get_action(pi)
-        root_id += (action_index,)
-
-        # =========================== step ============================= #
-
-        board, _, win_index, turn, _ = env.step(action)
-        time_step += 1
-
-        if win_index != 0:
-
-            if win_index == 1:
-                reward_black = 1.
-                reward_white = -1.
-                result['Black'] += 1
-
-            elif win_index == 2:
-                reward_black = -1.
-                reward_white = 1.
-                result['White'] += 1
-
-            else:
-                reward_black = 0.
-                reward_white = 0.
-                result['Draw'] += 1
-
-        # ====================== store in memory ======================= #
-
-            for i in range(len(samples_black)):
-                memory.append((samples_black[i][0],
-                               samples_black[i][1],
-                               reward_black))
-
-            for j in range(len(samples_white)):
-                memory.append((samples_white[j][0],
-                               samples_white[j][1],
-                               reward_white))
-
-        # =========================  result  =========================== #
-
+        while win_index == 0:
             utils.render_str(board, BOARD_SIZE, action_index)
-            bw, ww, dr = result['Black'], result['White'], result['Draw']
-            print('')
-            print('=' * 18,
-                  " {:4} Iteration End ".format(bw + ww + dr),
-                  '=' * 18)
-            print('Black Win: {:3}  '
-                  'White Win: {:3}  '
-                  'Draw: {}  '
-                  'Win%: {:.2f}%'.format(
-                      bw, ww, dr,
-                      (bw + 0.5 * dr) / (bw + ww + dr) * 100))
-            print('memory size:', len(memory))
+            # ====================== start mcts ============================ #
 
-            Agent.reset()
-            # pprint(memory)
+            if time_step < TAU_THRES:
+                tau = 1
+            else:
+                tau = 1e-2
+
+            pi = Agent.get_pi(root_id, board, turn, tau)
+
+            print('\nPi:')
+            print(pi.reshape(BOARD_SIZE, BOARD_SIZE).round(decimals=2))
+
+            # ===================== collect samples ======================== #
+
+            state = utils.get_state_pt(root_id, BOARD_SIZE, IN_PLANES)
+            state_input = Variable(Tensor([state]))
+
+            if turn == 0:
+                state_black.appendleft(state)
+                pi_black.appendleft(pi)
+            else:
+                state_white.appendleft(state)
+                pi_white.appendleft(pi)
+
+            # ====================== print evaluation ====================== #
+
+            p, v = Agent.model(state_input)
+
+            print(
+                "\nLogit:\n{}".format(
+                    p.data.cpu().numpy()[0].reshape(
+                        BOARD_SIZE, BOARD_SIZE).round(decimals=2)))
+
+            if turn == 0:
+                print("\nBlack's win%: {:.2f}%".format(
+                    (v.data[0] + 1) / 2 * 100))
+            else:
+                print("\nWhite's win%: {:.2f}%".format(
+                    (v.data[0] + 1) / 2 * 100))
+
+            # ======================== get action ========================== #
+
+            action, action_index = utils.get_action(pi)
+            root_id += (action_index,)
+
+            # =========================== step ============================= #
+
+            board, _, win_index, turn, _ = env.step(action)
+            time_step += 1
+
+            if win_index != 0:
+
+                if win_index == 1:
+                    reward_black = 1.
+                    reward_white = -1.
+                    result['Black'] += 1
+
+                elif win_index == 2:
+                    reward_black = -1.
+                    reward_white = 1.
+                    result['White'] += 1
+
+                else:
+                    reward_black = 0.
+                    reward_white = 0.
+                    result['Draw'] += 1
+
+            # ====================== store in memory ======================= #
+                while state_black and state_white:
+                    memory.appendleft((state_black.pop(),
+                                       pi_black.pop(),
+                                       reward_black))
+                    memory.appendleft((state_white.pop(),
+                                       pi_white.pop(),
+                                       reward_white))
+
+            # =========================  result  =========================== #
+
+                utils.render_str(board, BOARD_SIZE, action_index)
+                bw, ww, dr = result['Black'], result['White'], result['Draw']
+                print('')
+                print('=' * 20,
+                      " {:3} Game End   ".format(episode + 1),
+                      '=' * 20)
+                print('Black Win: {:3}   '
+                      'White Win: {:3}   '
+                      'Draw: {:3}   '
+                      'Win%: {:.2f}%'.format(
+                          bw, ww, dr,
+                          (bw + 0.5 * dr) / (bw + ww + dr) * 100))
+                print('memory size:', len(memory))
+
+                Agent.reset()
 
 
-def train(n_epochs):
+def train(n_epochs, n_iter):
     global step
-    global loss_pv, loss_p, loss_v
-    # global LR
+    global writer
 
-    # if 3000 < step <= 6000:
-    #     LR = 2e-4
-    # if 6000 < step <= 9000:
-    #     LR = 2e-5
-    # if step > 9000:
-    #     LR = 2e-6
+    loss_all = []
+    loss_v = []
+    loss_p = []
 
     print('=' * 20, ' Start Learning ', '=' * 20)
     print('learning rate:', LR)
@@ -173,7 +172,8 @@ def train(n_epochs):
                                 drop_last=True,
                                 pin_memory=use_cuda)
 
-        for (s, pi, z) in dataloader:
+        for i, (s, pi, z) in enumerate(dataloader):
+
             if use_cuda:
                 s_batch = Variable(s.float()).cuda()
                 pi_batch = Variable(pi.float()).cuda()
@@ -186,41 +186,91 @@ def train(n_epochs):
             p_batch, v_batch = Agent.model(s_batch)
 
             v_loss = F.mse_loss(v_batch, z_batch)
-            p_loss = torch.mean(torch.sum(-pi_batch * p_batch.log(), 1))
+            p_loss = -(pi_batch * p_batch.log()).sum(dim=1).mean()
+
             loss = v_loss + p_loss
 
             loss_v.append(v_loss.item())
             loss_p.append(p_loss.item())
-            loss_pv.append(loss.item())
+            loss_all.append(loss.item())
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            step += 1
 
-            print('{} step Loss: {:.4f}   '
-                  'VLoss: {:.4f}   '
-                  'PLoss: {:.4f}'.format(
+            # tensorboad & print loss
+            writer.add_scalars('LOSS',
+                               {
+                                   'Loss': loss.item(),
+                                   'Loss V': v_loss.item(),
+                                   'Loss P': p_loss.item()
+                               },
+                               step)
+            writer.add_scalar('Loss', loss.item(), step)
+            writer.add_scalar('Loss V', v_loss.item(), step)
+            writer.add_scalar('Loss P', p_loss.item(), step)
+
+            print('{:4} step Loss: {:.4f}   '
+                  'Loss V: {:.4f}   '
+                  'Loss P: {:.4f}'.format(
                       step, loss.item(), v_loss.item(), p_loss.item()))
 
-            if ONLINE_TRAIN:
-                break
+            step += 1
 
-    print('-' * 58)
-    print('mean Loss: {:.4f}  '
-          'mean VLoss: {:.4f}  '
-          'mean PLoss: {:.4f}'.format(sum(loss_pv) / len(loss_pv),
-                                      sum(loss_v) / len(loss_v),
-                                      sum(loss_p) / len(loss_p)))
+        writer.add_scalars('mean LOSS',
+                           {
+                               'mean Loss': np.mean(loss_all),
+                               'mean Loss V': np.mean(loss_v),
+                               'mean Loss P': np.mean(loss_p)
+                           },
+                           n_iter)
+        writer.add_scalar('mean Loss', np.mean(loss_all), n_iter)
+        writer.add_scalar('mean Loss V', np.mean(loss_v), n_iter)
+        writer.add_scalar('mean Loss P', np.mean(loss_p), n_iter)
 
-    # plt.plot(STEPS, V_LOSS, marker='o', ms=3, label='V Loss')
-    # plt.plot(STEPS, P_LOSS, marker='o', ms=3, label='P Loss')
-    # plt.plot(STEPS, LOSS, marker='*', ms=5, label='Total Loss')
-    # plt.legend()
-    # plt.ylabel('Loss')
-    # plt.xlabel('Step')
-    # plt.grid(True, ls='--', lw=.5, c='k', alpha=.3)
-    # plt.show()
+        print('-' * 58)
+        print('mean Loss: {:.4f} '
+              'mean Loss V: {:.4f} '
+              'mean Loss P: {:.4f}'.format(np.mean(loss_all),
+                                           np.mean(loss_v),
+                                           np.mean(loss_p)))
+        print('-' * 58)
+
+
+def save_data(memory, step):
+    datetime_now = datetime.now().strftime('%y%m%d_%H%M')
+
+    # save model
+    torch.save(
+        Agent.model.state_dict(),
+        'data/{}_{}_step_model.pickle'.format(datetime_now, step))
+
+    if DATASET_SAVE:
+        with open('data/{}_{}_step_dataset.pickle'.format(
+                datetime_now, step), 'wb') as f:
+            pickle.dump(memory, f, pickle.HIGHEST_PROTOCOL)
+
+
+def load_data(model_path, dataset_path):
+    global memory, step
+
+    if model_path:
+        print('load model: {}\n'.format(model_path))
+        Agent.model.load_state_dict(torch.load(model_path))
+        step = int(model_path.split('_')[-3])
+
+    if dataset_path:
+        print('load dataset: {}\n'.format(dataset_path))
+        with open(dataset_path, 'rb') as f:
+            memory = pickle.load(f)
+            memory = deque(memory, maxlen=120000)
+
+
+def reset_iter(memory, result, n_iter):
+    result['Black'] = 0
+    result['White'] = 0
+    result['Draw'] = 0
+    # memory.clear()
 
 
 if __name__ == '__main__':
@@ -232,71 +282,45 @@ if __name__ == '__main__':
     torch.manual_seed(0)
     torch.cuda.manual_seed_all(0)
 
+    # global variable
+    memory = deque(maxlen=120000)
+    writer = SummaryWriter()
+    result = {'Black': 0, 'White': 0, 'Draw': 0}
+    step = 0
+
     # gpu or cpu
     use_cuda = torch.cuda.is_available()
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
     print('CUDA:', use_cuda)
 
-    # global variable
-    memory = deque(maxlen=MEMORY_SIZE)
-    loss_pv = deque(maxlen=200)
-    loss_v = deque(maxlen=200)
-    loss_p = deque(maxlen=200)
-    result = {'Black': 0, 'White': 0, 'Draw': 0}
-    step = 0
-
-    # ==================== load model & dataset ======================== #
-
     # init agent & model
+    # Agent = agents.PUCTAgent(BOARD_SIZE, N_MCTS)
     Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-    Agent.model = PVNet(N_BLOCKS, IN_PLANES, OUT_PLANES, BOARD_SIZE)
+    Agent.model = neural_net.PVNet(N_BLOCKS,
+                                   IN_PLANES,
+                                   OUT_PLANES,
+                                   BOARD_SIZE)
 
     if use_cuda:
         Agent.model.cuda()
 
+# ====================== self-play & training ====================== #
+
     model_path = None
     dataset_path = None
 
-    if model_path:
-        print('load model: {}\n'.format(model_path[5:]))
-        Agent.model.load_state_dict(torch.load(model_path))
-        step = int(model_path.split('_')[2])
+    load_data(model_path, dataset_path)
 
-    if dataset_path:
-        print('load dataset: {}\n'.format(dataset_path))
-        with open(dataset_path, 'rb') as f:
-            memory = pickle.load(f)
+    for n_iter in range(TOTAL_ITER):
+        print('=' * 20, " {:4} Iteration ".format(n_iter), '=' * 20)
 
-    # ====================== self-play & training ====================== #
-
-    for i in range(TOTAL_ITER):
-        print('=' * 20, " {:4} Iteration ".format(i + 1), '=' * 20)
-
-        for e in range(N_EPISODES):
-
-            if len(memory) == TRAIN_START_SIZE:
-                train(N_EPOCHS)
-
-            # ====================== save & reset  ====================== #
-
-                if step % SAVE_CYCLE == 0:
-                    datetime_now = datetime.now().strftime('%y%m%d_%H%M')
-
-                    # save model
-                    torch.save(
-                        Agent.model.state_dict(),
-                        'data/{}_{}_step_model.pickle'.format(
-                            datetime_now, step))
-
-                    # save dataset
-                    with open('data/{}_{}_step_dataset.pickle'.format(
-                            datetime_now, step), 'wb') as f:
-                        pickle.dump(memory, f, pickle.HIGHEST_PROTOCOL)
-
-                    # reset result
-                    result = {'Black': 0, 'White': 0, 'Draw': 0}
-
-                    if EMPTY_MEMORY:
-                        memory.clear()
-
-            self_play()
+        if dataset_path:
+            train(N_EPOCHS, n_iter)
+            save_data(memory, step)
+            self_play(N_SELFPLAY)
+            reset_iter(memory, result, n_iter)
+        else:
+            self_play(N_SELFPLAY)
+            train(N_EPOCHS, n_iter)
+            save_data(memory, step)
+            reset_iter(memory, result, n_iter)

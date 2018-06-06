@@ -32,10 +32,10 @@ class ResBlock(nn.Module):
 class PolicyHead(nn.Module):
     def __init__(self, planes, board_size):
         super(PolicyHead, self).__init__()
-        self.policy_head = nn.Conv2d(planes, 1, kernel_size=1, bias=False)
-        self.policy_bn = nn.BatchNorm2d(1)
+        self.policy_head = nn.Conv2d(planes, 2, kernel_size=1, bias=False)
+        self.policy_bn = nn.BatchNorm2d(2)
         self.relu = nn.ReLU()
-        self.policy_fc = nn.Linear(board_size**2, board_size**2)
+        self.policy_fc = nn.Linear(board_size**2 * 2, board_size**2)
         self.log_softmax = nn.LogSoftmax(dim=1)
 
     def forward(self, x):
@@ -84,7 +84,9 @@ class PVNet(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
-                nn.init.xavier_uniform_(m.weight)
+                nn.init.kaiming_normal_(
+                    m.weight, mode='fan_out', nonlinearity='relu')
+
             elif isinstance(m, nn.BatchNorm2d):
                 nn.init.constant_(m.weight, 1)
                 nn.init.constant_(m.bias, 0)

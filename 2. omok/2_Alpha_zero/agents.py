@@ -44,6 +44,9 @@ class ZeroAgent(object):
             child_id = self.root_id + (action_index,)
             visit[action_index] = self.tree[child_id]['n']
 
+        if visit.max() > 1000:
+            tau = 0.1
+
         pi = visit**(1 / tau)
         pi /= pi.sum()
         return pi
@@ -186,7 +189,8 @@ class ZeroAgent(object):
             self.tree[node_id]['n'] += 1
 
             if not reward:
-                self.tree[node_id]['w'] += -value
+                self.tree[node_id]['w'] += (-value) * (-1)**(count)
+                count += 1
                 # print('value:', -value)
             else:
                 self.tree[node_id]['w'] += reward * (-1)**(count)
@@ -384,7 +388,6 @@ class UCTAgent(object):
         self.num_mcts = num_mcts
         # tictactoe and omok
         self.win_mark = 3 if board_size == 3 else 5
-        self.alpha = 10 / self.board_size**2
         self.root_id = None
         self.board = None
         self.turn = None
