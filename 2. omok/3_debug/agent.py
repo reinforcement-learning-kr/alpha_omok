@@ -372,6 +372,7 @@ class PUCTAgent(Player):
             pi[action] = self.tree[child_id]['n']
         pi = pi**(1 / 0.01)
         pi /= pi.sum()
+        # print(pi)
         return pi
 
 

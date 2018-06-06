@@ -178,6 +178,7 @@ def get_state_pt(node_id, board_size, channel_size):
     state = np.stack(history)
     return state
 
+
 def get_action(pi, board):
     # need to be fixed!! apply temperature as control exploration.
     # do not select action greedily

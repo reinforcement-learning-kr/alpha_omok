@@ -24,13 +24,13 @@ from evaluator import Evaluator
 
 STATE_SIZE = 9
 N_BLOCKS = 3
-IN_PLANES = 7  # history * 2 + 1
-OUT_PLANES = 32
-BATCH_SIZE = 16
+IN_PLANES = 5  # history * 2 + 1
+OUT_PLANES = 64
+BATCH_SIZE = 32
 TOTAL_ITER = 100000
 N_MCTS = 400
 TAU_THRES = 8
-N_EPISODES = 500
+N_EPISODES = 300
 N_EPOCHS = 10
 SAVE_CYCLE = 1000
 LR = 2e-4
@@ -40,6 +40,7 @@ beta = 0.001
 
 
 def self_play(n_episodes):
+    agent.model.eval()
     print('self play for {} games'.format(n_episodes))
     for episode in range(n_episodes):
         # if (episode + 1)%100 == 0:
@@ -84,8 +85,8 @@ def self_play(n_episodes):
             # ======================== get action ==========================
             p = p.data[0].cpu().numpy()
             action, action_index = get_action(p, board)
-            # turn = 1(흑), 0(백)
-            if turn == 1:
+            # turn = 0(흑), 1(백)
+            if turn == 0:
                 samples_black.append((state, action))
             else:
                 samples_white.append((state, action))
@@ -96,6 +97,7 @@ def self_play(n_episodes):
 
             # used for debugging
             if not check_valid_pos:
+                print(board)
                 raise ValueError("no legal move!")
 
             if win_index != 0:
@@ -116,7 +118,8 @@ def self_play(n_episodes):
                 # print("{} win in episode {}".format(win_color, episode + 1))
             # ====================== store in memory =======================
                 for i in range(len(samples_black)):
-                    memory.append((samples_black[i][0], samples_black[i][1], reward_black))
+                    memory.append((samples_black[i][0], samples_black[i][1],
+                                   reward_black))
                 for i in range(len(samples_white)):
                     memory.append((samples_white[i][0], samples_white[i][1],
                                    reward_white))
@@ -124,6 +127,7 @@ def self_play(n_episodes):
 
 
 def train(n_game, n_epochs):
+    agent.model.train()
     print('memory size:', len(memory))
     print('learning rate:', LR)
 
@@ -235,10 +239,11 @@ def eval_model(player_model_path, enemy_model_path):
 
             # used for debugging
             if not check_valid_pos:
+                print(board)
                 raise ValueError("no legal move!")
 
+            # episode end
             if win_index != 0:
-
                 if turn == enemy_turn:
                     if win_index == 3:
                         result['Draw'] += 1
@@ -328,8 +333,12 @@ if __name__ == '__main__':
         print('-----------------------------------------')
 
         if i > 0:
-            agent.model.load_state_dict(torch.load(best_model_path))
-            print('load model from ' + best_model_path)
+            if best_model_path == 'random':
+                agent.model = PVNet(IN_PLANES, STATE_SIZE)
+                print('make new agent')
+            else:
+                agent.model.load_state_dict(torch.load(best_model_path))
+                print('load model from ' + best_model_path)
         self_play(N_EPISODES)
         train(i, N_EPOCHS)
 

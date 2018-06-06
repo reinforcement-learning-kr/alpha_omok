@@ -12,7 +12,7 @@ STATE_SIZE = 9
 N_BLOCKS = 3
 IN_PLANES = 5
 OUT_PLANES = 32
-N_MCTS = 200
+N_MCTS = 400
 N_MATCH = 30
 
 
@@ -61,7 +61,8 @@ class Evaluator:
 
     def get_action(self, root_id, board, turn, enemy_turn):
         if turn != enemy_turn:
-            state = get_state_pt(root_id, turn, STATE_SIZE, IN_PLANES)
+            self.player.model.eval()
+            state = get_state_pt(root_id, STATE_SIZE, IN_PLANES)
             state_input = Variable(Tensor([state]))
             p, v = self.player.model(state_input)
             p = p.data[0].cpu().numpy()
@@ -74,7 +75,8 @@ class Evaluator:
                 pi = self.enemy.get_pi(root_id, board, turn)
                 action, action_index = get_action(pi, board)
             else:
-                state = get_state_pt(root_id, turn, STATE_SIZE, IN_PLANES)
+                self.enemy.model.eval()
+                state = get_state_pt(root_id, STATE_SIZE, IN_PLANES)
                 state_input = Variable(Tensor([state]))
                 p, v = self.enemy.model(state_input)
                 p = p.data[0].cpu().numpy()
@@ -93,7 +95,9 @@ def main():
 
     # ========================== input model path ======================= #
     # 'random': no MCTS, 'puct': model free MCTS, None: random model MCTS
-    player_model_path = 'models/model_51.pickle'
+    # player_model_path = 'models/model_116.pickle'
+    # player_model_path = 'models/model_44.pickle'
+    player_model_path = 'models/model_18.pickle'
     enemy_model_path = 'puct'
 
     evaluator = Evaluator(player_model_path, enemy_model_path)
