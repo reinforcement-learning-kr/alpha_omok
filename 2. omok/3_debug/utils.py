@@ -15,7 +15,6 @@ def valid_actions(game_board):
             if game_board[i][j] == 0:
                 actions.append([(i, j), count])
             count += 1
-
     return actions
 
 
@@ -192,8 +191,11 @@ def get_action(pi, board):
         valid_indicator[action_idx] = 1
 
     pi = pi * valid_indicator
-    pi /= np.sum(pi)
-
+    # if the sum of pi equals 0, then nan eror occurs
+    if np.sum(pi) > 0:
+        pi /= np.sum(pi)
+    else:
+        pi = valid_indicator / np.sum(valid_indicator)
     action_index = np.random.choice(action_size, p=pi)
     action[action_index] = 1
     return action, action_index
