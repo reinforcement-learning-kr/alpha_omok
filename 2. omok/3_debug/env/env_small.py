@@ -147,7 +147,7 @@ class GameState:
         # If self mode and MCTS works
         if np.any(input_) != 0:
             action_index = np.argmax(input_)
-            y_index = int(action_index / GAMEBOARD_SIZE)
+            y_index = action_index // GAMEBOARD_SIZE
             x_index = action_index % GAMEBOARD_SIZE
             check_valid_pos = True
 
