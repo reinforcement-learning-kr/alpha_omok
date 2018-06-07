@@ -299,7 +299,7 @@ def symmetry_choice(state, pi):
         sym_state.append(c)
         state = np.asarray(sym_state).reshape(s_shape)
 
-        p = np.fliplr(s)
+        p = np.fliplr(p)
         pi = p.reshape(pi_shape)
 
     elif rand_i == 5:
