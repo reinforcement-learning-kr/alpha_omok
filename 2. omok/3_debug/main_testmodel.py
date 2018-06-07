@@ -4,7 +4,7 @@ Data : 2018.03.12, 2018.03.28, 2018.05.11, 2018.06.04
 Project : Make your own Alpha Zero
 Objective : find the problem of code. Let's Debugging!!
 '''
-from utils import render_str, get_state_pt, get_action, valid_actions
+from utils import render_str, get_state_pt, get_action, valid_actions, symmetry_choice
 from neural_net import PVNet
 import numpy as np
 from collections import deque
@@ -29,7 +29,7 @@ BATCH_SIZE = 32
 TOTAL_ITER = 100000
 N_MCTS = 400
 TAU_THRES = 8
-N_EPISODES = 300
+N_EPISODES = 30
 N_EPOCHS = 10
 SAVE_CYCLE = 1000
 LR = 2e-4
@@ -86,9 +86,11 @@ def self_play(n_episodes):
             action, action_index = get_action(p, board)
             # turn = 0(흑), 1(백)
             if turn == 0:
-                samples_black.append((state, action))
+                _state, _action = symmetry_choice(state, action)
+                samples_black.append((_state, _action))
             else:
-                samples_white.append((state, action))
+                _state, _action = symmetry_choice(state, action)
+                samples_white.append((_state, _action))
             root_id += (action_index,)
             # =========================== step =============================
             board, check_valid_pos, win_index, turn, _ = env.step(action)
@@ -314,7 +316,7 @@ if __name__ == '__main__':
     memory = deque(maxlen=50000)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(IN_PLANES, STATE_SIZE)
-    best_model_path = "./models/model_18.pickle"
+    # best_model_path = "./models/model_18.pickle"
 
     datetime_now = str(datetime.date.today()) + '_' + \
         str(datetime.datetime.now().hour) + '_' + \
@@ -323,7 +325,7 @@ if __name__ == '__main__':
     if use_cuda:
         agent.model.cuda()
 
-    for i in range(19, TOTAL_ITER):
+    for i in range(TOTAL_ITER):
         print('-----------------------------------------')
         print('{}th training process'.format(i + 1))
         print('-----------------------------------------')
@@ -338,7 +340,7 @@ if __name__ == '__main__':
         self_play(N_EPISODES)
         train(i, N_EPOCHS)
 
-        player_model_path = "./models/model_{}.pickle".format(i)
+        player_model_path = "./models/model_{}_0607.pickle".format(i)
         if i == 0:
             best_model_path = 'random'
 
