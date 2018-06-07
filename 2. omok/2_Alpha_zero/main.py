@@ -72,11 +72,13 @@ def self_play(n_selfplay):
             state_input = Variable(Tensor([state]))
 
             if turn == 0:
-                state_black.appendleft(state)
-                pi_black.appendleft(pi)
+                s_sym, pi_sym = utils.symmetry_choice(state, pi)
+                state_black.appendleft(s_sym.copy())
+                pi_black.appendleft(pi_sym.copy())
             else:
-                state_white.appendleft(state)
-                pi_white.appendleft(pi)
+                s_sym, pi_sym = utils.symmetry_choice(state, pi)
+                state_white.appendleft(s_sym.copy())
+                pi_white.appendleft(pi_sym.copy())
 
             # ====================== print evaluation ====================== #
 
