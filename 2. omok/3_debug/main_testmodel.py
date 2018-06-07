@@ -14,7 +14,6 @@ from torch.nn import functional as F
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from agent import Player
-# import matplotlib.pyplot as plt
 import datetime
 
 import sys
@@ -97,7 +96,6 @@ def self_play(n_episodes):
 
             # used for debugging
             if not check_valid_pos:
-                print(board)
                 raise ValueError("no legal move!")
 
             if win_index != 0:
@@ -191,10 +189,6 @@ def train(n_game, n_epochs):
         agent.model.state_dict(),
         './models/model_{}.pickle'.format(n_game))
 
-    # plt.plot(n_game, np.average(loss_list), hold=True, marker='*', ms=5)
-    # plt.draw()
-    # plt.pause(0.000001)
-
 
 def eval_model(player_model_path, enemy_model_path):
     evaluator = Evaluator(player_model_path, enemy_model_path)
@@ -239,7 +233,8 @@ def eval_model(player_model_path, enemy_model_path):
 
             # used for debugging
             if not check_valid_pos:
-                print(board)
+                print('action:', action)
+                print('board:', board)
                 raise ValueError("no legal move!")
 
             # episode end
@@ -319,6 +314,7 @@ if __name__ == '__main__':
     memory = deque(maxlen=50000)
     agent = Player(STATE_SIZE, N_MCTS, IN_PLANES)
     agent.model = PVNet(IN_PLANES, STATE_SIZE)
+    best_model_path = "./models/model_18.pickle"
 
     datetime_now = str(datetime.date.today()) + '_' + \
         str(datetime.datetime.now().hour) + '_' + \
@@ -327,7 +323,7 @@ if __name__ == '__main__':
     if use_cuda:
         agent.model.cuda()
 
-    for i in range(TOTAL_ITER):
+    for i in range(19, TOTAL_ITER):
         print('-----------------------------------------')
         print('{}th training process'.format(i + 1))
         print('-----------------------------------------')
