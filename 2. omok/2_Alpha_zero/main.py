@@ -23,14 +23,14 @@ TAU_THRES = 8
 # Net
 N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
-OUT_PLANES = 16
+OUT_PLANES = 64
 
 # Training
 TOTAL_ITER = 1000000
-N_SELFPLAY = 300
+N_SELFPLAY = 400
 N_EPOCHS = 1
 BATCH_SIZE = 32
-LR = 0.01
+LR = 0.0015
 L2 = 1e-4
 
 # Data
@@ -201,13 +201,6 @@ def train(n_epochs, n_iter):
             optimizer.step()
 
             # tensorboad & print loss
-            writer.add_scalars('LOSS',
-                               {
-                                   'Loss': loss.item(),
-                                   'Loss V': v_loss.item(),
-                                   'Loss P': p_loss.item()
-                               },
-                               step)
             writer.add_scalar('Loss', loss.item(), step)
             writer.add_scalar('Loss V', v_loss.item(), step)
             writer.add_scalar('Loss P', p_loss.item(), step)
@@ -219,13 +212,6 @@ def train(n_epochs, n_iter):
 
             step += 1
 
-        writer.add_scalars('mean LOSS',
-                           {
-                               'mean Loss': np.mean(loss_all),
-                               'mean Loss V': np.mean(loss_v),
-                               'mean Loss P': np.mean(loss_p)
-                           },
-                           n_iter)
         writer.add_scalar('mean Loss', np.mean(loss_all), n_iter)
         writer.add_scalar('mean Loss V', np.mean(loss_v), n_iter)
         writer.add_scalar('mean Loss P', np.mean(loss_p), n_iter)
@@ -239,13 +225,13 @@ def train(n_epochs, n_iter):
         print('-' * 58)
 
 
-def save_data(memory, step):
+def save_data(memory, n_iter, step):
     datetime_now = datetime.now().strftime('%y%m%d_%H%M')
 
     # save model
     torch.save(
         Agent.model.state_dict(),
-        'data/{}_{}_step_model.pickle'.format(datetime_now, step))
+        'data/{}_{}_{}_step_model.pickle'.format(datetime_now, n_iter, step))
 
     if DATASET_SAVE:
         with open('data/{}_{}_step_dataset.pickle'.format(
@@ -254,18 +240,19 @@ def save_data(memory, step):
 
 
 def load_data(model_path, dataset_path):
-    global memory, step
+    global memory, step, start_iter
 
     if model_path:
         print('load model: {}\n'.format(model_path))
         Agent.model.load_state_dict(torch.load(model_path))
-        step = int(model_path.split('_')[-3])
+        step = int(model_path.split('_')[2])
+        start_iter = int(model_path.split('_')[1]) + 1
 
     if dataset_path:
         print('load dataset: {}\n'.format(dataset_path))
         with open(dataset_path, 'rb') as f:
             memory = pickle.load(f)
-            memory = deque(memory, maxlen=120000)
+            memory = deque(memory, maxlen=200000)
 
 
 def reset_iter(memory, result, n_iter):
@@ -285,9 +272,10 @@ if __name__ == '__main__':
     torch.cuda.manual_seed_all(0)
 
     # global variable
-    memory = deque(maxlen=120000)
+    memory = deque(maxlen=200000)
     writer = SummaryWriter()
     result = {'Black': 0, 'White': 0, 'Draw': 0}
+    start_iter = 0
     step = 0
 
     # gpu or cpu
@@ -313,16 +301,16 @@ if __name__ == '__main__':
 
     load_data(model_path, dataset_path)
 
-    for n_iter in range(TOTAL_ITER):
+    for n_iter in range(start_iter, TOTAL_ITER):
         print('=' * 20, " {:4} Iteration ".format(n_iter), '=' * 20)
 
         if dataset_path:
             train(N_EPOCHS, n_iter)
-            save_data(memory, step)
+            save_data(memory, n_iter, step)
             self_play(N_SELFPLAY)
             reset_iter(memory, result, n_iter)
         else:
             self_play(N_SELFPLAY)
             train(N_EPOCHS, n_iter)
-            save_data(memory, step)
+            save_data(memory, n_iter, step)
             reset_iter(memory, result, n_iter)

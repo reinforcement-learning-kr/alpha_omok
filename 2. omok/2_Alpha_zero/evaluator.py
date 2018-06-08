@@ -10,7 +10,7 @@ import utils
 BOARD_SIZE = 9
 N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
-OUT_PLANES = 16
+OUT_PLANES = 32
 N_MCTS = 400
 N_MATCH = 10
 

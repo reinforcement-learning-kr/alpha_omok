@@ -102,14 +102,9 @@ class ZeroAgent(object):
 
             qu = {}
             ids = []
-            total_n = 0
-
-            for action_idx in self.tree[node_id]['child']:
-                edge_id = node_id + (action_idx,)
-                n = self.tree[edge_id]['n']
-                total_n += n
 
             for i, action_index in enumerate(self.tree[node_id]['child']):
+                total_n = self.tree[node_id]['n']
                 child_id = node_id + (action_index,)
                 n = self.tree[child_id]['n']
                 q = self.tree[child_id]['q']
@@ -280,14 +275,9 @@ class PUCTAgent(object):
 
             qu = {}
             ids = []
-            total_n = 0
-
-            for action_idx in self.tree[node_id]['child']:
-                edge_id = node_id + (action_idx,)
-                n = self.tree[edge_id]['n']
-                total_n += n
 
             for action_index in self.tree[node_id]['child']:
+                total_n = self.tree[node_id]['n']
                 child_id = node_id + (action_index,)
                 n = self.tree[child_id]['n']
                 q = self.tree[child_id]['q']
@@ -455,7 +445,6 @@ class UCTAgent(object):
 
             qu = {}
             ids = []
-            total_n = 0
 
             for action_index in self.tree[node_id]['child']:
                 child_id = node_id + (action_index,)
@@ -464,9 +453,10 @@ class UCTAgent(object):
                 total_n = self.tree[node_id]['n']
 
                 if n == 0:
-                    n = 1e-5
+                    u = np.inf
+                else:
+                    u = np.sqrt(2 * np.log(total_n) / n)
 
-                u = np.sqrt(2 * np.log(total_n) / n)
                 qu[child_id] = q + u
 
             max_value = max(qu.values())
