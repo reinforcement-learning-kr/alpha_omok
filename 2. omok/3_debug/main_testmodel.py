@@ -29,7 +29,7 @@ BATCH_SIZE = 32
 TOTAL_ITER = 100000
 N_MCTS = 400
 TAU_THRES = 8
-N_EPISODES = 30
+N_EPISODES = 300
 N_EPOCHS = 10
 SAVE_CYCLE = 1000
 LR = 2e-4
@@ -87,10 +87,10 @@ def self_play(n_episodes):
             # turn = 0(흑), 1(백)
             if turn == 0:
                 _state, _action = symmetry_choice(state, action)
-                samples_black.append((_state, _action))
+                samples_black.append((_state.copy(), _action.copy()))
             else:
                 _state, _action = symmetry_choice(state, action)
-                samples_white.append((_state, _action))
+                samples_white.append((_state.copy(), _action.copy()))
             root_id += (action_index,)
             # =========================== step =============================
             board, check_valid_pos, win_index, turn, _ = env.step(action)
@@ -189,7 +189,7 @@ def train(n_game, n_epochs):
 
     torch.save(
         agent.model.state_dict(),
-        './models/model_{}.pickle'.format(n_game))
+        './models/model_{}_0607.pickle'.format(n_game))
 
 
 def eval_model(player_model_path, enemy_model_path):

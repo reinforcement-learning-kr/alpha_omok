@@ -95,7 +95,8 @@ def main():
 
     # ========================== input model path ======================= #
     # 'random': no MCTS, 'puct': model free MCTS, None: random model MCTS
-    player_model_path = 'models/model_236.pickle'
+    # player_model_path = 'models/model_236.pickle'
+    player_model_path = 'models/model_45_0607.pickle'
     enemy_model_path = 'puct'
 
     evaluator = Evaluator(player_model_path, enemy_model_path)
