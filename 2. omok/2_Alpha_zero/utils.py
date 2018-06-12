@@ -171,7 +171,7 @@ def get_state_pt(node_id, board_size, channel_size):
                 history.append(state_b.copy())
                 color_idx = 0
             else:
-                state_w[:][row, col] = 1
+                state_w[row, col] = 1
                 history.append(state_w.copy())
                 color_idx = 1
 
@@ -343,5 +343,5 @@ def symmetry_choice(state, pi):
 
 if __name__ == '__main__':
     # test
-    node_id = (0, 1, 2, 3, 5, 4, 7)
-    print(get_state_pt(node_id, 3, 17))
+    node_id = (0, 1, 2, 3, 5, 4)
+    print(get_state_pt(node_id, 3, 5))
