@@ -9,8 +9,8 @@ import utils
 
 BOARD_SIZE = 9
 N_BLOCKS = 10
-IN_PLANES = 5  # history * 2 + 1
-OUT_PLANES = 32
+IN_PLANES = 17  # history * 2 + 1
+OUT_PLANES = 64
 N_MCTS = 400
 N_MATCH = 10
 
@@ -134,7 +134,6 @@ def main():
 
     player_model_path = None
     enemy_model_path = None
-
     # ===================================================================== #
 
     evaluator = Evaluator(player_model_path, enemy_model_path)

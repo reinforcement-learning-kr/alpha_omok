@@ -134,6 +134,13 @@ class ZeroAgent(object):
         if win_index == 0:
             # print("expansion")
             actions = utils.legal_actions(leaf_board)
+            prior_prob = np.zeros(self.board_size**2)
+
+            for action in actions:
+                action_index = action[1]
+                prior_prob[action_index] = policy[action_index]
+
+            prior_prob /= prior_prob.sum()
 
             if self.noise:
                 if leaf_id == self.root_id:
@@ -200,14 +207,13 @@ class ZeroAgent(object):
 
 class PUCTAgent(object):
 
-    C_PUCT = 5
-
     def __init__(self, board_size, num_mcts):
         self.board_size = board_size
         self.num_mcts = num_mcts
         # tictactoe and omok
         self.win_mark = 3 if board_size == 3 else 5
         self.alpha = 10 / self.board_size**2
+        self.c_puct = 5
         self.root_id = None
         self.board = None
         self.turn = None
@@ -215,7 +221,6 @@ class PUCTAgent(object):
 
     def reset(self):
         self.root_id = None
-        self.board = None
         self.turn = None
         self.tree.clear()
 
@@ -223,12 +228,14 @@ class PUCTAgent(object):
         self._init_mcts(root_id, board, turn)
         self._mcts(self.root_id)
 
-        root_node = self.tree[self.root_id]
         visit = np.zeros(self.board_size**2, 'float')
 
-        for action_index in root_node['child']:
+        for action_index in self.tree[self.root_id]['child']:
             child_id = self.root_id + (action_index,)
             visit[action_index] = self.tree[child_id]['n']
+
+        if visit.max() > 1000:
+            tau = 0.1
 
         pi = visit**(1 / tau)
         pi /= pi.sum()
@@ -275,6 +282,12 @@ class PUCTAgent(object):
 
             qu = {}
             ids = []
+            # total_n = 0
+
+            # for action_idx in self.tree[node_id]['child']:
+            #     edge_id = node_id + (action_idx,)
+            #     n = self.tree[edge_id]['n']
+            #     total_n += n
 
             for action_index in self.tree[node_id]['child']:
                 total_n = self.tree[node_id]['n']
@@ -282,7 +295,7 @@ class PUCTAgent(object):
                 n = self.tree[child_id]['n']
                 q = self.tree[child_id]['q']
                 p = self.tree[child_id]['p']
-                u = self.C_PUCT * p * np.sqrt(total_n) / (n + 1)
+                u = self.c_puct * p * np.sqrt(total_n) / (n + 1)
                 qu[child_id] = q + u
 
             max_value = max(qu.values())
@@ -394,15 +407,15 @@ class UCTAgent(object):
         self._mcts(self.root_id)
 
         root_node = self.tree[self.root_id]
-        q = np.zeros(self.board_size**2, 'float')
+        q = np.ones(self.board_size**2, 'float') * -np.inf
         pi = np.zeros(self.board_size**2, 'float')
 
         for action_index in root_node['child']:
             child_id = self.root_id + (action_index,)
             q[action_index] = self.tree[child_id]['q']
 
-        max_idx = np.argmax(q)
-        pi[max_idx] = 1
+        max_idx = np.argwhere(q == q.max())
+        pi[max_idx[np.random.choice(len(max_idx))]] = 1
         return pi
 
     def _init_mcts(self, root_id, board, turn):
@@ -445,6 +458,7 @@ class UCTAgent(object):
 
             qu = {}
             ids = []
+            total_n = 0
 
             for action_index in self.tree[node_id]['child']:
                 child_id = node_id + (action_index,)
