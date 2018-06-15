@@ -78,7 +78,7 @@ class ZeroAgent(object):
                 # print("add noise no expansion")
 
     def _mcts(self, root_id):
-        start = time.time()
+        # start = time.time()
         self.model.eval()
         for i in range(self.num_mcts):
             sys.stdout.write('simulation: {}\r'.format(i + 1))
@@ -87,7 +87,7 @@ class ZeroAgent(object):
             value, reward = self._expansion_evaluation(leaf_id, win_index)
             self._backup(leaf_id, value, reward)
 
-        finish = time.time() - start
+        # finish = time.time() - start
         # print("{} simulations end ({:0.0f}s)".format(i + 1, finish))
 
     def _selection(self, root_id):
@@ -153,12 +153,11 @@ class ZeroAgent(object):
                 child_board = utils.get_board(child_id, self.board_size)
                 next_turn = utils.get_turn(child_id)
 
-                prior_prob = policy[action_index]
+                prior_p = prior_prob[action_index]
 
                 if self.noise:
                     if leaf_id == self.root_id:
-                        prior_prob = 0.75 * policy[action_index] + \
-                            0.25 * noise_probs[i]
+                        prior_prob = 0.75 * prior_p + 0.25 * noise_probs[i]
                         # print("add noise expansion")
 
                 self.tree[child_id] = {'board': child_board,
@@ -168,7 +167,7 @@ class ZeroAgent(object):
                                        'n': 0.,
                                        'w': 0.,
                                        'q': 0.,
-                                       'p': prior_prob}
+                                       'p': prior_p}
 
                 self.tree[leaf_id]['child'].append(action_index)
 

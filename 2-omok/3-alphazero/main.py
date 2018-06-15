@@ -18,21 +18,22 @@ import utils
 # Game
 BOARD_SIZE = 9
 N_MCTS = 400
-TAU_THRES = 8
+TAU_THRES = 6
+# RESIGN = False
 
 # Net
 N_BLOCKS = 10
-IN_PLANES = 17  # history * 2 + 1
+IN_PLANES = 11  # history * 2 + 1
 OUT_PLANES = 64
 
 # Training
 TOTAL_ITER = 1000000
-N_SELFPLAY = 100
-MEMORY_SIZE = 64000
-SAMPLE_SIZE = 100
+N_SELFPLAY = 400
+MEMORY_SIZE = 240000
+SAMPLE_SIZE = 400
 N_EPOCHS = 1
 BATCH_SIZE = 32
-LR = 15e-5
+LR = 0.01
 L2 = 1e-4
 
 # Data
@@ -44,11 +45,12 @@ def self_play(n_selfplay):
     state_white = deque()
     pi_black = deque()
     pi_white = deque()
-    # resign_val_balck = []
-    # resign_val_white = []
-    # resign_val = []
-    # resign_v = -1.0
-    # n_resign_thres = N_SELFPLAY // 10
+
+    resign_val_balck = []
+    resign_val_white = []
+    resign_val = []
+    resign_v = -1.0
+    n_resign_thres = N_SELFPLAY // 10
 
     for episode in range(n_selfplay):
         env = game.GameState('text')
@@ -56,7 +58,7 @@ def self_play(n_selfplay):
         turn = 0
         root_id = (0,)
         win_index = 0
-        # resign_index = 0
+        resign_index = 0
         time_step = 0
         action_index = None
 
@@ -99,22 +101,22 @@ def self_play(n_selfplay):
                 print("\nBlack's win%: {:.2f}%".format(
                     (v.item() + 1) / 2 * 100))
 
-                # if episode < n_resign_thres:
-                #     resign_val_balck.append(v.item())
+                if episode < n_resign_thres:
+                    resign_val_balck.append(v.item())
 
-                # elif v.item() < resign_v:
-                #     resign_index = 2
-                #     print('"Black Resign!"')
+                elif v.item() < resign_v:
+                    resign_index = 2
+                    print('"Black Resign!"')
             else:
                 print("\nWhite's win%: {:.2f}%".format(
                     (v.item() + 1) / 2 * 100))
 
-                # if episode < n_resign_thres:
-                #     resign_val_white.append(v.item())
+                if episode < n_resign_thres:
+                    resign_val_white.append(v.item())
 
-                # elif v.item() < resign_v:
-                #     resign_index = 1
-                #     print('"White Resign!"')
+                elif v.item() < resign_v:
+                    resign_index = 1
+                    print('"White Resign!"')
 
             # ======================== get action ========================== #
 
@@ -126,9 +128,9 @@ def self_play(n_selfplay):
             board, _, win_index, turn, _ = env.step(action)
             time_step += 1
 
-            # if resign_index != 0:
-            #     win_index = resign_index
-            #     result['Resign'] += 1
+            if resign_index != 0:
+                win_index = resign_index
+                result['Resign'] += 1
 
             if win_index != 0:
 
@@ -137,37 +139,37 @@ def self_play(n_selfplay):
                     reward_white = -1.
                     result['Black'] += 1
 
-                    # if episode < n_resign_thres:
-                    #     resign_val.append(min(resign_val_balck))
-                    #     resign_val_balck.clear()
-                    #     resign_val_white.clear()
+                    if episode < n_resign_thres:
+                        resign_val.append(min(resign_val_balck))
+                        resign_val_balck.clear()
+                        resign_val_white.clear()
 
                 elif win_index == 2:
                     reward_black = -1.
                     reward_white = 1.
                     result['White'] += 1
 
-                    # if episode < n_resign_thres:
-                    #     resign_val.append(min(resign_val_white))
-                    #     resign_val_white.clear()
-                    #     resign_val_balck.clear()
+                    if episode < n_resign_thres:
+                        resign_val.append(min(resign_val_white))
+                        resign_val_white.clear()
+                        resign_val_balck.clear()
 
                 else:
                     reward_black = 0.
                     reward_white = 0.
                     result['Draw'] += 1
 
-                #     if episode < n_resign_thres:
-                #         resign_val.append(min(resign_val_balck))
-                #         resign_val.append(min(resign_val_white))
-                #         resign_val_balck.clear()
-                #         resign_val_white.clear()
+                    if episode < n_resign_thres:
+                        resign_val.append(min(resign_val_balck))
+                        resign_val.append(min(resign_val_white))
+                        resign_val_balck.clear()
+                        resign_val_white.clear()
 
-                # if episode + 1 == n_resign_thres:
-                #     resign_v = min(resign_val)
-                #     resign_val.clear()
+                if episode + 1 == n_resign_thres:
+                    resign_v = min(resign_val)
+                    resign_val.clear()
 
-                # print('Resign win%: {:.2f}%'.format((resign_v + 1) / 2 * 100))
+                print('Resign win%: {:.2f}%'.format((resign_v + 1) / 2 * 100))
 
             # ====================== store in memory ======================= #
                 while state_black or state_white:
@@ -206,6 +208,7 @@ def train(n_epochs, n_iter):
     global step
     global writer
 
+    Agent.model.train()
     loss_all = []
     loss_v = []
     loss_p = []
@@ -298,8 +301,9 @@ def load_data(model_path, dataset_path):
     if model_path:
         print('load model: {}\n'.format(model_path))
         Agent.model.load_state_dict(torch.load(model_path))
-        step = int(model_path.split('_')[2])
-        start_iter = int(model_path.split('_')[1])
+        step = int(model_path.split('_')[3])
+        start_iter = int(model_path.split('_')[2]) + 1
+
 
     if dataset_path:
         print('load dataset: {}\n'.format(dataset_path))
