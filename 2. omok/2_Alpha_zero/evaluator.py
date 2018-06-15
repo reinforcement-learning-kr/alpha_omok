@@ -11,7 +11,7 @@ STATE_SIZE = 9
 N_BLOCKS = 10
 IN_PLANES = 9
 OUT_PLANES = 64
-N_MCTS = 400
+N_MCTS = 100
 N_MATCH = 30
 
 
@@ -71,17 +71,18 @@ def main():
     # input model path
     # 'random': no MCTS, 'puct': model free MCTS, None: random model MCTS
     player_model_path = None
-    enemy_model_path = 'puct'
+    enemy_model_path = None
 
     evaluator = Evaluator(player_model_path, enemy_model_path)
 
     env = game.GameState('text')
     result = {'Player': 0, 'Enemy': 0, 'Draw': 0}
 
+    enemy_turn = 1
+
     for i in range(N_MATCH):
         board = np.zeros([STATE_SIZE, STATE_SIZE])
         turn = 0
-        player_color = 'Black' if turn == 0 else 'White'
         win_index = 0
         action_index = None
 
@@ -89,12 +90,12 @@ def main():
             render_str(board, STATE_SIZE, action_index)
             action, action_index = evaluator.get_action(i, board, turn)
 
-            if turn == 0:
-                # print("player turn")
+            if turn != enemy_turn:
+                print("player turn")
                 node_id = evaluator.player.root_id + (action_index,)
                 evaluator.enemy.root_id = node_id
             else:
-                # print("enemy turn")
+                print("enemy turn")
                 node_id = evaluator.enemy.root_id + (action_index,)
                 evaluator.player.root_id = node_id
 
@@ -105,23 +106,24 @@ def main():
                 raise ValueError("no legal move!")
 
             if win_index != 0:
-                if win_index == 1:
-                    if player_color == 'Black':
+                if turn == enemy_turn:
+                    if win_index == 3:
+                        result['Draw'] += 1
+                        print("Draw!")
+                    else:
                         result['Player'] += 1
                         print("Player Win!")
-                    else:
-                        result['Enemy'] += 1
-                        print("Enemy Win")
-                elif win_index == 2:
-                    if player_color == 'White':
-                        result['Player'] += 1
-                        print("Player Win!")
-                    else:
-                        result['Enemy'] += 1
-                        print("Enemy Win")
                 else:
-                    result['Draw'] += 1
-                    print("Draw!")
+                    if win_index == 3:
+                        result['Draw'] += 1
+                        print("Draw!")
+                    else:
+                        result['Enemy'] += 1
+                        print("Enemy Win!")
+
+                # Change turn
+                enemy_turn = abs(enemy_turn - 1)
+                turn = 0
 
                 render_str(board, STATE_SIZE, action_index)
                 pw, ew, dr = result['Player'], result['Enemy'], result['Draw']
@@ -129,7 +131,7 @@ def main():
                 print('')
                 print('=' * 20, " {}  Game End  ".format(i + 1), '=' * 20)
                 print('Player Win: {}  Enemy Win: {}  Draw: {}  \
-Winrate: {:.2f}%'.format(pw, ew, dr, winrate))
+                       Winrate: {:.2f}%'.format(pw, ew, dr, winrate))
                 evaluator.reset()
 
 
