@@ -55,6 +55,7 @@ class ZeroAgent(object):
         self.root_id = root_id
         self.board = board
         self.turn = turn
+        self.model.eval()
 
         if self.root_id not in self.tree:
             # print('init root node')
@@ -153,12 +154,11 @@ class ZeroAgent(object):
                 child_board = utils.get_board(child_id, self.board_size)
                 next_turn = utils.get_turn(child_id)
 
-                prior_prob = policy[action_index]
+                prior_p = prior_prob[action_index]
 
                 if self.noise:
                     if leaf_id == self.root_id:
-                        prior_prob = 0.75 * policy[action_index] + \
-                            0.25 * noise_probs[i]
+                        prior_p = 0.75 * prior_p + 0.25 * noise_probs[i]
                         # print("add noise expansion")
 
                 self.tree[child_id] = {'board': child_board,
@@ -168,7 +168,7 @@ class ZeroAgent(object):
                                        'n': 0.,
                                        'w': 0.,
                                        'q': 0.,
-                                       'p': prior_prob}
+                                       'p': prior_p}
 
                 self.tree[leaf_id]['child'].append(action_index)
 
@@ -213,7 +213,7 @@ class PUCTAgent(object):
         # tictactoe and omok
         self.win_mark = 3 if board_size == 3 else 5
         self.alpha = 10 / self.board_size**2
-        self.c_puct = 5
+        self.c_puct = 1
         self.root_id = None
         self.board = None
         self.turn = None
@@ -224,7 +224,7 @@ class PUCTAgent(object):
         self.turn = None
         self.tree.clear()
 
-    def get_pi(self, root_id, board, turn, tau):
+    def get_pi(self, root_id, board, turn, tau=0.01):
         self._init_mcts(root_id, board, turn)
         self._mcts(self.root_id)
 
@@ -591,16 +591,10 @@ class HumanAgent(object):
 
     def get_pi(self, root_id, board, turn, tau):
         self.root_id = root_id
-
-        while True:
-            try:
-                action_index = self.input_action(self.last_label)
-            except Exception:
-                continue
-            else:
-                pi = np.zeros(self.board_size**2, 'float')
-                pi[action_index] = 1
-                return pi
+        action_index = self.input_action(self.last_label)
+        pi = np.zeros(self.board_size**2, 'float')
+        pi[action_index] = 1
+        return pi
 
     def _init_board_label(self):
         self.last_label = str(self.board_size)
