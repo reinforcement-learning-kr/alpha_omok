@@ -55,6 +55,7 @@ class ZeroAgent(object):
         self.root_id = root_id
         self.board = board
         self.turn = turn
+        self.model.eval()
 
         if self.root_id not in self.tree:
             # print('init root node')
@@ -79,7 +80,6 @@ class ZeroAgent(object):
 
     def _mcts(self, root_id):
         # start = time.time()
-        self.model.eval()
         for i in range(self.num_mcts):
             sys.stdout.write('simulation: {}\r'.format(i + 1))
             sys.stdout.flush()
@@ -102,9 +102,15 @@ class ZeroAgent(object):
 
             qu = {}
             ids = []
+            total_n = 0
+
+            for action_idx in self.tree[node_id]['child']:
+                edge_id = node_id + (action_idx,)
+                n = self.tree[edge_id]['n']
+                total_n += n
 
             for i, action_index in enumerate(self.tree[node_id]['child']):
-                total_n = self.tree[node_id]['n']
+                # total_n = self.tree[node_id]['n']
                 child_id = node_id + (action_index,)
                 n = self.tree[child_id]['n']
                 q = self.tree[child_id]['q']
@@ -157,7 +163,7 @@ class ZeroAgent(object):
 
                 if self.noise:
                     if leaf_id == self.root_id:
-                        prior_prob = 0.75 * prior_p + 0.25 * noise_probs[i]
+                        prior_p = 0.75 * prior_p + 0.25 * noise_probs[i]
                         # print("add noise expansion")
 
                 self.tree[child_id] = {'board': child_board,
@@ -281,15 +287,15 @@ class PUCTAgent(object):
 
             qu = {}
             ids = []
-            # total_n = 0
+            total_n = 0
 
-            # for action_idx in self.tree[node_id]['child']:
-            #     edge_id = node_id + (action_idx,)
-            #     n = self.tree[edge_id]['n']
-            #     total_n += n
+            for action_idx in self.tree[node_id]['child']:
+                edge_id = node_id + (action_idx,)
+                n = self.tree[edge_id]['n']
+                total_n += n
 
             for action_index in self.tree[node_id]['child']:
-                total_n = self.tree[node_id]['n']
+                # total_n = self.tree[node_id]['n']
                 child_id = node_id + (action_index,)
                 n = self.tree[child_id]['n']
                 q = self.tree[child_id]['q']

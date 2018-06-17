@@ -9,10 +9,10 @@ import utils
 
 BOARD_SIZE = 9
 N_BLOCKS = 10
-IN_PLANES = 11  # history * 2 + 1
+IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 64
 N_MCTS = 400
-N_MATCH = 10
+N_MATCH = 40
 
 
 class Evaluator(object):

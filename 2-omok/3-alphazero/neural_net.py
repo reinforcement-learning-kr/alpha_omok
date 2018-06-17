@@ -106,104 +106,6 @@ class PVNet(nn.Module):
         return p, v
 
 
-class ResBlock2(nn.Module):
-    def __init__(self, inplanes, planes):
-        super(ResBlock2, self).__init__()
-        self.conv1 = conv3x3(inplanes, planes)
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(planes, planes)
-        self.bn2 = nn.BatchNorm2d(planes)
-
-    def forward(self, x):
-        residual = x
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out += residual
-        out = self.relu(out)
-        return out
-
-
-class PolicyHead2(nn.Module):
-    def __init__(self, planes, board_size):
-        super(PolicyHead2, self).__init__()
-        self.policy_head = nn.Conv2d(planes, 2, kernel_size=1, bias=False)
-        self.policy_bn = nn.BatchNorm2d(2)
-        self.relu = nn.ReLU(inplace=True)
-        self.policy_fc = nn.Linear(board_size**2 * 2, board_size**2)
-        self.log_softmax = nn.LogSoftmax(dim=-1)
-
-    def forward(self, x):
-        out = self.policy_head(x)
-        out = self.policy_bn(out)
-        out = self.relu(out)
-        out = out.view(out.size(0), -1)
-        out = self.policy_fc(out)
-        out = self.log_softmax(out)
-        out = out.exp()
-        return out
-
-
-class ValueHead2(nn.Module):
-    def __init__(self, planes, board_size):
-        super(ValueHead2, self).__init__()
-        self.value_head = nn.Conv2d(planes, 1, kernel_size=1, bias=False)
-        self.value_bn = nn.BatchNorm2d(1)
-        self.relu = nn.ReLU(inplace=True)
-        self.value_fc1 = nn.Linear(board_size**2, planes)
-        self.value_fc2 = nn.Linear(planes, 1)
-        self.tanh = nn.Tanh()
-
-    def forward(self, x):
-        out = self.value_head(x)
-        out = self.value_bn(out)
-        out = self.relu(out)
-        out = out.view(out.size(0), -1)
-        out = self.value_fc1(out)
-        out = self.relu(out)
-        out = self.value_fc2(out)
-        out = self.tanh(out)
-        out = out.view(out.size(0))
-        return out
-
-
-class PVNet2(nn.Module):
-    def __init__(self, n_block, inplanes, planes, board_size):
-        super(PVNet2, self).__init__()
-        self.conv1 = conv3x3(inplanes, planes)
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU(inplace=True)
-        self.layers = self._make_layer(ResBlock2, planes, n_block)
-        self.policy_head = PolicyHead2(planes, board_size)
-        self.value_head = ValueHead2(planes, board_size)
-
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(
-                    m.weight, mode='fan_out', nonlinearity='relu')
-            if isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
-
-    def _make_layer(self, block, planes, n_block):
-        blocks = []
-        for i in range(n_block):
-            blocks.append(block(planes, planes))
-        return nn.Sequential(*blocks)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.layers(x)
-        p = self.policy_head(x)
-        v = self.value_head(x)
-        return p, v
-
-
 if __name__ == '__main__':
     # test
     import torch
@@ -211,7 +113,7 @@ if __name__ == '__main__':
     import numpy as np
     use_cuda = torch.cuda.is_available()
     Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    model = PVNet2(20, 5, 64, 9)
+    model = PVNet(20, 5, 64, 9)
     state = np.ones((5, 9, 9))
     state_input = Variable(torch.FloatTensor([state]))
     p, v = model(state_input)
