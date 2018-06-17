@@ -19,21 +19,20 @@ import utils
 BOARD_SIZE = 9
 N_MCTS = 400
 TAU_THRES = 6
-# RESIGN = False
 
 # Net
 N_BLOCKS = 10
-IN_PLANES = 11  # history * 2 + 1
+IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 64
 
 # Training
 TOTAL_ITER = 1000000
 N_SELFPLAY = 400
 MEMORY_SIZE = 240000
-SAMPLE_SIZE = 400
-N_EPOCHS = 1
+SAMPLE_SIZE = 1
+N_EPOCHS = 1200
 BATCH_SIZE = 32
-LR = 0.01
+LR = 1e-4
 L2 = 1e-4
 
 # Data
@@ -209,6 +208,7 @@ def train(n_epochs, n_iter):
     global writer
 
     Agent.model.train()
+
     loss_all = []
     loss_v = []
     loss_p = []
@@ -304,7 +304,6 @@ def load_data(model_path, dataset_path):
         step = int(model_path.split('_')[3])
         start_iter = int(model_path.split('_')[2]) + 1
 
-
     if dataset_path:
         print('load dataset: {}\n'.format(dataset_path))
         with open(dataset_path, 'rb') as f:
@@ -334,7 +333,7 @@ if __name__ == '__main__':
     writer = SummaryWriter()
     result = {'Black': 0, 'White': 0, 'Draw': 0, 'Resign': 0}
     step = 0
-    start_iter = 0
+    start_iter = 1
 
     # gpu or cpu
     use_cuda = torch.cuda.is_available()

@@ -103,9 +103,15 @@ class ZeroAgent(object):
 
             qu = {}
             ids = []
+            total_n = 0
+
+            for action_idx in self.tree[node_id]['child']:
+                edge_id = node_id + (action_idx,)
+                n = self.tree[edge_id]['n']
+                total_n += n
 
             for i, action_index in enumerate(self.tree[node_id]['child']):
-                total_n = self.tree[node_id]['n']
+                # total_n = self.tree[node_id]['n']
                 child_id = node_id + (action_index,)
                 n = self.tree[child_id]['n']
                 q = self.tree[child_id]['q']
@@ -213,7 +219,7 @@ class PUCTAgent(object):
         # tictactoe and omok
         self.win_mark = 3 if board_size == 3 else 5
         self.alpha = 10 / self.board_size**2
-        self.c_puct = 1
+        self.c_puct = 5
         self.root_id = None
         self.board = None
         self.turn = None
@@ -282,15 +288,15 @@ class PUCTAgent(object):
 
             qu = {}
             ids = []
-            # total_n = 0
+            total_n = 0
 
-            # for action_idx in self.tree[node_id]['child']:
-            #     edge_id = node_id + (action_idx,)
-            #     n = self.tree[edge_id]['n']
-            #     total_n += n
+            for action_idx in self.tree[node_id]['child']:
+                edge_id = node_id + (action_idx,)
+                n = self.tree[edge_id]['n']
+                total_n += n
 
             for action_index in self.tree[node_id]['child']:
-                total_n = self.tree[node_id]['n']
+                # total_n = self.tree[node_id]['n']
                 child_id = node_id + (action_index,)
                 n = self.tree[child_id]['n']
                 q = self.tree[child_id]['q']
