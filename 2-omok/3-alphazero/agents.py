@@ -3,17 +3,13 @@ import time
 
 import numpy as np
 import torch
-from torch.autograd import Variable
 
 import utils
 
-
-use_cuda = torch.cuda.is_available()
-Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
+PRINT_MCTS = True
 
 
 class ZeroAgent(object):
-
     def __init__(self, board_size, num_mcts, inplanes, noise=True):
         self.board_size = board_size
         self.num_mcts = num_mcts
@@ -24,14 +20,14 @@ class ZeroAgent(object):
         self.c_puct = 5
         self.noise = noise
         self.root_id = None
-        self.board = None
-        self.turn = None
+        # self.board = None
+        # self.turn = None
         self.model = None
         self.tree = {}
 
     def reset(self):
         self.root_id = None
-        self.turn = None
+        # self.turn = None
         self.tree.clear()
 
     def get_pi(self, root_id, board, turn, tau):
@@ -53,20 +49,18 @@ class ZeroAgent(object):
 
     def _init_mcts(self, root_id, board, turn):
         self.root_id = root_id
-        self.board = board
-        self.turn = turn
+        # self.board = board
+        # self.turn = turn
         self.model.eval()
 
         if self.root_id not in self.tree:
-            # print('init root node')
-            self.tree[self.root_id] = {'board': self.board,
-                                       'player': self.turn,
-                                       'parent': None,
-                                       'child': [],
+            # init root node
+            self.tree[self.root_id] = {'child': [],
                                        'n': 0.,
                                        'w': 0.,
                                        'q': 0.,
                                        'p': 0.}
+        # add noise
         elif self.noise:
             children = self.tree[self.root_id]['child']
             noise_probs = np.random.dirichlet(
@@ -76,27 +70,31 @@ class ZeroAgent(object):
                 child_id = self.root_id + (action_index,)
                 self.tree[child_id]['p'] = 0.75 * \
                     self.tree[child_id]['p'] + 0.25 * noise_probs[i]
-                # print("add noise no expansion")
 
     def _mcts(self, root_id):
         start = time.time()
 
         for i in range(self.num_mcts):
-            sys.stdout.write('simulation: {}\r'.format(i + 1))
-            sys.stdout.flush()
+        	if PRINT_MCTS:
+            	sys.stdout.write('simulation: {}\r'.format(i + 1))
+            	sys.stdout.flush()
+            # selection
             leaf_id, win_index = self._selection(root_id)
+            # expansion and evaluation
             value, reward = self._expansion_evaluation(leaf_id, win_index)
+            # backup
             self._backup(leaf_id, value, reward)
 
         finish = time.time() - start
-        print("{} simulations end ({:0.0f}s)".format(i + 1, finish))
+        if PRINT_MCTS:
+        	print("{} simulations end ({:0.0f}s)".format(i + 1, finish))
 
     def _selection(self, root_id):
         node_id = root_id
 
         while self.tree[node_id]['n'] > 0:
-            win_index = utils.check_win(
-                self.tree[node_id]['board'], self.win_mark)
+            board = utils.get_board(node_id, self.board_size)
+            win_index = utils.check_win(board, self.win_mark)
 
             if win_index != 0:
                 return node_id, win_index
@@ -111,7 +109,6 @@ class ZeroAgent(object):
                 total_n += n
 
             for i, action_index in enumerate(self.tree[node_id]['child']):
-                # total_n = self.tree[node_id]['n']
                 child_id = node_id + (action_index,)
                 n = self.tree[child_id]['n']
                 q = self.tree[child_id]['q']
@@ -123,54 +120,46 @@ class ZeroAgent(object):
             ids = [key for key, value in qu.items()
                    if value == max_value]
             node_id = ids[np.random.choice(len(ids))]
-            # print('selectionted id:', node_id)
 
-        win_index = utils.check_win(self.tree[node_id]['board'],
-                                    self.win_mark)
+        board = utils.get_board(node_id, self.board_size)
+        win_index = utils.check_win(board, self.win_mark)
         return node_id, win_index
 
     def _expansion_evaluation(self, leaf_id, win_index):
-        leaf_board = self.tree[leaf_id]['board']
         leaf_state = utils.get_state_pt(
             leaf_id, self.board_size, self.inplanes)
-        state_input = Variable(Tensor([leaf_state]))
+        state_input = torch.FloatTensor([leaf_state], device=device)
         policy, value = self.model(state_input)
         policy = policy.data.cpu().numpy()[0]
         value = value.data.cpu().numpy()[0]
 
         if win_index == 0:
-            # print("expansion")
-            actions = utils.legal_actions(leaf_board)
+            # expansion
+            actions = utils.legal_actions(leaf_id, self.board_size)
             prior_prob = np.zeros(self.board_size**2)
 
-            for action in actions:
-                action_index = action[1]
+            # re-nomalization
+            for action_index in actions:
                 prior_prob[action_index] = policy[action_index]
 
             prior_prob /= prior_prob.sum()
 
             if self.noise:
+                # root node noise
                 if leaf_id == self.root_id:
                     noise_probs = np.random.dirichlet(
                         self.alpha * np.ones(len(actions)))
 
-            for i, action in enumerate(actions):
-                action_index = action[1]
+            for i, action_index in enumerate(actions):
                 child_id = leaf_id + (action_index,)
-                child_board = utils.get_board(child_id, self.board_size)
-                next_turn = utils.get_turn(child_id)
 
                 prior_p = prior_prob[action_index]
 
                 if self.noise:
                     if leaf_id == self.root_id:
                         prior_p = 0.75 * prior_p + 0.25 * noise_probs[i]
-                        # print("add noise expansion")
 
-                self.tree[child_id] = {'board': child_board,
-                                       'player': next_turn,
-                                       'parent': leaf_id,
-                                       'child': [],
+                self.tree[child_id] = {'child': [],
                                        'n': 0.,
                                        'w': 0.,
                                        'q': 0.,
@@ -178,47 +167,53 @@ class ZeroAgent(object):
 
                 self.tree[leaf_id]['child'].append(action_index)
 
+            # return value
             reward = False
             return value, reward
         else:
-            # print("terminal node don't expansion")
-            reward = utils.get_reward(win_index, leaf_id)
+            # terminal node
+            # return reward
+            reward = 1.
             value = False
             return value, reward
 
     def _backup(self, leaf_id, value, reward):
-        # print("backup")
         node_id = leaf_id
         count = 0
 
-        while node_id != self.tree[self.root_id]['parent']:
-            # print('id: {}, reward: {}'.format(node_id,
-            #                                   reward * (-1)**(count)))
+        while node_id != self.root_id[:-1]:
             self.tree[node_id]['n'] += 1
 
             if not reward:
                 self.tree[node_id]['w'] += (-value) * (-1)**(count)
                 count += 1
-                # print('value:', -value)
             else:
                 self.tree[node_id]['w'] += reward * (-1)**(count)
-                # print('reward:', reward * (-1)**(count))
                 count += 1
 
             self.tree[node_id]['q'] = (self.tree[node_id]['w'] /
                                        self.tree[node_id]['n'])
-            parent_id = self.tree[node_id]['parent']
+            parent_id = node_id[:-1]
             node_id = parent_id
+
+    def del_parents(self, root_id):
+        max_len = 0
+        if self.tree:
+            for key in list(self.tree.keys()):
+                if len(key) > max_len:
+                    max_len = len(key)
+                if len(key) < len(root_id):
+                    del self.tree[key]
+        print('tree size:', len(self.tree))
+        print('tree depth:', 0 if max_len <= 0 else max_len - 1)
 
 
 class PUCTAgent(object):
-
     def __init__(self, board_size, num_mcts):
         self.board_size = board_size
         self.num_mcts = num_mcts
         # tictactoe and omok
         self.win_mark = 3 if board_size == 3 else 5
-        self.alpha = 10 / self.board_size**2
         self.c_puct = 5
         self.root_id = None
         self.board = None
@@ -235,16 +230,14 @@ class PUCTAgent(object):
         self._mcts(self.root_id)
 
         visit = np.zeros(self.board_size**2, 'float')
+        pi = np.zeros(self.board_size**2, 'float')
 
         for action_index in self.tree[self.root_id]['child']:
             child_id = self.root_id + (action_index,)
             visit[action_index] = self.tree[child_id]['n']
 
-        if visit.max() > 1000:
-            tau = 0.1
-
-        pi = visit**(1 / tau)
-        pi /= pi.sum()
+        max_idx = np.argwhere(visit == visit.max())
+        pi[max_idx[np.random.choice(len(max_idx))]] = 1
         return pi
 
     def _init_mcts(self, root_id, board, turn):
@@ -253,7 +246,6 @@ class PUCTAgent(object):
         self.turn = turn
 
         if self.root_id not in self.tree:
-            # print('init root node')
             self.tree[self.root_id] = {'board': self.board,
                                        'player': self.turn,
                                        'parent': None,
@@ -262,6 +254,8 @@ class PUCTAgent(object):
                                        'w': 0.,
                                        'q': 0.,
                                        'p': 0.}
+        else:
+            self.tree[self.root_id]['parent'] = None
 
     def _mcts(self, root_id):
         start = time.time()
@@ -296,7 +290,6 @@ class PUCTAgent(object):
                 total_n += n
 
             for action_index in self.tree[node_id]['child']:
-                # total_n = self.tree[node_id]['n']
                 child_id = node_id + (action_index,)
                 n = self.tree[child_id]['n']
                 q = self.tree[child_id]['q']
@@ -308,7 +301,6 @@ class PUCTAgent(object):
             ids = [key for key, value in qu.items()
                    if value == max_value]
             node_id = ids[np.random.choice(len(ids))]
-            # print('selectionted id:', node_id)
 
         win_index = utils.check_win(self.tree[node_id]['board'],
                                     self.win_mark)
@@ -319,8 +311,7 @@ class PUCTAgent(object):
         current_player = self.tree[leaf_id]['player']
 
         if win_index == 0:
-            # print("expansion")
-            actions = utils.legal_actions(leaf_board)
+            actions = utils.valid_actions(leaf_board)
             prior_prob = 1 / len(actions)
 
             for i, action in enumerate(actions):
@@ -341,12 +332,11 @@ class PUCTAgent(object):
                 self.tree[leaf_id]['child'].append(action_index)
 
             if self.tree[leaf_id]['parent']:
-                # print("simulation")
                 board_sim = leaf_board.copy()
                 turn_sim = current_player
 
                 while True:
-                    actions_sim = utils.legal_actions(board_sim)
+                    actions_sim = utils.valid_actions(board_sim)
                     action_sim = actions_sim[
                         np.random.choice(len(actions_sim))]
                     coord_sim = action_sim[0]
@@ -365,22 +355,19 @@ class PUCTAgent(object):
                         reward = utils.get_reward(win_idx_sim, leaf_id)
                         return reward
             else:
-                # print("root node don't simulation")
+                # root node don't simulation
                 reward = 0.
                 return reward
         else:
-            # print("terminal node don't expansion")
-            reward = utils.get_reward(win_index, leaf_id)
+            # terminal node don't expansion
+            reward = 1.
             return reward
 
     def _backup(self, leaf_id, reward):
-        # print("backup")
         node_id = leaf_id
         count = 0
 
-        while node_id != self.tree[self.root_id]['parent']:
-            # print('id: {}, reward: {}'.format(node_id,
-            #                                   reward * (-1)**(count)))
+        while node_id is not None:
             self.tree[node_id]['n'] += 1
             self.tree[node_id]['w'] += reward * (-1)**(count)
             self.tree[node_id]['q'] = (self.tree[node_id]['w'] /
@@ -389,9 +376,19 @@ class PUCTAgent(object):
             node_id = parent_id
             count += 1
 
+    def del_parents(self, root_id):
+        max_len = 0
+        if self.tree:
+            for key in list(self.tree.keys()):
+                if len(key) > max_len:
+                    max_len = len(key)
+                if len(key) < len(root_id):
+                    del self.tree[key]
+        print('tree size:', len(self.tree))
+        print('tree depth:', 0 if max_len <= 0 else max_len - 1)
+
 
 class UCTAgent(object):
-
     def __init__(self, board_size, num_mcts):
         self.board_size = board_size
         self.num_mcts = num_mcts
@@ -430,7 +427,7 @@ class UCTAgent(object):
         self.turn = turn
 
         if self.root_id not in self.tree:
-            # print('init root node')
+            # init root node
             self.tree[self.root_id] = {'board': self.board,
                                        'player': self.turn,
                                        'parent': None,
@@ -438,6 +435,8 @@ class UCTAgent(object):
                                        'n': 0.,
                                        'w': 0.,
                                        'q': 0.}
+        else:
+            self.tree[self.root_id]['parent'] = None
 
     def _mcts(self, root_id):
         start = time.time()
@@ -483,7 +482,6 @@ class UCTAgent(object):
             ids = [key for key, value in qu.items()
                    if value == max_value]
             node_id = ids[np.random.choice(len(ids))]
-            # print('selectionted id:', node_id)
 
         win_index = utils.check_win(self.tree[node_id]['board'],
                                     self.win_mark)
@@ -494,8 +492,8 @@ class UCTAgent(object):
         current_player = self.tree[leaf_id]['player']
 
         if win_index == 0:
-            # print("expansion")
-            actions = utils.legal_actions(leaf_board)
+            # expansion
+            actions = utils.valid_actions(leaf_board)
 
             for action in actions:
                 action_index = action[1]
@@ -514,12 +512,12 @@ class UCTAgent(object):
                 self.tree[leaf_id]['child'].append(action_index)
 
             if self.tree[leaf_id]['parent']:
-                # print("simulation")
+                # simulation
                 board_sim = leaf_board.copy()
                 turn_sim = current_player
 
                 while True:
-                    actions_sim = utils.legal_actions(board_sim)
+                    actions_sim = utils.valid_actions(board_sim)
                     action_sim = actions_sim[
                         np.random.choice(len(actions_sim))]
                     coord_sim = action_sim[0]
@@ -538,22 +536,20 @@ class UCTAgent(object):
                         reward = utils.get_reward(win_idx_sim, leaf_id)
                         return reward
             else:
-                # print("root node don't simulation")
+                # root node don't simulation
                 reward = 0.
                 return reward
         else:
-            # print("terminal node don't expansion")
-            reward = utils.get_reward(win_index, leaf_id)
+            # terminal node don't expansion
+            reward = 1.
             return reward
 
     def _backup(self, leaf_id, reward):
-        # print("backup")
+
         node_id = leaf_id
         count = 0
 
-        while node_id != self.tree[self.root_id]['parent']:
-            # print('id: {}, reward: {}'.format(node_id,
-            #                                   reward * (-1)**(count)))
+        while node_id is not None:
             self.tree[node_id]['n'] += 1
             self.tree[node_id]['w'] += reward * (-1)**(count)
             self.tree[node_id]['q'] = (self.tree[node_id]['w'] /
@@ -562,15 +558,25 @@ class UCTAgent(object):
             node_id = parent_id
             count += 1
 
+    def del_parents(self, root_id):
+        max_len = 0
+        if self.tree:
+            for key in list(self.tree.keys()):
+                if len(key) > max_len:
+                    max_len = len(key)
+                if len(key) < len(root_id):
+                    del self.tree[key]
+        print('tree size:', len(self.tree))
+        print('tree depth:', 0 if max_len <= 0 else max_len - 1)
+
 
 class RandomAgent(object):
-
     def __init__(self, board_size):
         self.board_size = board_size
 
     def get_pi(self, root_id, board, turn, tau):
         self.root_id = root_id
-        action = utils.legal_actions(board)
+        action = utils.valid_actions(board)
         prob = 1 / len(action)
         pi = np.zeros(self.board_size**2, 'float')
 
@@ -582,9 +588,11 @@ class RandomAgent(object):
     def reset(self):
         self.root_id = None
 
+    def del_parents(self, root_id):
+        return
+
 
 class HumanAgent(object):
-
     COLUMN = {"a": 0, "b": 1, "c": 2,
               "d": 3, "e": 4, "f": 5,
               "g": 6, "h": 7, "i": 8,
@@ -597,10 +605,16 @@ class HumanAgent(object):
 
     def get_pi(self, root_id, board, turn, tau):
         self.root_id = root_id
-        action_index = self.input_action(self.last_label)
-        pi = np.zeros(self.board_size**2, 'float')
-        pi[action_index] = 1
-        return pi
+
+        while True:
+            try:
+                action_index = self.input_action(self.last_label)
+            except Exception:
+                continue
+            else:
+                pi = np.zeros(self.board_size**2, 'float')
+                pi[action_index] = 1
+                return pi
 
     def _init_board_label(self):
         self.last_label = str(self.board_size)
@@ -619,3 +633,6 @@ class HumanAgent(object):
 
     def reset(self):
         self.root_id = None
+
+    def del_parents(self, root_id):
+        return
