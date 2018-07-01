@@ -9,10 +9,10 @@ import utils
 
 BOARD_SIZE = 9
 N_BLOCKS = 10
-IN_PLANES = 5  # history * 2 + 1
-OUT_PLANES = 64
+IN_PLANES = 7  # history * 2 + 1
+OUT_PLANES = 128
 N_MCTS = 400
-N_MATCH = 40
+N_MATCH = 12
 
 
 class Evaluator(object):
@@ -150,6 +150,8 @@ def main():
     for i in range(N_MATCH):
         board = np.zeros([BOARD_SIZE, BOARD_SIZE])
         root_id = (0,)
+        # evaluator.player.root_id = root_id
+        # evaluator.enemy.root_id = root_id
         win_index = 0
         action_index = None
 
@@ -174,6 +176,12 @@ def main():
                 # evaluator.player.root_id = node_id
 
             board, check_valid_pos, win_index, turn, _ = env.step(action)
+
+            if turn == enemy_turn:
+                evaluator.enemy.del_parents(root_id)
+
+            else:
+                evaluator.player.del_parents(root_id)
 
             # used for debugging
             if not check_valid_pos:
@@ -234,6 +242,7 @@ def main():
 
 
 if __name__ == '__main__':
+    np.set_printoptions(suppress=True)
     use_cuda = torch.cuda.is_available()
     np.random.seed(0)
     torch.manual_seed(0)

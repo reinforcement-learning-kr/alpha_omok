@@ -5,7 +5,7 @@ import numpy as np
 ALPHABET = ' A B C D E F G H I J K L M N O P Q R S'
 
 
-def legal_actions(board):
+def valid_actions(board):
     actions = []
     count = 0
     board_size = len(board)
@@ -19,8 +19,16 @@ def legal_actions(board):
     return actions
 
 
+def legal_actions(node_id, board_size):
+    all_action = {a for a in range(board_size**2)}
+    action = set(node_id[1:])
+    actions = all_action - action
+    return list(actions)
+
+
 # Check win
 def check_win(board, win_mark):
+    board = board.copy()
     num_mark = np.count_nonzero(board)
     board_size = len(board)
 
@@ -183,17 +191,11 @@ def get_state_pt(node_id, board_size, channel_size):
 def get_board(node_id, board_size):
     board = np.zeros(board_size**2)
 
-    for i, action_index in enumerate(node_id):
-
-        if i == 0:
-            if action_index == ():
-                # board is none
-                return None
+    for i, action_index in enumerate(node_id[1:]):
+        if i % 2 == 0:
+            board[action_index] = 1
         else:
-            if i % 2 == 1:
-                board[action_index] = 1
-            else:
-                board[action_index] = -1
+            board[action_index] = -1
 
     return board.reshape(board_size, board_size)
 
@@ -248,7 +250,7 @@ def get_reward(win_index, leaf_id):
     return reward
 
 
-def symmetry_choice(state, pi):
+def symmetry_dataset(state, pi):
     s_shape = state.shape
     history = state[:-1]
     c = state[-1]
@@ -257,91 +259,104 @@ def symmetry_choice(state, pi):
     p = pi.reshape(s_shape[1], s_shape[1])
 
     sym_state = []
-    rand_i = np.random.choice(8)
 
-    if rand_i == 0:
-        return state, pi
+    for s in history:
+        sym_state.append(np.rot90(s, 1))
 
-    elif rand_i == 1:
-        for s in history:
-            sym_state.append(np.rot90(s, 1))
+    sym_state.append(c)
+    state = np.asarray(sym_state).reshape(s_shape)
 
-        sym_state.append(c)
-        state = np.asarray(sym_state).reshape(s_shape)
+    p = np.rot90(p, 1)
+    pi = p.reshape(pi_shape)
 
-        p = np.rot90(p, 1)
-        pi = p.reshape(pi_shape)
+    for s in history:
+        sym_state.append(np.rot90(s, 2))
 
-    elif rand_i == 2:
-        for s in history:
-            sym_state.append(np.rot90(s, 2))
+    sym_state.append(c)
+    state = np.asarray(sym_state).reshape(s_shape)
 
-        sym_state.append(c)
-        state = np.asarray(sym_state).reshape(s_shape)
+    p = np.rot90(p, 2)
+    pi = p.reshape(pi_shape)
 
-        p = np.rot90(p, 2)
-        pi = p.reshape(pi_shape)
+    for s in history:
+        sym_state.append(np.rot90(s, 3))
 
-    elif rand_i == 3:
-        for s in history:
-            sym_state.append(np.rot90(s, 3))
+    sym_state.append(c)
+    state = np.asarray(sym_state).reshape(s_shape)
 
-        sym_state.append(c)
-        state = np.asarray(sym_state).reshape(s_shape)
+    p = np.rot90(p, 3)
+    pi = p.reshape(pi_shape)
 
-        p = np.rot90(p, 3)
-        pi = p.reshape(pi_shape)
+    for s in history:
+        sym_state.append(np.fliplr(s))
 
-    elif rand_i == 4:
-        for s in history:
-            sym_state.append(np.fliplr(s))
+    sym_state.append(c)
+    state = np.asarray(sym_state).reshape(s_shape)
 
-        sym_state.append(c)
-        state = np.asarray(sym_state).reshape(s_shape)
+    p = np.fliplr(p)
+    pi = p.reshape(pi_shape)
 
-        p = np.fliplr(p)
-        pi = p.reshape(pi_shape)
+    for s in history:
+        rot_s = np.rot90(s, 1)
+        sym_state.append(np.fliplr(rot_s))
 
-    elif rand_i == 5:
-        for s in history:
-            rot_s = np.rot90(s, 1)
-            sym_state.append(np.fliplr(rot_s))
+    sym_state.append(c)
+    state = np.asarray(sym_state).reshape(s_shape)
 
-        sym_state.append(c)
-        state = np.asarray(sym_state).reshape(s_shape)
+    rot_p = np.rot90(p, 1)
+    p = np.fliplr(rot_p)
+    pi = p.reshape(pi_shape)
 
-        rot_p = np.rot90(p, 1)
-        p = np.fliplr(rot_p)
-        pi = p.reshape(pi_shape)
+    for s in history:
+        rot_s = np.rot90(s, 2)
+        sym_state.append(np.fliplr(rot_s))
 
-    elif rand_i == 6:
-        for s in history:
-            rot_s = np.rot90(s, 2)
-            sym_state.append(np.fliplr(rot_s))
+    sym_state.append(c)
+    state = np.asarray(sym_state).reshape(s_shape)
 
-        sym_state.append(c)
-        state = np.asarray(sym_state).reshape(s_shape)
+    rot_p = np.rot90(p, 2)
+    p = np.fliplr(rot_p)
+    pi = p.reshape(pi_shape)
 
-        rot_p = np.rot90(p, 2)
-        p = np.fliplr(rot_p)
-        pi = p.reshape(pi_shape)
+    for s in history:
+        rot_s = np.rot90(s, 3)
+        sym_state.append(np.fliplr(rot_s))
 
-    elif rand_i == 7:
-        for s in history:
-            rot_s = np.rot90(s, 3)
-            sym_state.append(np.fliplr(rot_s))
+    sym_state.append(c)
+    state = np.asarray(sym_state).reshape(s_shape)
 
-        sym_state.append(c)
-        state = np.asarray(sym_state).reshape(s_shape)
-
-        rot_p = np.rot90(p, 3)
-        p = np.fliplr(rot_p)
-        pi = p.reshape(pi_shape)
+    rot_p = np.rot90(p, 3)
+    p = np.fliplr(rot_p)
+    pi = p.reshape(pi_shape)
 
     return state, pi
 
 
+def get_action_eval(pi, board):
+    pi = pi.copy()
+    action_size = len(pi)
+    action = np.zeros(action_size)
+
+    valid_action = valid_actions(board)
+    valid_pi = np.zeros(action_size)
+    for a in valid_action:
+        a_idx = a[1]
+        valid_pi[a_idx] = pi[a_idx]
+
+    valid_pi /= valid_pi.sum()
+    action_index = np.random.choice(action_size, p=valid_pi)
+    action[action_index] = 1
+    return action, action_index
+
+
+def convert_id(node_id):
+    base_id = deque([None, None], maxlen=2)
+    for i in node_id[1:]:
+        base_id.append(i)
+    return tuple(base_id)
+
+
 if __name__ == '__main__':
     # test
-    node_id = (0, 1, 2, 3, 5, 4)
-    print(get_state_pt(node_id, 3, 5))
+    node_id = (0, 1, 3, 56, 22, 33, 12, 58, 74, 22)
+    print(convert_id(node_id))
