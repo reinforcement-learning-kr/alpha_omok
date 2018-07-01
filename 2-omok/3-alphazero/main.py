@@ -115,7 +115,7 @@ def self_play(n_selfplay):
 
             if PRINT_SELFPLAY:
                 print(
-                    "\nProb:\n{}".format(
+                    '\nProb:\n{}'.format(
                         p.data.cpu().numpy()[0].reshape(
                             BOARD_SIZE, BOARD_SIZE).round(decimals=2)))
 
@@ -356,7 +356,7 @@ def eval_model(player_path, enemy_path):
             if not chk_legal_move:
                 print('action:', action)
                 print('board:', board)
-                raise ValueError("illegal move!")
+                raise ValueError('illegal move!')
 
             # episode end
             if win_index != 0:
@@ -501,8 +501,8 @@ if __name__ == '__main__':
 
     # gpu or cpu
     use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
-    print('CUDA:', use_cuda)
+    device = torch.device('cuda' if use_cuda else 'cpu')
+    print('cuda:', use_cuda)
 
     # init agent & model
     Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
