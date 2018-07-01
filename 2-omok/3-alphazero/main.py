@@ -9,7 +9,6 @@ from tensorboardX import SummaryWriter
 import torch
 import torch.optim as optim
 from torch.nn import functional as F
-from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
 import agents
@@ -27,8 +26,9 @@ logging.warning(datetime.now().isoformat())
 BOARD_SIZE = 9
 N_MCTS = 400
 TAU_THRES = 6
-PRINT_SELFPLAY = True
 RESIGN_MODE = True
+PRINT_SELFPLAY = True
+agents.PRINT_MCTS = True
 
 # Net
 N_BLOCKS = 10
@@ -67,6 +67,8 @@ def self_play(n_selfplay):
         n_resign_thres = N_SELFPLAY // 10
 
     for episode in range(n_selfplay):
+        if (episode + 1) % 50 == 0:
+            logging.warning('Playing Episode {:3}'.format(episode + 1))
         env = game.GameState('text')
         board = np.zeros((BOARD_SIZE, BOARD_SIZE))
         turn = 0
@@ -108,7 +110,7 @@ def self_play(n_selfplay):
             # ====================== print evaluation ====================== #
 
             Agent.model.eval()
-            state_input = Variable(Tensor([state]))
+            state_input = torch.FloatTensor([state], device=device)
             p, v = Agent.model(state_input)
 
             if PRINT_SELFPLAY:
@@ -242,7 +244,7 @@ def self_play(n_selfplay):
 
 def train(lr, n_epochs, n_iter):
     global step
-    global writer
+    global Writer
 
     Agent.model.train()
     loss_all = []
@@ -285,14 +287,9 @@ def train(lr, n_epochs, n_iter):
 
     for epoch in range(n_epochs):
         for i, (s, pi, z) in enumerate(dataloader):
-            if use_cuda:
-                s_batch = Variable(s.float()).cuda()
-                pi_batch = Variable(pi.float()).cuda()
-                z_batch = Variable(z.float()).cuda()
-            else:
-                s_batch = Variable(s.float())
-                pi_batch = Variable(pi.float())
-                z_batch = Variable(z.float())
+            s_batch = s.to(device).float()
+            pi_batch = pi.to(device).float()
+            z_batch = z.to(device).float()
 
             p_batch, v_batch = Agent.model(s_batch)
 
@@ -312,9 +309,9 @@ def train(lr, n_epochs, n_iter):
 
             # tensorboad & print loss
             if USE_TENSORBOARD:
-                writer.add_scalar('Loss', loss.item(), step)
-                writer.add_scalar('Loss V', v_loss.item(), step)
-                writer.add_scalar('Loss P', p_loss.item(), step)
+                Writer.add_scalar('Loss', loss.item(), step)
+                Writer.add_scalar('Loss V', v_loss.item(), step)
+                Writer.add_scalar('Loss P', p_loss.item(), step)
 
             if PRINT_SELFPLAY:
                 print('{:4} step Loss: {:.4f}   '
@@ -495,7 +492,8 @@ if __name__ == '__main__':
     # global variable
     rep_memory = deque(maxlen=MEMORY_SIZE)
     cur_memory = deque()
-    writer = SummaryWriter()
+    if USE_TENSORBOARD:
+        Writer = SummaryWriter()
     result = {'Black': 0, 'White': 0, 'Draw': 0, 'Resign': 0}
     step = 0
     start_iter = 1
@@ -503,7 +501,7 @@ if __name__ == '__main__':
 
     # gpu or cpu
     use_cuda = torch.cuda.is_available()
-    Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
+    device = torch.device("cuda" if use_cuda else "cpu")
     print('CUDA:', use_cuda)
 
     # init agent & model
@@ -511,9 +509,7 @@ if __name__ == '__main__':
     Agent.model = neural_net.PVNet(N_BLOCKS,
                                    IN_PLANES,
                                    OUT_PLANES,
-                                   BOARD_SIZE)
-    if use_cuda:
-        Agent.model.cuda()
+                                   BOARD_SIZE).to(device)
 
 # ====================== self-play & training ====================== #
     model_path = None
@@ -531,9 +527,13 @@ if __name__ == '__main__':
     load_data(model_path, dataset_path)
 
     for n_iter in range(start_iter, TOTAL_ITER + 1):
-        print('=' * 20, "  {} Iteration  ".format(n_iter), '=' * 20)
+        print('=' * 58)
+        print(' ' * 22, '{:2} Iteration'.format(n_iter), ' ' * 22)
+        print('=' * 58)
+        logging.warning('=' * 58)
         logging.warning(
-            '=' * 20 + "  {} Iteration  ".format(n_iter) + '=' * 20)
+            ' ' * 20 + "  {:2} Iteration  ".format(n_iter) + ' ' * 20)
+        logging.warning('=' * 58)
 
         datetime_now = datetime.now().strftime('%y%m%d')
 
