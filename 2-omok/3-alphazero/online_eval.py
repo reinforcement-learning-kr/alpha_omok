@@ -58,7 +58,7 @@ class Evaluator:
         if turn != enemy_turn:
             self.player.model.eval()
             state = utils.get_state_pt(root_id, BOARD_SIZE, IN_PLANES)
-            state_input = torch.FloatTensor([state], device=device)
+            state_input = torch.tensor([state]).to(device).float()
             p, v = self.player.model(state_input)
             p = p.data[0].cpu().numpy()
             action, action_index = utils.get_action_eval(p, board)
@@ -72,7 +72,7 @@ class Evaluator:
             else:
                 self.enemy.model.eval()
                 state = utils.get_state_pt(root_id, BOARD_SIZE, IN_PLANES)
-                state_input = torch.FloatTensor([state], device=device)
+                state_input = torch.tensor([state]).to(device).float()
                 p, v = self.enemy.model(state_input)
                 p = p.data[0].cpu().numpy()
                 action, action_index = utils.get_action_eval(p, board)

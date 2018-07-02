@@ -3,15 +3,15 @@ import torch
 
 import agents
 from env import env_small
-from neural_net import PVNet
+from neural_net import PVNet, PVNetW
 import utils
 
 
 BOARD_SIZE = 9
 N_BLOCKS = 10
-IN_PLANES = 7  # history * 2 + 1
+IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
-N_MCTS = 400
+N_MCTS = 1600
 N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
@@ -42,10 +42,11 @@ class Evaluator(object):
                                            N_MCTS,
                                            IN_PLANES,
                                            noise=False)
-            self.player.model = PVNet(N_BLOCKS,
-                                      IN_PLANES,
-                                      OUT_PLANES,
-                                      BOARD_SIZE).to(device)
+            # self.player.model = PVNet(N_BLOCKS,
+            #                           IN_PLANES,
+            #                           OUT_PLANES,
+            #                           BOARD_SIZE).to(device)
+            self.player.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_a = self.player.model.state_dict()
             state_a.update(torch.load(model_path_a))
@@ -83,16 +84,15 @@ class Evaluator(object):
                                           N_MCTS,
                                           IN_PLANES,
                                           noise=False)
-            self.enemy.model = PVNet(N_BLOCKS,
-                                     IN_PLANES,
-                                     OUT_PLANES,
-                                     BOARD_SIZE).to(device)
+            # self.enemy.model = PVNet(N_BLOCKS,
+            #                          IN_PLANES,
+            #                          OUT_PLANES,
+            #                          BOARD_SIZE).to(device)
+            self.enemy.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_b = self.enemy.model.state_dict()
             state_b.update(torch.load(model_path_b))
             self.enemy.model.load_state_dict(state_b)
-            self.enemy.model.load_state_dict(torch.load(model_path_b))
-
         else:
             print('load enemy model:', model_path_b)
             self.enemy = agents.ZeroAgent(BOARD_SIZE,
@@ -128,8 +128,8 @@ def main():
     #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
     # ===================================================================== #
 
-    player_model_path = None
-    enemy_model_path = None
+    player_model_path = 'data/model_85_0624.pickle'
+    enemy_model_path = 'data/model_84_0624.pickle'
     # ===================================================================== #
 
     evaluator = Evaluator(player_model_path, enemy_model_path)

@@ -7,6 +7,8 @@ import torch
 import utils
 
 PRINT_MCTS = True
+use_cuda = torch.cuda.is_available()
+device = torch.device('cuda' if use_cuda else 'cpu')
 
 
 class ZeroAgent(object):
@@ -75,9 +77,9 @@ class ZeroAgent(object):
         start = time.time()
 
         for i in range(self.num_mcts):
-        	if PRINT_MCTS:
-            	sys.stdout.write('simulation: {}\r'.format(i + 1))
-            	sys.stdout.flush()
+            if PRINT_MCTS:
+                sys.stdout.write('simulation: {}\r'.format(i + 1))
+                sys.stdout.flush()
             # selection
             leaf_id, win_index = self._selection(root_id)
             # expansion and evaluation
@@ -87,7 +89,7 @@ class ZeroAgent(object):
 
         finish = time.time() - start
         if PRINT_MCTS:
-        	print("{} simulations end ({:0.0f}s)".format(i + 1, finish))
+            print("{} simulations end ({:0.0f}s)".format(i + 1, finish))
 
     def _selection(self, root_id):
         node_id = root_id
@@ -128,7 +130,7 @@ class ZeroAgent(object):
     def _expansion_evaluation(self, leaf_id, win_index):
         leaf_state = utils.get_state_pt(
             leaf_id, self.board_size, self.inplanes)
-        state_input = torch.FloatTensor([leaf_state], device=device)
+        state_input = torch.tensor([leaf_state]).to(device).float()
         policy, value = self.model(state_input)
         policy = policy.data.cpu().numpy()[0]
         value = value.data.cpu().numpy()[0]

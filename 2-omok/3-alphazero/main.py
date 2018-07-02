@@ -110,7 +110,7 @@ def self_play(n_selfplay):
             # ====================== print evaluation ====================== #
 
             Agent.model.eval()
-            state_input = torch.FloatTensor([state], device=device)
+            state_input = torch.tensor([state]).to(device).float()
             p, v = Agent.model(state_input)
 
             if PRINT_SELFPLAY:
