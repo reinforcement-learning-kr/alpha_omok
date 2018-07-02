@@ -11,7 +11,7 @@ BOARD_SIZE = 9
 N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
-N_MCTS = 1600
+N_MCTS = 400
 N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
