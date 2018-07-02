@@ -121,7 +121,7 @@ class Evaluator(object):
 
 
 def main():
-    print('CUDA:', use_cuda)
+    print('cuda:', use_cuda)
 
     # =========================== input model path ======================== #
     #    'human': human play    'random': random    None: raw model MCTS    #
