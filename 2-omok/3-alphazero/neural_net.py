@@ -13,7 +13,7 @@ class ResBlock(nn.Module):
         super(ResBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU()
         self.conv2 = conv3x3(planes, planes)
         self.bn2 = nn.BatchNorm2d(planes)
 
@@ -34,7 +34,7 @@ class PolicyHead(nn.Module):
         super(PolicyHead, self).__init__()
         self.policy_head = nn.Conv2d(planes, 2, kernel_size=1, bias=False)
         self.policy_bn = nn.BatchNorm2d(2)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU()
         self.policy_fc = nn.Linear(board_size**2 * 2, board_size**2)
         self.log_softmax = nn.LogSoftmax(dim=-1)
 
@@ -54,7 +54,7 @@ class ValueHead(nn.Module):
         super(ValueHead, self).__init__()
         self.value_head = nn.Conv2d(planes, 1, kernel_size=1, bias=False)
         self.value_bn = nn.BatchNorm2d(1)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU()
         self.value_fc1 = nn.Linear(board_size**2, planes)
         self.value_fc2 = nn.Linear(planes, 1)
         self.tanh = nn.Tanh()
@@ -77,7 +77,7 @@ class PVNet(nn.Module):
         super(PVNet, self).__init__()
         self.conv1 = conv3x3(inplanes, planes)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU()
         self.layers = self._make_layer(ResBlock, planes, n_block)
         self.policy_head = PolicyHead(planes, board_size)
         self.value_head = ValueHead(planes, board_size)
@@ -103,6 +103,82 @@ class PVNet(nn.Module):
         x = self.layers(x)
         p = self.policy_head(x)
         v = self.value_head(x)
+        return p, v
+
+
+class PVNetW(nn.Module):
+    def __init__(self, in_channel, state_size):
+        super(PVNetW, self).__init__()
+        self.feature = nn.Sequential(
+            nn.Conv2d(in_channel, 128, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+
+            nn.Conv2d(128, 128, kernel_size=3, padding=1, bias=False),
+            nn.BatchNorm2d(128),
+            nn.ReLU()
+        )
+
+        self.conv2d = nn.Conv2d(128, 1, kernel_size=1, bias=False)
+
+        self.policy = nn.Sequential(
+            nn.Linear(state_size**2, state_size**2),
+            nn.Softmax(dim=1)
+        )
+
+        self.value = nn.Sequential(
+            nn.Linear(state_size**2, 1),
+            nn.Tanh()
+        )
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight.data)
+            if isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight, gain=0.01)
+                m.bias.data.zero_()
+
+    def forward(self, x):
+        x = self.feature(x)
+        x = self.conv2d(x)
+        x = x.view(x.size(0), -1)
+        p = self.policy(x)
+        v = self.value(x)
         return p, v
 
 
