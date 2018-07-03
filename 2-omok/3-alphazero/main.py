@@ -98,7 +98,7 @@ def self_play(n_selfplay):
         n_resign_thres = N_SELFPLAY // 10
 
     for episode in range(n_selfplay):
-        if (episode + 1) % 50 == 0:
+        if (episode + 1) % 10 == 0:
             logging.warning('Playing Episode {:3}'.format(episode + 1))
         env = game.GameState('text')
         board = np.zeros((BOARD_SIZE, BOARD_SIZE))
