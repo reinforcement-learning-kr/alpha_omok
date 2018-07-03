@@ -17,11 +17,6 @@ import neural_net
 import online_eval
 import utils
 
-logging.basicConfig(
-    filename='logs/log_{}.txt'.format(datetime.now().strftime('%y%m%d')),
-    level=logging.WARNING)
-logging.warning(datetime.now().isoformat())
-
 # Game
 BOARD_SIZE = 9
 N_MCTS = 400
@@ -41,7 +36,7 @@ N_SELFPLAY = 400
 MEMORY_SIZE = 160000
 N_EPOCHS = 1
 N_MATCH = 400
-EVAL_THRES = 15
+EVAL_THRES = 20
 BATCH_SIZE = 32
 LR = 1e-4
 L2 = 1e-4
@@ -51,6 +46,42 @@ USE_TENSORBOARD = True
 online_eval.N_BLOCKS = N_BLOCKS
 online_eval.IN_PLANES = IN_PLANES
 online_eval.OUT_PLANES = OUT_PLANES
+
+logging.basicConfig(
+    filename='logs/log_{}.txt'.format(datetime.now().strftime('%y%m%d')),
+    level=logging.WARNING)
+
+logging.warning(
+    '\nBOARD_SIZE: {}'
+    '\nN_MCTS: {}'
+    '\nTAU_THRES: {}'
+    '\nRESIGN_MODE: {}'
+    '\nN_BLOCKS: {}'
+    '\nIN_PLANES: {}'
+    '\nOUT_PLANES: {}'
+    '\nN_SELFPLAY: {}'
+    '\nMEMORY_SIZE: {}'
+    '\nN_EPOCHS: {}'
+    '\nN_MATCH: {}'
+    '\nEVAL_THRES: {}'
+    '\nBATCH_SIZE: {}'
+    '\nLR: {}'
+    '\nL2: {}'.format(
+        BOARD_SIZE,
+        N_MCTS,
+        TAU_THRES,
+        RESIGN_MODE,
+        N_BLOCKS,
+        IN_PLANES,
+        OUT_PLANES,
+        N_SELFPLAY,
+        MEMORY_SIZE,
+        N_EPOCHS,
+        N_MATCH,
+        EVAL_THRES,
+        BATCH_SIZE,
+        LR,
+        L2))
 
 
 def self_play(n_selfplay):
@@ -245,6 +276,7 @@ def self_play(n_selfplay):
 def train(lr, n_epochs, n_iter):
     global step
     global Writer
+    global total_epoch
 
     Agent.model.train()
     loss_all = []
@@ -259,14 +291,14 @@ def train(lr, n_epochs, n_iter):
 
     train_memory.extend(cur_memory)
 
-    optimizer = optim.Adam(Agent.model.parameters(),
-                           lr=lr,
-                           weight_decay=L2)
+    # optimizer = optim.Adam(Agent.model.parameters(),
+    #                        lr=lr,
+    #                        weight_decay=L2)
 
-    # optimizer = optim.SGD(Agent.model.parameters(),
-    #                       lr=lr,
-    #                       momentum=0.9,
-    #                       weight_decay=L2)
+    optimizer = optim.SGD(Agent.model.parameters(),
+                          lr=lr,
+                          momentum=0.9,
+                          weight_decay=L2)
 
     dataloader = DataLoader(train_memory,
                             batch_size=BATCH_SIZE,
@@ -274,12 +306,16 @@ def train(lr, n_epochs, n_iter):
                             drop_last=True,
                             pin_memory=use_cuda)
 
-    print('-' * 19, ' Start Learning ', '-' * 19)
+    print('=' * 58)
+    print('-' * 20 + ' Start Learning ' + '-' * 20)
+    print('=' * 58)
     print('current memory size:', len(cur_memory))
     print('replay memory size:', len(rep_memory))
     print('train memory size:', len(train_memory))
     print('optimizer: {}'.format(optimizer))
-    logging.warning('-' * 19 + ' Start Learning ' + '-' * 19)
+    logging.warning('=' * 58)
+    logging.warning(' ' * 20 + ' Start Learning ' + ' ' * 20)
+    logging.warning('=' * 58)
     logging.warning('current memory size: {}'.format(len(cur_memory)))
     logging.warning('replay memory size: {}'.format(len(rep_memory)))
     logging.warning('train memory size: {}'.format(len(train_memory)))
@@ -314,15 +350,36 @@ def train(lr, n_epochs, n_iter):
                 Writer.add_scalar('Loss P', p_loss.item(), step)
 
             if PRINT_SELFPLAY:
-                print('{:4} step Loss: {:.4f}   '
+                print('{:4} Step Loss: {:.4f}   '
                       'Loss V: {:.4f}   '
-                      'Loss P: {:.4f}'.format(
-                          step, loss.item(), v_loss.item(), p_loss.item()))
+                      'Loss P: {:.4f}'.format(step,
+                                              loss.item(),
+                                              v_loss.item(),
+                                              p_loss.item()))
+        total_epoch += 1
+
+        if PRINT_SELFPLAY:
+            print('{:2} Epoch Loss: {:.4f}   '
+                  'Loss V: {:.4f}   '
+                  'Loss P: {:.4f}'.format(total_epoch,
+                                          np.mean(loss_all),
+                                          np.mean(loss_v),
+                                          np.mean(loss_p)))
+        logging.warning('{:2} Epoch Loss: {:.4f}   '
+                        'Loss V: {:.4f}   '
+                        'Loss P: {:.4f}'.format(total_epoch,
+                                                np.mean(loss_all),
+                                                np.mean(loss_v),
+                                                np.mean(loss_p)))
 
 
 def eval_model(player_path, enemy_path):
-    print('-' * 18, ' Start Evaluation ', '-' * 18)
-    logging.warning('-' * 18 + ' Start Evaluation ' + '-' * 18)
+    print('=' * 58)
+    print(' ' * 20 + 'Start Evaluation' + ' ' * 20)
+    print('=' * 58)
+    logging.warning('=' * 58)
+    logging.warning(' ' * 20 + 'Start Evaluation' + ' ' * 20)
+    logging.warning('=' * 58)
 
     Agent.model.eval()
     evaluator = online_eval.Evaluator(player_path, enemy_path)
@@ -387,7 +444,7 @@ def eval_model(player_path, enemy_path):
     return winrate
 
 
-def train_and_eval(lr, best_model_path):
+def train_and_eval_adam(lr, best_model_path):
     for i in range(EVAL_THRES):
         train(lr, N_EPOCHS, n_iter)
         save_model(Agent, n_iter, step)
@@ -410,7 +467,7 @@ def train_and_eval(lr, best_model_path):
     return best_model_path, success
 
 
-def train_and_eval_SGD(lr, best_model_path):
+def train_and_eval(lr, best_model_path):
     winrates = []
     ng_count = 0
     for i in range(EVAL_THRES):
@@ -473,10 +530,12 @@ def load_data(model_path, dataset_path):
 
 
 def reset_iter(memory, result, n_iter):
+    global total_epoch
     result['Black'] = 0
     result['White'] = 0
     result['Draw'] = 0
     result['Resign'] = 0
+    total_epoch = 0
     memory.clear()
 
 
@@ -503,6 +562,7 @@ if __name__ == '__main__':
     use_cuda = torch.cuda.is_available()
     device = torch.device('cuda' if use_cuda else 'cpu')
     print('cuda:', use_cuda)
+    logging.warning('cuda: {}'.format(use_cuda))
 
     # init agent & model
     Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
@@ -516,7 +576,7 @@ if __name__ == '__main__':
     dataset_path = None
     best_model_path = None
 
-    first_train = False
+    first_train = True
 
     if first_train:
         datetime_now = datetime.now().strftime('%y%m%d')
@@ -528,8 +588,9 @@ if __name__ == '__main__':
 
     for n_iter in range(start_iter, TOTAL_ITER + 1):
         print('=' * 58)
-        print(' ' * 22, '{:2} Iteration'.format(n_iter), ' ' * 22)
+        print(' ' * 20 + '  {:2} Iteration  '.format(n_iter) + ' ' * 20)
         print('=' * 58)
+        logging.warning(datetime.now().isoformat())
         logging.warning('=' * 58)
         logging.warning(
             ' ' * 20 + "  {:2} Iteration  ".format(n_iter) + ' ' * 20)
