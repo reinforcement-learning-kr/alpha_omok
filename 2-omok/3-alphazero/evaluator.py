@@ -9,7 +9,7 @@ import utils
 
 BOARD_SIZE = 9
 N_BLOCKS = 10
-IN_PLANES = 5  # history * 2 + 1
+IN_PLANES = 7  # history * 2 + 1
 OUT_PLANES = 128
 N_MCTS = 2000
 N_MATCH = 5
@@ -128,8 +128,8 @@ def main():
     #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
     # ===================================================================== #
 
-    player_model_path = 'data/model_90_0624.pickle'
-    enemy_model_path = 'data/model_85_0624.pickle'
+    player_model_path = 'data/180704_3_1615_step_model.pickle'
+    enemy_model_path = 'human'
 
     # ===================================================================== #
 

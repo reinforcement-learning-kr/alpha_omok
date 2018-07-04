@@ -21,9 +21,8 @@ import utils
 BOARD_SIZE = 9
 N_MCTS = 400
 TAU_THRES = 6
-RESIGN_MODE = True
+RESIGN_MODE = False
 PRINT_SELFPLAY = True
-agents.PRINT_MCTS = True
 
 # Net
 N_BLOCKS = 10
@@ -36,16 +35,17 @@ N_SELFPLAY = 400
 MEMORY_SIZE = 160000
 N_EPOCHS = 1
 N_MATCH = 400
-EVAL_THRES = 20
+EVAL_THRES = 15
 BATCH_SIZE = 32
 LR = 1e-4
 L2 = 1e-4
 USE_TENSORBOARD = True
 
-# Parameter sharing
+# Hyperparameter sharing
 online_eval.N_BLOCKS = N_BLOCKS
 online_eval.IN_PLANES = IN_PLANES
 online_eval.OUT_PLANES = OUT_PLANES
+agents.PRINT_MCTS = PRINT_SELFPLAY
 
 logging.basicConfig(
     filename='logs/log_{}.txt'.format(datetime.now().strftime('%y%m%d')),
@@ -238,6 +238,7 @@ def self_play(n_selfplay):
                             (resign_v + 1) / 2 * 100))
 
             # ====================== store in memory ======================= #
+
                 while state_black or state_white:
                     if state_black:
                         cur_memory.appendleft((state_black.pop(),
@@ -291,14 +292,14 @@ def train(lr, n_epochs, n_iter):
 
     train_memory.extend(cur_memory)
 
-    # optimizer = optim.Adam(Agent.model.parameters(),
-    #                        lr=lr,
-    #                        weight_decay=L2)
+    optimizer = optim.Adam(Agent.model.parameters(),
+                           lr=lr,
+                           weight_decay=L2)
 
-    optimizer = optim.SGD(Agent.model.parameters(),
-                          lr=lr,
-                          momentum=0.9,
-                          weight_decay=L2)
+    # optimizer = optim.SGD(Agent.model.parameters(),
+    #                       lr=lr,
+    #                       momentum=0.9,
+    #                       weight_decay=L2)
 
     dataloader = DataLoader(train_memory,
                             batch_size=BATCH_SIZE,
@@ -307,15 +308,15 @@ def train(lr, n_epochs, n_iter):
                             pin_memory=use_cuda)
 
     print('=' * 58)
-    print('-' * 20 + ' Start Learning ' + '-' * 20)
+    print(' ' * 20 + ' Start Learning ' + ' ' * 20)
     print('=' * 58)
     print('current memory size:', len(cur_memory))
     print('replay memory size:', len(rep_memory))
     print('train memory size:', len(train_memory))
     print('optimizer: {}'.format(optimizer))
-    logging.warning('=' * 58)
+    logging.warning('-' * 58)
     logging.warning(' ' * 20 + ' Start Learning ' + ' ' * 20)
-    logging.warning('=' * 58)
+    logging.warning('-' * 58)
     logging.warning('current memory size: {}'.format(len(cur_memory)))
     logging.warning('replay memory size: {}'.format(len(rep_memory)))
     logging.warning('train memory size: {}'.format(len(train_memory)))
@@ -330,7 +331,7 @@ def train(lr, n_epochs, n_iter):
             p_batch, v_batch = Agent.model(s_batch)
 
             v_loss = F.mse_loss(v_batch, z_batch)
-            p_loss = -(pi_batch * (p_batch + 1e-5).log()).sum(dim=1).mean()
+            p_loss = -(pi_batch * (p_batch + 1e-8).log()).sum(dim=1).mean()
             loss = v_loss + p_loss
 
             loss_v.append(v_loss.item())
@@ -359,6 +360,7 @@ def train(lr, n_epochs, n_iter):
         total_epoch += 1
 
         if PRINT_SELFPLAY:
+            print('-' * 58)
             print('{:2} Epoch Loss: {:.4f}   '
                   'Loss V: {:.4f}   '
                   'Loss P: {:.4f}'.format(total_epoch,
@@ -373,13 +375,13 @@ def train(lr, n_epochs, n_iter):
                                                 np.mean(loss_p)))
 
 
-def eval_model(player_path, enemy_path):
+def eval_model(i, player_path, enemy_path):
     print('=' * 58)
-    print(' ' * 20 + 'Start Evaluation' + ' ' * 20)
+    print(' ' * 20 + ' {:3} Evaluation '.format(i + 1) + ' ' * 20)
     print('=' * 58)
-    logging.warning('=' * 58)
-    logging.warning(' ' * 20 + 'Start Evaluation' + ' ' * 20)
-    logging.warning('=' * 58)
+    logging.warning('-' * 58)
+    logging.warning(' ' * 20 + ' {:3} Evaluation '.format(i + 1) + ' ' * 20)
+    logging.warning('-' * 58)
 
     Agent.model.eval()
     evaluator = online_eval.Evaluator(player_path, enemy_path)
@@ -444,7 +446,7 @@ def eval_model(player_path, enemy_path):
     return winrate
 
 
-def train_and_eval_adam(lr, best_model_path):
+def train_and_eval(lr, best_model_path):
     for i in range(EVAL_THRES):
         train(lr, N_EPOCHS, n_iter)
         save_model(Agent, n_iter, step)
@@ -452,7 +454,7 @@ def train_and_eval_adam(lr, best_model_path):
         player_path = 'data/{}_{}_{}_step_model.pickle'.format(
             datetime_now, n_iter, step)
 
-        winrate = eval_model(player_path, best_model_path)
+        winrate = eval_model(i, player_path, best_model_path)
 
         if winrate > 55:
             best_model_path = player_path
@@ -467,7 +469,7 @@ def train_and_eval_adam(lr, best_model_path):
     return best_model_path, success
 
 
-def train_and_eval(lr, best_model_path):
+def train_and_eval_with_decay(lr, best_model_path):
     winrates = []
     ng_count = 0
     for i in range(EVAL_THRES):
@@ -477,7 +479,7 @@ def train_and_eval(lr, best_model_path):
         player_path = 'data/{}_{}_{}_step_model.pickle'.format(
             datetime_now, n_iter, step)
 
-        winrate = eval_model(player_path, best_model_path)
+        winrate = eval_model(i, player_path, best_model_path)
         winrates.append(winrate)
 
         if winrate > 55:
@@ -515,18 +517,20 @@ def save_dataset(memory, n_iter, step):
 
 
 def load_data(model_path, dataset_path):
-    global cur_memory, step, start_iter
+    global rep_memory, step, start_iter
     if model_path:
         print('load model: {}'.format(model_path))
         logging.warning('load model: {}'.format(model_path))
-        Agent.model.load_state_dict(torch.load(model_path))
+        state = Agent.model.state_dict()
+        state.update(torch.load(model_path))
+        Agent.model.load_state_dict(state)
         step = int(model_path.split('_')[2])
         start_iter = int(model_path.split('_')[1]) + 1
     if dataset_path:
         print('load dataset: {}'.format(dataset_path))
         logging.warning('load dataset: {}'.format(dataset_path))
         with open(dataset_path, 'rb') as f:
-            cur_memory = deque(pickle.load(f), maxlen=MEMORY_SIZE)
+            rep_memory = deque(pickle.load(f), maxlen=MEMORY_SIZE)
 
 
 def reset_iter(memory, result, n_iter):
@@ -544,9 +548,9 @@ if __name__ == '__main__':
     np.set_printoptions(suppress=True)
 
     # set random seeds
-    np.random.seed(0)
-    torch.manual_seed(0)
-    torch.cuda.manual_seed_all(0)
+    # np.random.seed(0)
+    # torch.manual_seed(0)
+    # torch.cuda.manual_seed_all(0)
 
     # global variable
     rep_memory = deque(maxlen=MEMORY_SIZE)
@@ -570,8 +574,10 @@ if __name__ == '__main__':
                                    IN_PLANES,
                                    OUT_PLANES,
                                    BOARD_SIZE).to(device)
+    # Agent.model = neural_net.PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
 # ====================== self-play & training ====================== #
+
     model_path = None
     dataset_path = None
     best_model_path = None
@@ -599,6 +605,7 @@ if __name__ == '__main__':
         datetime_now = datetime.now().strftime('%y%m%d')
 
         if dataset_path:
+            self_play(N_SELFPLAY)
             best_model_path, success = train_and_eval(LR, best_model_path)
             if success:
                 rep_memory.extend(cur_memory)
@@ -608,7 +615,6 @@ if __name__ == '__main__':
                 load_data(best_model_path, dataset_path=False)
             save_dataset(rep_memory, n_iter, step)
             reset_iter(cur_memory, result, n_iter)
-            self_play(N_SELFPLAY)
         else:
             self_play(N_SELFPLAY)
             best_model_path, success = train_and_eval(LR, best_model_path)
