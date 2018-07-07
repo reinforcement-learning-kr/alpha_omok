@@ -356,6 +356,49 @@ def convert_id(node_id):
     return tuple(base_id)
 
 
+def dataset_expand(memory, board_size):
+    aug_dataset = []
+
+    for (s, pi, z) in memory:
+        aug_dataset.append((s, pi, z))
+
+        s_1 = np.rot90(s, 1, axes=(1, 2)).copy()
+        pi_1 = np.rot90(pi.reshape(board_size, board_size), 1).flatten().copy()
+        aug_dataset.append((s_1, pi_1, z))
+
+        s_2 = np.rot90(s, 2, axes=(1, 2)).copy()
+        pi_2 = np.rot90(pi.reshape(board_size, board_size), 2).flatten().copy()
+        aug_dataset.append((s_2, pi_2, z))
+
+        s_3 = np.rot90(s, 3, axes=(1, 2)).copy()
+        pi_3 = np.rot90(pi.reshape(board_size, board_size), 3).flatten().copy()
+        aug_dataset.append((s_3, pi_3, z))
+
+        s_4 = np.fliplr(s).copy()
+        pi_4 = np.fliplr(pi.reshape(board_size, board_size)).flatten().copy()
+        aug_dataset.append((s_4, pi_4, z))
+
+        s_5 = np.rot90(s, 1, axes=(1, 2))
+        s_5 = np.fliplr(s_5).copy()
+        pi_5 = np.rot90(pi.reshape(board_size, board_size), 1)
+        pi_5 = np.fliplr(pi_5).flatten().copy()
+        aug_dataset.append((s_5, pi_5, z))
+
+        s_6 = np.rot90(s, 2, axes=(1, 2))
+        s_6 = np.fliplr(s_6).copy()
+        pi_6 = np.rot90(pi.reshape(board_size, board_size), 2)
+        pi_6 = np.fliplr(pi_6).flatten().copy()
+        aug_dataset.append((s_6, pi_6, z))
+
+        s_7 = np.rot90(s, 3, axes=(1, 2))
+        s_7 = np.fliplr(s_7).copy()
+        pi_7 = np.rot90(pi.reshape(board_size, board_size), 3)
+        pi_7 = np.fliplr(pi_7).flatten().copy()
+        aug_dataset.append((s_7, pi_7, z))
+
+        return aug_dataset
+
+
 if __name__ == '__main__':
     # test
     node_id = (0, 1, 3, 56, 22, 33, 12, 58, 74, 22)
