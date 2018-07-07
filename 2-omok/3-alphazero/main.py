@@ -282,7 +282,7 @@ def self_play(n_selfplay):
 
                 Agent.reset()
 
-        cur_augment = utils.augment_dataset(cur_memory, BOARD_SIZE)
+    cur_augment = utils.augment_dataset(cur_memory, BOARD_SIZE)
 
 
 def train(lr, n_epochs, n_iter):
