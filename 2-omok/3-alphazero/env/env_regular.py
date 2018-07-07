@@ -1,8 +1,8 @@
-# Mini Omok
+# Regular Omok
 '''
-This is mini version of omok.
+This is regular version of omok.
 Win: Black or white stone has to be 5 in a row (horizontal, vertical, diagonal)
-boardsize: 9 x 9
+boardsize: 15 x 15
 '''
 # By KyushikMin kyushikmin@gamil.com
 # http://mmc.hanyang.ac.kr
@@ -15,13 +15,13 @@ from pygame.locals import *
 
 from utils import check_win
 
-GAMEBOARD_SIZE = 9
+GAMEBOARD_SIZE = 15
 WIN_STONES = 5
 
 # Window Information
 FPS = 30
-WINDOW_WIDTH = 300
-WINDOW_HEIGHT = 450
+WINDOW_WIDTH = 480
+WINDOW_HEIGHT = 620
 TOP_MARGIN = 160
 MARGIN = 10
 BOARD_MARGIN = 20
@@ -46,7 +46,7 @@ BADUK = (220, 179, 92)
 
 
 def ReturnName():
-    return 'mini_omok'
+    return 'regular_omok'
 
 
 def Return_Num_Action():

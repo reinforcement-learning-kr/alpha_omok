@@ -12,13 +12,19 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
 import agents
-from env import env_small as game
+
 import neural_net
 import online_eval
 import utils
 
+'''
+env_small = 9x9
+env_regular = 15x15
+'''
+from env import env_regular as game
+
 # Game
-BOARD_SIZE = 9
+BOARD_SIZE = game.Return_BoardParams()[0]
 N_MCTS = 400
 TAU_THRES = 6
 RESIGN_MODE = False
@@ -42,6 +48,7 @@ L2 = 1e-4
 USE_TENSORBOARD = True
 
 # Hyperparameter sharing
+online_eval.BOARD_SIZE = BOARD_SIZE
 online_eval.N_BLOCKS = N_BLOCKS
 online_eval.IN_PLANES = IN_PLANES
 online_eval.OUT_PLANES = OUT_PLANES

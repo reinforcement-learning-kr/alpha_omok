@@ -4,7 +4,6 @@ import agents
 from neural_net import PVNet
 import utils
 
-
 BOARD_SIZE = 9
 N_BLOCKS = 10
 IN_PLANES = 7  # history * 2 + 1
@@ -35,11 +34,11 @@ class Evaluator:
                                       BOARD_SIZE).to(device)
 
         if model_path_b == 'random':
-            print('load enemy model:', model_path_b)
+            print('load best model:', model_path_b)
             self.enemy = agents.RandomAgent(BOARD_SIZE)
 
         elif model_path_b:
-            print('load enemy model:', model_path_b)
+            print('load best model:', model_path_b)
             self.enemy = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
             self.enemy.model = PVNet(N_BLOCKS,
                                      IN_PLANES,
