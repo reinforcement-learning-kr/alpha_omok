@@ -12,7 +12,6 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
 import agents
-
 import neural_net
 import online_eval
 import utils
@@ -21,7 +20,7 @@ import utils
 env_small = 9x9
 env_regular = 15x15
 '''
-from env import env_regular as game
+from env import env_small as game
 
 # Game
 BOARD_SIZE = game.Return_BoardParams()[0]
@@ -32,20 +31,21 @@ PRINT_SELFPLAY = True
 
 # Net
 N_BLOCKS = 10
-IN_PLANES = 7  # history * 2 + 1
+IN_PLANES = 3  # history * 2 + 1
 OUT_PLANES = 128
 
 # Training
+USE_TENSORBOARD = True
 TOTAL_ITER = 1000000
-N_SELFPLAY = 400
-MEMORY_SIZE = 160000
+N_SELFPLAY = 100
+MEMORY_SIZE = 100000
 N_EPOCHS = 1
 N_MATCH = 400
 EVAL_THRES = 15
 BATCH_SIZE = 32
 LR = 1e-4
 L2 = 1e-4
-USE_TENSORBOARD = True
+
 
 # Hyperparameter sharing
 online_eval.BOARD_SIZE = BOARD_SIZE
@@ -287,17 +287,21 @@ def train(lr, n_epochs, n_iter):
     global total_epoch
 
     Agent.model.train()
+
     loss_all = []
     loss_v = []
     loss_p = []
 
-    num_sample = len(cur_memory) // 4
     train_memory = []
+    cur_augment = []
 
-    if rep_memory:
+    cur_augment = utils.augment_dataset(cur_memory, BOARD_SIZE)
+    num_sample = len(cur_augment) // 4
+
+    if len(rep_memory) >= num_sample:
         train_memory.extend(random.sample(rep_memory, num_sample))
 
-    train_memory.extend(cur_memory)
+    train_memory.extend(cur_augment)
 
     optimizer = optim.Adam(Agent.model.parameters(),
                            lr=lr,
@@ -318,6 +322,7 @@ def train(lr, n_epochs, n_iter):
     print(' ' * 20 + ' Start Learning ' + ' ' * 20)
     print('=' * 58)
     print('current memory size:', len(cur_memory))
+    print('augment memory size:', len(cur_augment))
     print('replay memory size:', len(rep_memory))
     print('train memory size:', len(train_memory))
     print('optimizer: {}'.format(optimizer))
@@ -325,6 +330,7 @@ def train(lr, n_epochs, n_iter):
     logging.warning(' ' * 20 + ' Start Learning ' + ' ' * 20)
     logging.warning('-' * 58)
     logging.warning('current memory size: {}'.format(len(cur_memory)))
+    logging.warning('augment memory size: {}'.format(len(cur_augment)))
     logging.warning('replay memory size: {}'.format(len(rep_memory)))
     logging.warning('train memory size: {}'.format(len(train_memory)))
     logging.warning('optimizer: {}'.format(optimizer))
@@ -562,8 +568,10 @@ if __name__ == '__main__':
     # global variable
     rep_memory = deque(maxlen=MEMORY_SIZE)
     cur_memory = deque()
+
     if USE_TENSORBOARD:
         Writer = SummaryWriter()
+
     result = {'Black': 0, 'White': 0, 'Draw': 0, 'Resign': 0}
     step = 0
     start_iter = 1

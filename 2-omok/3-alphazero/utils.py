@@ -220,31 +220,16 @@ def get_reward(win_index, leaf_id):
 
     if win_index == 1:
         if turn == 1:
-            # print('leaf id: {}, '
-            #       'win: black, '
-            #       'reward: 1'.format(leaf_id))
             reward = 1.
         else:
-            # print('leaf id: {}, '
-            #       'win: black, '
-            #       'reward: -1'.format(leaf_id))
             reward = -1.
 
     elif win_index == 2:
         if turn == 1:
-            # print('leaf id: {}, '
-            #       'win: white, '
-            #       'reward: -1'.format(leaf_id))
             reward = -1.
         else:
-            # print('leaf id: {}, '
-            #       'win: white, '
-            #       'reward: 1'.format(leaf_id))
             reward = 1.
     else:
-        # print('leaf id: {}, '
-        #       'win: draw, '
-        #       'reward: 0'.format(leaf_id))
         reward = 0.
 
     return reward
@@ -356,7 +341,7 @@ def convert_id(node_id):
     return tuple(base_id)
 
 
-def dataset_augment_Q(memory, board_size):
+def augment_dataset(memory, board_size):
     aug_dataset = []
 
     for (s, pi, z) in memory:
@@ -370,7 +355,7 @@ def dataset_augment_Q(memory, board_size):
             pi_flip = np.fliplr(pi_rot).flatten().copy()
             aug_dataset.append((s_flip, pi_flip, z))
 
-        return aug_dataset
+    return aug_dataset
 
 
 if __name__ == '__main__':
