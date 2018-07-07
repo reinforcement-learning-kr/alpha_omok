@@ -636,7 +636,7 @@ if __name__ == '__main__':
                 logging.warning('Load the Previous Best Model')
                 load_data(best_model_path, dataset_path=False)
             save_dataset(rep_memory, n_iter, step)
-            reset_iter(cur_augment, result, n_iter)
+            reset_iter(result, n_iter)
         else:
             self_play(N_SELFPLAY)
             best_model_path, success = train_and_eval(LR, best_model_path)
@@ -647,4 +647,4 @@ if __name__ == '__main__':
                 logging.warning('Load the Previous Best Model')
                 load_data(best_model_path, dataset_path=False)
             save_dataset(rep_memory, n_iter, step)
-            reset_iter(cur_augment, result, n_iter)
+            reset_iter(result, n_iter)
