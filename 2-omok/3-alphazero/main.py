@@ -297,7 +297,6 @@ def train(lr, n_epochs, n_iter):
 
     cur_augment = utils.augment_dataset(cur_memory, BOARD_SIZE)
     num_sample = len(cur_augment) // 4
-    cur_memory.clear()
 
     if len(rep_memory) >= num_sample:
         train_memory.extend(random.sample(rep_memory, num_sample))
@@ -335,6 +334,8 @@ def train(lr, n_epochs, n_iter):
     logging.warning('replay memory size: {}'.format(len(rep_memory)))
     logging.warning('train memory size: {}'.format(len(train_memory)))
     logging.warning('optimizer: {}'.format(optimizer))
+
+    cur_memory.clear()
 
     for epoch in range(n_epochs):
         for i, (s, pi, z) in enumerate(dataloader):
