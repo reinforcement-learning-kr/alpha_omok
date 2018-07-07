@@ -285,6 +285,7 @@ def train(lr, n_epochs, n_iter):
     global step
     global Writer
     global total_epoch
+    global cur_augment
 
     Agent.model.train()
 
@@ -293,10 +294,10 @@ def train(lr, n_epochs, n_iter):
     loss_p = []
 
     train_memory = []
-    cur_augment = []
 
     cur_augment = utils.augment_dataset(cur_memory, BOARD_SIZE)
     num_sample = len(cur_augment) // 4
+    cur_memory.clear()
 
     if len(rep_memory) >= num_sample:
         train_memory.extend(random.sample(rep_memory, num_sample))
@@ -568,6 +569,7 @@ if __name__ == '__main__':
     # global variable
     rep_memory = deque(maxlen=MEMORY_SIZE)
     cur_memory = deque()
+    cur_augment = deque()
 
     if USE_TENSORBOARD:
         Writer = SummaryWriter()
@@ -623,21 +625,21 @@ if __name__ == '__main__':
             self_play(N_SELFPLAY)
             best_model_path, success = train_and_eval(LR, best_model_path)
             if success:
-                rep_memory.extend(cur_memory)
+                rep_memory.extend(cur_augment)
             else:
                 print('Load the Previous Best Model')
                 logging.warning('Load the Previous Best Model')
                 load_data(best_model_path, dataset_path=False)
             save_dataset(rep_memory, n_iter, step)
-            reset_iter(cur_memory, result, n_iter)
+            reset_iter(cur_augment, result, n_iter)
         else:
             self_play(N_SELFPLAY)
             best_model_path, success = train_and_eval(LR, best_model_path)
             if success:
-                rep_memory.extend(cur_memory)
+                rep_memory.extend(cur_augment)
             else:
                 print('Load the Previous Best Model')
                 logging.warning('Load the Previous Best Model')
                 load_data(best_model_path, dataset_path=False)
             save_dataset(rep_memory, n_iter, step)
-            reset_iter(cur_memory, result, n_iter)
+            reset_iter(cur_augment, result, n_iter)
