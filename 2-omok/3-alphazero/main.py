@@ -92,6 +92,8 @@ logging.warning(
 
 
 def self_play(n_selfplay):
+    global cur_augment
+
     state_black = deque()
     state_white = deque()
     pi_black = deque()
@@ -280,6 +282,8 @@ def self_play(n_selfplay):
 
                 Agent.reset()
 
+        cur_augment = utils.augment_dataset(cur_memory, BOARD_SIZE)
+
 
 def train(lr, n_epochs, n_iter):
     global step
@@ -295,7 +299,6 @@ def train(lr, n_epochs, n_iter):
 
     train_memory = []
 
-    cur_augment = utils.augment_dataset(cur_memory, BOARD_SIZE)
     num_sample = len(cur_augment) // 4
 
     if len(rep_memory) >= num_sample:
@@ -334,8 +337,6 @@ def train(lr, n_epochs, n_iter):
     logging.warning('replay memory size: {}'.format(len(rep_memory)))
     logging.warning('train memory size: {}'.format(len(train_memory)))
     logging.warning('optimizer: {}'.format(optimizer))
-
-    cur_memory.clear()
 
     for epoch in range(n_epochs):
         for i, (s, pi, z) in enumerate(dataloader):
@@ -548,14 +549,17 @@ def load_data(model_path, dataset_path):
             rep_memory = deque(pickle.load(f), maxlen=MEMORY_SIZE)
 
 
-def reset_iter(memory, result, n_iter):
+def reset_iter(result, n_iter):
     global total_epoch
+    global cur_memory
+    global cur_augment
     result['Black'] = 0
     result['White'] = 0
     result['Draw'] = 0
     result['Resign'] = 0
     total_epoch = 0
-    memory.clear()
+    cur_memory.clear()
+    cur_augment.clear()
 
 
 if __name__ == '__main__':
