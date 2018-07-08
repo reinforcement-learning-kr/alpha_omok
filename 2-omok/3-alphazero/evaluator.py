@@ -9,11 +9,11 @@ import utils
 env_small = 9x9
 env_regular = 15x15
 '''
-from env import env_regular as game
+from env import env_small as game
 
 BOARD_SIZE = game.Return_BoardParams()[0]
 N_BLOCKS = 10
-IN_PLANES = 7  # history * 2 + 1
+IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
 N_MCTS = 2000
 N_MATCH = 5
@@ -21,6 +21,15 @@ N_MATCH = 5
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
 
+# =========================== input model path ======================== #
+#    'human': human play    'random': random    None: raw model MCTS    #
+#    'puct': PUCT MCTS      'uct': UCT MCTS                             #
+# ===================================================================== #
+
+player_model_path = './data/180708_3_7232_step_model.pickle'
+enemy_model_path = 'human'
+
+# ===================================================================== #
 
 class Evaluator(object):
     def __init__(self, model_path_a, model_path_b):
@@ -53,7 +62,8 @@ class Evaluator(object):
             # self.player.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_a = self.player.model.state_dict()
-            state_a.update(torch.load(model_path_a))
+            state_a.update(torch.load(
+              model_path_a, map_location='cuda:0' if use_cuda else 'cpu'))
             self.player.model.load_state_dict(state_a)
         else:
             print('load player model:', model_path_a)
@@ -95,7 +105,8 @@ class Evaluator(object):
             # self.enemy.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_b = self.enemy.model.state_dict()
-            state_b.update(torch.load(model_path_b))
+            state_b.update(torch.load(
+              model_path_b, map_location='cuda:0' if use_cuda else 'cpu'))
             self.enemy.model.load_state_dict(state_b)
         else:
             print('load enemy model:', model_path_b)
@@ -126,16 +137,6 @@ class Evaluator(object):
 
 def main():
     print('cuda:', use_cuda)
-
-    # =========================== input model path ======================== #
-    #    'human': human play    'random': random    None: raw model MCTS    #
-    #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
-    # ===================================================================== #
-
-    player_model_path = 'data/180707_1_5_step_model.pickle'
-    enemy_model_path = 'human'
-
-    # ===================================================================== #
 
     evaluator = Evaluator(player_model_path, enemy_model_path)
     env = game.GameState('text')
