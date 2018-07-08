@@ -1,3 +1,7 @@
 .DS_Store
 __pycache__
 *.pickle
+venv3
+*.pyc
+runs
+*.txt
