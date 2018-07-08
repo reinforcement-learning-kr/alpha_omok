@@ -509,15 +509,16 @@ def train_and_eval_with_decay(lr, best_model_path):
             ng_count += 1
 
         if ng_count == 2:
-            print('Reduce LR: {} -> {}'.format(lr, lr / 2))
-            logging.warning('Reduce LR: {} -> {}'.format(lr, lr / 2))
-            lr /= 2
-            ng_count = 0
+            old_lr = lr
 
-    print('Do Not Find Best Model')
-    logging.warning('Do Not Find Best Model')
-    success = False
-    return best_model_path, success
+            if lr > 1e-8:
+                lr *= 0.1
+            else:
+                lr = 1e-8
+
+            print('Reduce LR: {} -> {}'.format(old_lr, lr))
+            logging.warning('Reduce LR: {} -> {}'.format(old_lr, lr))
+            ng_count = 0
 
 
 def save_model(agent, n_iter, step):
