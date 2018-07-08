@@ -31,17 +31,17 @@ PRINT_SELFPLAY = True
 
 # Net
 N_BLOCKS = 10
-IN_PLANES = 3  # history * 2 + 1
+IN_PLANES = 7  # history * 2 + 1
 OUT_PLANES = 128
 
 # Training
 USE_TENSORBOARD = True
 TOTAL_ITER = 1000000
-N_SELFPLAY = 100
-MEMORY_SIZE = 100000
+N_SELFPLAY = 120
+MEMORY_SIZE = 1000000
 N_EPOCHS = 1
 N_MATCH = 400
-EVAL_THRES = 15
+EVAL_THRES = 100
 BATCH_SIZE = 32
 LR = 1e-4
 L2 = 1e-4
@@ -310,10 +310,10 @@ def train(lr, n_epochs, n_iter):
                            lr=lr,
                            weight_decay=L2)
 
-    # optimizer = optim.SGD(Agent.model.parameters(),
-    #                       lr=lr,
-    #                       momentum=0.9,
-    #                       weight_decay=L2)
+    optimizer = optim.SGD(Agent.model.parameters(),
+                          lr=lr,
+                          momentum=0.9,
+                          weight_decay=L2)
 
     dataloader = DataLoader(train_memory,
                             batch_size=BATCH_SIZE,
@@ -632,25 +632,13 @@ if __name__ == '__main__':
 
         datetime_now = datetime.now().strftime('%y%m%d')
 
-        if dataset_path:
-            self_play(N_SELFPLAY)
-            best_model_path, success = train_and_eval(LR, best_model_path)
-            if success:
-                rep_memory.extend(cur_augment)
-            else:
-                print('Load the Previous Best Model')
-                logging.warning('Load the Previous Best Model')
-                load_data(best_model_path, dataset_path=False)
-            save_dataset(rep_memory, n_iter, step)
-            reset_iter(result, n_iter)
+        self_play(N_SELFPLAY)
+        best_model_path, success = train_and_eval(LR, best_model_path)
+        if success:
+            rep_memory.extend(cur_augment)
         else:
-            self_play(N_SELFPLAY)
-            best_model_path, success = train_and_eval(LR, best_model_path)
-            if success:
-                rep_memory.extend(cur_augment)
-            else:
-                print('Load the Previous Best Model')
-                logging.warning('Load the Previous Best Model')
-                load_data(best_model_path, dataset_path=False)
-            save_dataset(rep_memory, n_iter, step)
-            reset_iter(result, n_iter)
+            print('Load the Previous Best Model')
+            logging.warning('Load the Previous Best Model')
+            load_data(best_model_path, dataset_path=False)
+        save_dataset(rep_memory, n_iter, step)
+        reset_iter(result, n_iter)

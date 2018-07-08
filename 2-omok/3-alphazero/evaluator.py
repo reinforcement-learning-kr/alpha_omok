@@ -13,10 +13,10 @@ from env import env_small as game
 
 BOARD_SIZE = game.Return_BoardParams()[0]
 N_BLOCKS = 10
-IN_PLANES = 5  # history * 2 + 1
+IN_PLANES = 7  # history * 2 + 1
 OUT_PLANES = 128
-N_MCTS = 2000
-N_MATCH = 5
+N_MCTS = 1000
+N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -26,10 +26,11 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
 # ===================================================================== #
 
-player_model_path = './data/180708_3_7232_step_model.pickle'
+player_model_path = None
 enemy_model_path = 'human'
 
 # ===================================================================== #
+
 
 class Evaluator(object):
     def __init__(self, model_path_a, model_path_b):
@@ -63,7 +64,7 @@ class Evaluator(object):
 
             state_a = self.player.model.state_dict()
             state_a.update(torch.load(
-              model_path_a, map_location='cuda:0' if use_cuda else 'cpu'))
+                model_path_a, map_location='cuda:0' if use_cuda else 'cpu'))
             self.player.model.load_state_dict(state_a)
         else:
             print('load player model:', model_path_a)
@@ -106,7 +107,7 @@ class Evaluator(object):
 
             state_b = self.enemy.model.state_dict()
             state_b.update(torch.load(
-              model_path_b, map_location='cuda:0' if use_cuda else 'cpu'))
+                model_path_b, map_location='cuda:0' if use_cuda else 'cpu'))
             self.enemy.model.load_state_dict(state_b)
         else:
             print('load enemy model:', model_path_b)
@@ -152,8 +153,6 @@ def main():
     for i in range(N_MATCH):
         board = np.zeros([BOARD_SIZE, BOARD_SIZE])
         root_id = (0,)
-        # evaluator.player.root_id = root_id
-        # evaluator.enemy.root_id = root_id
         win_index = 0
         action_index = None
 

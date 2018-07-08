@@ -1,3 +1,5 @@
+import logging
+
 import torch
 
 import agents
@@ -20,7 +22,8 @@ class Evaluator:
         self.model_path_b = model_path_b
 
         if model_path_a:
-            print('load player model:', model_path_a)
+            print('load current model:', model_path_a)
+            logging.warning('load current model: {}'.format(model_path_a))
             self.player = agents.ZeroAgent(BOARD_SIZE,
                                            N_MCTS,
                                            IN_PLANES,
@@ -43,11 +46,13 @@ class Evaluator:
                                       BOARD_SIZE).to(device)
 
         if model_path_b == 'random':
-            print('load enemy model:', model_path_b)
+            print('load best model:', model_path_b)
+            logging.warning('load best model: {}'.format(model_path_b))
+
             self.enemy = agents.RandomAgent(BOARD_SIZE)
 
         elif model_path_b:
-            print('load enemy model:', model_path_b)
+            print('load best model:', model_path_b)
             self.enemy = agents.ZeroAgent(BOARD_SIZE,
                                           N_MCTS,
                                           IN_PLANES,
