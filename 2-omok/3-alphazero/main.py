@@ -55,7 +55,7 @@ online_eval.OUT_PLANES = OUT_PLANES
 agents.PRINT_MCTS = PRINT_SELFPLAY
 
 logging.basicConfig(
-    filename='logs/log_n_{}.txt'.format(datetime.now().strftime('%y%m%d')),
+    filename='logs/log_{}.txt'.format(datetime.now().strftime('%y%m%d')),
     level=logging.WARNING)
 
 logging.warning(
@@ -467,7 +467,7 @@ def train_and_eval(lr, best_model_path):
         train(lr, N_EPOCHS, n_iter)
         save_model(Agent, n_iter, step)
 
-        player_path = 'noise/{}_{}_{}_step_model.pickle'.format(
+        player_path = 'data/{}_{}_{}_step_model.pickle'.format(
             datetime_now, n_iter, step)
 
         winrate = eval_model(i, player_path, best_model_path)
@@ -492,7 +492,7 @@ def train_and_eval_with_decay(lr, best_model_path):
         train(lr, N_EPOCHS, n_iter)
         save_model(Agent, n_iter, step)
 
-        player_path = 'noise/{}_{}_{}_step_model.pickle'.format(
+        player_path = 'data/{}_{}_{}_step_model.pickle'.format(
             datetime_now, n_iter, step)
 
         winrate = eval_model(i, player_path, best_model_path)
@@ -508,7 +508,7 @@ def train_and_eval_with_decay(lr, best_model_path):
         if winrate < max(winrates):
             ng_count += 1
 
-        if ng_count == 2:
+        if ng_count == 10:
             old_lr = lr
 
             if lr > 1e-8:
@@ -529,11 +529,11 @@ def train_and_eval_with_decay(lr, best_model_path):
 def save_model(agent, n_iter, step):
     torch.save(
         agent.model.state_dict(),
-        'noise/{}_{}_{}_step_model.pickle'.format(datetime_now, n_iter, step))
+        'data/{}_{}_{}_step_model.pickle'.format(datetime_now, n_iter, step))
 
 
 def save_dataset(memory, n_iter, step):
-    with open('noise/{}_{}_{}_step_dataset.pickle'.format(
+    with open('data/{}_{}_{}_step_dataset.pickle'.format(
             datetime_now, n_iter, step), 'wb') as f:
         pickle.dump(memory, f, pickle.HIGHEST_PROTOCOL)
 
@@ -615,7 +615,7 @@ if __name__ == '__main__':
     if first_train:
         datetime_now = datetime.now().strftime('%y%m%d')
         save_model(Agent, 0, 0)
-        best_model_path = 'noise/{}_{}_{}_step_model.pickle'.format(
+        best_model_path = 'data/{}_{}_{}_step_model.pickle'.format(
             datetime_now, 0, 0)
 
     load_data(model_path, dataset_path)

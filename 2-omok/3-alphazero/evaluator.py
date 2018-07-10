@@ -26,8 +26,8 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
 # ===================================================================== #
 
-player_model_path = 'models/180711_1_5286_step_model.pickle'
-enemy_model_path = 'models/180710_1_21144_step_model.pickle'
+player_model_path = None
+enemy_model_path = None
 
 # ===================================================================== #
 
@@ -63,7 +63,8 @@ class Evaluator(object):
             # self.player.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_a = self.player.model.state_dict()
-            state_a.update(torch.load(model_path_a))
+            state_a.update(torch.load(
+                model_path_a, map_location='cuda:0' if use_cuda else 'cpu'))
             self.player.model.load_state_dict(state_a)
         else:
             print('load player model:', model_path_a)
@@ -105,7 +106,8 @@ class Evaluator(object):
             # self.enemy.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_b = self.enemy.model.state_dict()
-            state_b.update(torch.load(model_path_b))
+            state_b.update(torch.load(
+                model_path_b, map_location='cuda:0' if use_cuda else 'cpu'))
             self.enemy.model.load_state_dict(state_b)
         else:
             print('load enemy model:', model_path_b)
