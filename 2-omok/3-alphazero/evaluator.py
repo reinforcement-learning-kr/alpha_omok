@@ -11,6 +11,12 @@ env_regular = 15x15
 '''
 from env import env_small as game
 
+### WebAPI
+import flask
+import threading
+app = flask.Flask(__name__)
+from game_info import GameInfo
+
 BOARD_SIZE = game.Return_BoardParams()[0]
 N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
@@ -21,6 +27,9 @@ N_MATCH = 5
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
 
+### WebAPI
+gi = GameInfo()
+
 # =========================== input model path ======================== #
 #    'human': human play    'random': random    None: raw model MCTS    #
 #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
@@ -30,6 +39,11 @@ player_model_path = './data/180708_3_7232_step_model.pickle'
 enemy_model_path = 'human'
 
 # ===================================================================== #
+
+# WebAPI
+
+player_model_path = './data/model_85_0624.pickle'
+enemy_model_path = 'web'
 
 class Evaluator(object):
     def __init__(self, model_path_a, model_path_b):
@@ -49,17 +63,23 @@ class Evaluator(object):
             print('load player model:', model_path_a)
             self.player = agents.HumanAgent(BOARD_SIZE)
 
+        elif model_path_a == 'web':
+            print('load player model:', model_path_a)
+            self.player = agents.WebAgent(BOARD_SIZE)
+
         elif model_path_a:
             print('load player model:', model_path_a)
             self.player = agents.ZeroAgent(BOARD_SIZE,
                                            N_MCTS,
                                            IN_PLANES,
                                            noise=False)
+            '''
             self.player.model = PVNet(N_BLOCKS,
                                       IN_PLANES,
                                       OUT_PLANES,
                                       BOARD_SIZE).to(device)
-            # self.player.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
+            '''                                      
+            self.player.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_a = self.player.model.state_dict()
             state_a.update(torch.load(
@@ -91,6 +111,10 @@ class Evaluator(object):
         elif model_path_b == 'human':
             print('load enemy model:', model_path_b)
             self.enemy = agents.HumanAgent(BOARD_SIZE)
+
+        elif model_path_b == 'web':
+            print('load enemy model:', model_path_b)
+            self.enemy = agents.WebAgent(BOARD_SIZE)
 
         elif model_path_b:
             print('load enemy model:', model_path_b)
@@ -134,6 +158,15 @@ class Evaluator(object):
         self.player.reset()
         self.enemy.reset()
 
+    ### WebAPI
+    def put_action(self, action_idx):
+
+        if turn != enemy_turn:
+            if type(self.player) is WebAgent:
+                self.player.put_action(action_idx)
+        else:
+            if type(self.enemy) is WebAgent:
+                self.player.put_action(action_idx)
 
 def main():
     print('cuda:', use_cuda)
@@ -176,6 +209,13 @@ def main():
 
             board, check_valid_pos, win_index, turn, _ = env.step(action)
 
+            # WebAPI
+            gi.game_board = board
+            gi.win_index = win_index
+            gi.curr_turn = turn
+            gi.player_message = evaluator.player.get_message()
+            gi.enemy_message = evaluator.enemy.get_message()
+        
             if turn == enemy_turn:
                 evaluator.enemy.del_parents(root_id)
 
@@ -238,11 +278,50 @@ def main():
                 print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
                     player_elo, enemy_elo))
                 evaluator.reset()
-
+    
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
     np.random.seed(0)
     torch.manual_seed(0)
-    torch.cuda.manual_seed_all(0)
+    
+    if use_cuda == True:
+        torch.cuda.manual_seed_all(0)
+
+    ### WebAPI
+    print("Activate WebAPI...")
+    app_th = threading.Thread(target=app.run, kwargs={"host":"0.0.0.0", "port":5000})
+    app_th.start()
+
     main()
+
+### WebAPI
+@app.route('/')
+def home():
+    return flask.render_template('index.html')
+
+@app.route('/action')
+def action():
+    
+    action_idx = flask.request.args.get("action_idx")
+    data = {"success": False}
+    evaluator.put_action(action_idx)
+    data["success"] = True
+
+    return flask.jsonify(data)
+
+@app.route('/gameboard')
+def gameboard():
+    
+    print('gameboard!!!')
+    data = {"success": False}
+    data["game_board_size"] = gi.game_board.shape[0]
+    game_board = gi.game_board.reshape(gi.game_board.size).astype(int)
+    data["game_board_values"] = gi.game_board.tolist()    
+    data["win_index"] = gi.win_index
+    data["curr_turn"] = gi.curr_turn   
+    data["player_message"] = gi.player_message
+    data["enemy_message"] = gi.enemy_message
+    data["success"] = True
+
+    return flask.jsonify(data)    

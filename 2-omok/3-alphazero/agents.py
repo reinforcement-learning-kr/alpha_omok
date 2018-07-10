@@ -26,6 +26,7 @@ class ZeroAgent(object):
         # self.turn = None
         self.model = None
         self.tree = {}
+        self.message = 'Hi, this is Zero.'
 
     def reset(self):
         self.root_id = None
@@ -80,6 +81,8 @@ class ZeroAgent(object):
             if PRINT_MCTS:
                 sys.stdout.write('simulation: {}\r'.format(i + 1))
                 sys.stdout.flush()
+                self.message = 'AlphaZero simulation: {}\r'.format(i + 1)
+
             # selection
             leaf_id, win_index = self._selection(root_id)
             # expansion and evaluation
@@ -209,6 +212,8 @@ class ZeroAgent(object):
         print('tree size:', len(self.tree))
         print('tree depth:', 0 if max_len <= 0 else max_len - 1)
 
+    def get_message(self):
+        return self.message
 
 class PUCTAgent(object):
     def __init__(self, board_size, num_mcts):
@@ -389,6 +394,8 @@ class PUCTAgent(object):
         print('tree size:', len(self.tree))
         print('tree depth:', 0 if max_len <= 0 else max_len - 1)
 
+    def get_message(self):
+        return ''
 
 class UCTAgent(object):
     def __init__(self, board_size, num_mcts):
@@ -571,6 +578,8 @@ class UCTAgent(object):
         print('tree size:', len(self.tree))
         print('tree depth:', 0 if max_len <= 0 else max_len - 1)
 
+    def get_message(self):
+        return ''
 
 class RandomAgent(object):
     def __init__(self, board_size):
@@ -592,6 +601,9 @@ class RandomAgent(object):
 
     def del_parents(self, root_id):
         return
+
+    def get_message(self):
+        return ''        
 
 
 class HumanAgent(object):
@@ -638,3 +650,48 @@ class HumanAgent(object):
 
     def del_parents(self, root_id):
         return
+
+    def get_message(self):
+        return ''        
+
+
+import subprocess
+import threading
+
+class WebAgent(object):
+    
+    def __init__(self, board_size):
+        self.board_size = board_size
+        self.wait_action_idx = -1
+        self.cv = threading.Condition()
+
+    def get_pi(self, root_id, board, turn, tau):
+        self.root_id = root_id
+
+        self.cv.acquire()
+        while self.wait_action_idx == -1:
+            self.cv.wait()
+        
+        action_index = self.wait_action_idx
+        self.wait_action_idx = -1
+
+        self.cv.release()
+
+        pi = np.zeros(self.board_size**2, 'float')
+        pi[action_index] = 1
+        return pi
+
+    def put_action(self, action_idx):
+        self.cv.acquire()
+        self.wait_action_idx = action_idx
+        self.cv.notifyAll()
+        self.cv.release()
+
+    def reset(self):
+        self.root_id = None
+
+    def del_parents(self, root_id):
+        return
+
+    def get_message(self):
+        return ''        
