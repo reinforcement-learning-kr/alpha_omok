@@ -31,17 +31,17 @@ PRINT_SELFPLAY = True
 
 # Net
 N_BLOCKS = 10
-IN_PLANES = 7  # history * 2 + 1
+IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
 
 # Training
 USE_TENSORBOARD = True
+N_SELFPLAY = 100
 TOTAL_ITER = 1000000
-N_SELFPLAY = 120
 MEMORY_SIZE = 1000000
 N_EPOCHS = 1
-N_MATCH = 400
-EVAL_THRES = 100
+N_MATCH = 100
+EVAL_THRES = 16
 BATCH_SIZE = 32
 LR = 1e-4
 L2 = 1e-4
@@ -55,7 +55,7 @@ online_eval.OUT_PLANES = OUT_PLANES
 agents.PRINT_MCTS = PRINT_SELFPLAY
 
 logging.basicConfig(
-    filename='logs/log_{}.txt'.format(datetime.now().strftime('%y%m%d')),
+    filename='logs/log_n_{}.txt'.format(datetime.now().strftime('%y%m%d')),
     level=logging.WARNING)
 
 logging.warning(
@@ -310,10 +310,10 @@ def train(lr, n_epochs, n_iter):
                            lr=lr,
                            weight_decay=L2)
 
-    optimizer = optim.SGD(Agent.model.parameters(),
-                          lr=lr,
-                          momentum=0.9,
-                          weight_decay=L2)
+    # optimizer = optim.SGD(Agent.model.parameters(),
+    #                       lr=lr,
+    #                       momentum=0.9,
+    #                       weight_decay=L2)
 
     dataloader = DataLoader(train_memory,
                             batch_size=BATCH_SIZE,
@@ -347,7 +347,7 @@ def train(lr, n_epochs, n_iter):
             p_batch, v_batch = Agent.model(s_batch)
 
             v_loss = F.mse_loss(v_batch, z_batch)
-            p_loss = -(pi_batch * (p_batch + 1e-8).log()).sum(dim=1).mean()
+            p_loss = -(pi_batch * (p_batch + 1e-5).log()).sum(dim=1).mean()
             loss = v_loss + p_loss
 
             loss_v.append(v_loss.item())
@@ -467,12 +467,12 @@ def train_and_eval(lr, best_model_path):
         train(lr, N_EPOCHS, n_iter)
         save_model(Agent, n_iter, step)
 
-        player_path = 'data/{}_{}_{}_step_model.pickle'.format(
+        player_path = 'noise/{}_{}_{}_step_model.pickle'.format(
             datetime_now, n_iter, step)
 
         winrate = eval_model(i, player_path, best_model_path)
 
-        if winrate > 55:
+        if winrate > 60:
             best_model_path = player_path
             print('Find Best Model')
             logging.warning('Find Best Model')
@@ -492,13 +492,13 @@ def train_and_eval_with_decay(lr, best_model_path):
         train(lr, N_EPOCHS, n_iter)
         save_model(Agent, n_iter, step)
 
-        player_path = 'data/{}_{}_{}_step_model.pickle'.format(
+        player_path = 'noise/{}_{}_{}_step_model.pickle'.format(
             datetime_now, n_iter, step)
 
         winrate = eval_model(i, player_path, best_model_path)
         winrates.append(winrate)
 
-        if winrate > 55:
+        if winrate > 60:
             best_model_path = player_path
             print('Find Best Model')
             logging.warning('Find Best Model')
@@ -529,11 +529,11 @@ def train_and_eval_with_decay(lr, best_model_path):
 def save_model(agent, n_iter, step):
     torch.save(
         agent.model.state_dict(),
-        'data/{}_{}_{}_step_model.pickle'.format(datetime_now, n_iter, step))
+        'noise/{}_{}_{}_step_model.pickle'.format(datetime_now, n_iter, step))
 
 
 def save_dataset(memory, n_iter, step):
-    with open('data/{}_{}_{}_step_dataset.pickle'.format(
+    with open('noise/{}_{}_{}_step_dataset.pickle'.format(
             datetime_now, n_iter, step), 'wb') as f:
         pickle.dump(memory, f, pickle.HIGHEST_PROTOCOL)
 
@@ -573,9 +573,9 @@ if __name__ == '__main__':
     np.set_printoptions(suppress=True)
 
     # set random seeds
-    # np.random.seed(0)
-    # torch.manual_seed(0)
-    # torch.cuda.manual_seed_all(0)
+    np.random.seed(0)
+    torch.manual_seed(0)
+    torch.cuda.manual_seed_all(0)
 
     # global variable
     rep_memory = deque(maxlen=MEMORY_SIZE)
@@ -597,11 +597,11 @@ if __name__ == '__main__':
     logging.warning('cuda: {}'.format(use_cuda))
 
     # init agent & model
-    Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-    Agent.model = neural_net.PVNet(N_BLOCKS,
-                                   IN_PLANES,
-                                   OUT_PLANES,
-                                   BOARD_SIZE).to(device)
+    Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES, noise=False)
+    Agent.model = neural_net.NoisyPVNet(N_BLOCKS,
+                                        IN_PLANES,
+                                        OUT_PLANES,
+                                        BOARD_SIZE).to(device)
     # Agent.model = neural_net.PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
 # ====================== self-play & training ====================== #
@@ -615,7 +615,7 @@ if __name__ == '__main__':
     if first_train:
         datetime_now = datetime.now().strftime('%y%m%d')
         save_model(Agent, 0, 0)
-        best_model_path = 'data/{}_{}_{}_step_model.pickle'.format(
+        best_model_path = 'noise/{}_{}_{}_step_model.pickle'.format(
             datetime_now, 0, 0)
 
     load_data(model_path, dataset_path)

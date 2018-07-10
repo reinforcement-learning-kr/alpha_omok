@@ -36,7 +36,7 @@ class Evaluator:
 
             state_a = self.player.model.state_dict()
             state_a.update(torch.load(
-                model_path_a, map_location='cuda:0' if use_cuda else 'cpu'))
+                model_path_a, map_location='cuda: 0' if use_cuda else 'cpu'))
             self.player.model.load_state_dict(state_a)
         else:
             self.player = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
@@ -65,7 +65,7 @@ class Evaluator:
 
             state_b = self.enemy.model.state_dict()
             state_b.update(torch.load(
-                model_path_b, map_location='cuda:0' if use_cuda else 'cpu'))
+                model_path_b, map_location='cuda: 0' if use_cuda else 'cpu'))
             self.enemy.model.load_state_dict(state_b)
 
         else:
