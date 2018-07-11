@@ -682,6 +682,10 @@ class WebAgent(object):
         return pi
 
     def put_action(self, action_idx):
+        
+        if action_idx < 0 and action_idx >= board_size**2:
+            return
+
         self.cv.acquire()
         self.wait_action_idx = action_idx
         self.cv.notifyAll()

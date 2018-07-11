@@ -33,7 +33,7 @@ function reqAction(action_idx)
 	xhr.send();
 }
 
-function reqBaord()
+function reqGameboard()
 {
 	var xhr = new XMLHttpRequest();
 	
@@ -182,9 +182,8 @@ function updateBoard(){
 
 }
 
-reqAction(-1);
 updateBoard();
-setInterval(reqState, 500);//1000 is miliseconds
+setInterval(reqGameboard, 500);//1000 is miliseconds
 
 /* Mouse Event */
 function getMousePos(canvas, evt) {

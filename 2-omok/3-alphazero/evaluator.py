@@ -28,7 +28,7 @@ use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
 
 ### WebAPI
-gi = GameInfo()
+gi = GameInfo(BOARD_SIZE)
 
 # =========================== input model path ======================== #
 #    'human': human play    'random': random    None: raw model MCTS    #
@@ -159,23 +159,41 @@ class Evaluator(object):
         self.enemy.reset()
 
     ### WebAPI
-    def put_action(self, action_idx):
+    def put_action(self, action_idx, turn, enemy_turn):
 
         if turn != enemy_turn:
-            if type(self.player) is WebAgent:
+            if type(self.player) is agents.WebAgent:
                 self.player.put_action(action_idx)
         else:
-            if type(self.enemy) is WebAgent:
-                self.player.put_action(action_idx)
+            if type(self.enemy) is agents.WebAgent:
+                self.enemy.put_action(action_idx)
+
+    def get_player_message(self):
+        
+        if self.player is None:
+            return ''
+
+        return self.player.get_message()
+
+    def get_enemy_message(self):
+        
+        if self.enemy is None:
+            return ''
+        
+        return self.enemy.get_message()
+
+evaluator = Evaluator(player_model_path, enemy_model_path) # 임시로 전역변수 할당
 
 def main():
     print('cuda:', use_cuda)
 
-    evaluator = Evaluator(player_model_path, enemy_model_path)
+    g_evaluator = evaluator
+
     env = game.GameState('text')
     result = {'Player': 0, 'Enemy': 0, 'Draw': 0}
     turn = 0
     enemy_turn = 1
+    gi.enemy_turn = enemy_turn
     player_elo = 1500
     enemy_elo = 1500
 
@@ -213,9 +231,7 @@ def main():
             gi.game_board = board
             gi.win_index = win_index
             gi.curr_turn = turn
-            gi.player_message = evaluator.player.get_message()
-            gi.enemy_message = evaluator.enemy.get_message()
-        
+                    
             if turn == enemy_turn:
                 evaluator.enemy.del_parents(root_id)
 
@@ -265,6 +281,8 @@ def main():
                 utils.render_str(board, BOARD_SIZE, action_index)
                 # Change turn
                 enemy_turn = abs(enemy_turn - 1)
+                gi.enemy_turn = enemy_turn
+
                 turn = 0
                 pw, ew, dr = result['Player'], result['Enemy'], result['Draw']
                 winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
@@ -278,9 +296,48 @@ def main():
                 print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
                     player_elo, enemy_elo))
                 evaluator.reset()
-    
+
+### WebAPI
+@app.route('/')
+def home():
+    return flask.render_template('index.html')
+
+@app.route('/gameboard_view')
+def GameboardView():
+    return flask.render_template('gameboard_view.html')
+
+@app.route('/action')
+def action():
+
+    action_idx = int(flask.request.args.get("action_idx"))
+    data = {"success": False}
+    evaluator.put_action(action_idx, gi.curr_turn, gi.enemy_turn)
+
+    data["success"] = True
+
+    return flask.jsonify(data)
+
+@app.route('/gameboard')
+def gameboard():
+
+    gi.player_message = evaluator.get_player_message()
+    gi.enemy_message = evaluator.get_enemy_message()
+    print('gi.player_message' + gi.player_message)
+
+    data = {"success": False}
+    data["game_board_size"] = gi.game_board.shape[0]
+    game_board = gi.game_board.reshape(gi.game_board.size).astype(int)
+    data["game_board_values"] = game_board.tolist()    
+    data["win_index"] = gi.win_index
+    data["curr_turn"] = gi.curr_turn   
+    data["player_message"] = gi.player_message
+    data["enemy_message"] = gi.enemy_message
+    data["success"] = True
+
+    return flask.jsonify(data)    
 
 if __name__ == '__main__':
+    
     np.set_printoptions(suppress=True)
     np.random.seed(0)
     torch.manual_seed(0)
@@ -294,34 +351,3 @@ if __name__ == '__main__':
     app_th.start()
 
     main()
-
-### WebAPI
-@app.route('/')
-def home():
-    return flask.render_template('index.html')
-
-@app.route('/action')
-def action():
-    
-    action_idx = flask.request.args.get("action_idx")
-    data = {"success": False}
-    evaluator.put_action(action_idx)
-    data["success"] = True
-
-    return flask.jsonify(data)
-
-@app.route('/gameboard')
-def gameboard():
-    
-    print('gameboard!!!')
-    data = {"success": False}
-    data["game_board_size"] = gi.game_board.shape[0]
-    game_board = gi.game_board.reshape(gi.game_board.size).astype(int)
-    data["game_board_values"] = gi.game_board.tolist()    
-    data["win_index"] = gi.win_index
-    data["curr_turn"] = gi.curr_turn   
-    data["player_message"] = gi.player_message
-    data["enemy_message"] = gi.enemy_message
-    data["success"] = True
-
-    return flask.jsonify(data)    
