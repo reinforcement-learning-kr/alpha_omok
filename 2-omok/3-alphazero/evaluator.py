@@ -15,7 +15,8 @@ from env import env_small as game
 import flask
 import threading
 app = flask.Flask(__name__)
-from game_info import GameInfo
+from info import GameInfo
+from info import AgentInfo
 
 BOARD_SIZE = game.Return_BoardParams()[0]
 N_BLOCKS = 10
@@ -29,6 +30,8 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 
 ### WebAPI
 gi = GameInfo(BOARD_SIZE)
+player_agent_info = AgentInfo(BOARD_SIZE)
+enemy_agent_info = AgentInfo(BOARD_SIZE)
 
 # =========================== input model path ======================== #
 #    'human': human play    'random': random    None: raw model MCTS    #
@@ -43,7 +46,8 @@ enemy_model_path = 'human'
 # WebAPI
 
 player_model_path = './data/model_85_0624.pickle'
-enemy_model_path = 'web'
+#enemy_model_path = 'web'
+enemy_model_path = './data/model_85_0624.pickle'
 
 class Evaluator(object):
     def __init__(self, model_path_a, model_path_b):
@@ -122,11 +126,13 @@ class Evaluator(object):
                                           N_MCTS,
                                           IN_PLANES,
                                           noise=False)
+            '''
             self.enemy.model = PVNet(N_BLOCKS,
                                      IN_PLANES,
                                      OUT_PLANES,
                                      BOARD_SIZE).to(device)
-            # self.enemy.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
+            '''                                     
+            self.enemy.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_b = self.enemy.model.state_dict()
             state_b.update(torch.load(
@@ -143,13 +149,18 @@ class Evaluator(object):
                                      OUT_PLANES,
                                      BOARD_SIZE).to(device)
 
+        self.player_pi = None
+        self.enemy_pi = None
+
     def get_action(self, root_id, board, turn, enemy_turn):
 
         if turn != enemy_turn:
             pi = self.player.get_pi(root_id, board, turn, tau=0.01)
+            self.player_pi = pi
             action, action_index = utils.get_action(pi)
         else:
             pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
+            self.enemy_pi = pi
             action, action_index = utils.get_action(pi)
 
         return action, action_index
@@ -181,6 +192,20 @@ class Evaluator(object):
             return ''
         
         return self.enemy.get_message()
+
+    def get_player_pi(self):
+
+        if self.player_pi is None:
+            return None
+
+        return self.player_pi
+
+    def get_enemy_pi(self):
+
+        if self.enemy_pi is None:
+            return None
+
+        return self.enemy_pi
 
 evaluator = Evaluator(player_model_path, enemy_model_path) # 임시로 전역변수 할당
 
@@ -215,8 +240,7 @@ def main():
 
         while win_index == 0:
             utils.render_str(board, BOARD_SIZE, action_index)
-            action, action_index = evaluator.get_action(
-                root_id, board, turn, enemy_turn)
+            action, action_index = evaluator.get_action(root_id, board, turn, enemy_turn)
 
             if turn != enemy_turn:
                 # player turn
@@ -231,7 +255,10 @@ def main():
             gi.game_board = board
             gi.win_index = win_index
             gi.curr_turn = turn
-                    
+
+            player_agent_info.pi = evaluator.get_player_pi()
+            enemy_agent_info.pi = evaluator.get_enemy_pi()
+
             if turn == enemy_turn:
                 evaluator.enemy.del_parents(root_id)
 
@@ -306,6 +333,10 @@ def home():
 def GameboardView():
     return flask.render_template('gameboard_view.html')
 
+@app.route('/agent_view/<role>')
+def AgentView(role):
+    return flask.render_template('agent_view.html', role=role)
+
 @app.route('/action')
 def action():
 
@@ -332,6 +363,29 @@ def gameboard():
     data["curr_turn"] = gi.curr_turn   
     data["player_message"] = gi.player_message
     data["enemy_message"] = gi.enemy_message
+    data["success"] = True
+
+    return flask.jsonify(data)    
+
+@app.route('/agent')
+def agent():
+
+    role = flask.request.args.get("role")
+
+    data = {"success": False}
+
+    if role == 'player':
+        agent_info = player_agent_info
+    else:
+        agent_info = enemy_agent_info
+
+    pi = agent_info.pi
+
+    data["pi_size"] = pi.shape[0]
+    pi_val = pi.reshape(pi.size).astype(float)
+    data["pi_values"] = pi_val.tolist()    
+    data["message"] = agent_info.message
+
     data["success"] = True
 
     return flask.jsonify(data)    

@@ -9,5 +9,12 @@ class GameInfo:
         self.curr_turn = 0
         self.player_message = ''
         self.enemy_message = ''
+    
+class AgentInfo:
 
-        
+    def __init__(self, board_size):
+
+        self.pi = np.zeros([board_size, board_size])
+        self.message = ''
+
+                

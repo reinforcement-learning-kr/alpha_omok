@@ -1,0 +1,25 @@
+<html>
+
+<head>
+<style>
+
+ <style type="text/css">
+ 
+   body {width: 100%;}
+   #boardWraaper {text-align: center;}
+ 
+ </style>
+
+
+</head>
+
+<body>
+  <div id="message"></div>  
+  <div id="boardWraaper">
+  	<canvas id="board" width="600" height="600"></canvas>
+  </div>
+</body>
+
+<script id="agent_call" type="text/javascript" role="{{ role }}"" src="{{url_for('static', filename='agent.js')}}"></script>
+
+</html>
