@@ -3,7 +3,7 @@ import logging
 import torch
 
 import agents
-from neural_net import PVNet, PVNetW
+import neural_net
 import utils
 
 
@@ -28,10 +28,15 @@ class Evaluator:
                                            N_MCTS,
                                            IN_PLANES,
                                            noise=False)
-            self.player.model = PVNet(N_BLOCKS,
-                                      IN_PLANES,
-                                      OUT_PLANES,
-                                      BOARD_SIZE).to(device)
+            self.player.model = neural_net.NoisyPVNet(N_BLOCKS,
+                                                      IN_PLANES,
+                                                      OUT_PLANES,
+                                                      BOARD_SIZE,
+                                                      sigma_zero=0).to(device)
+            # self.player.model = PVNet(N_BLOCKS,
+            #                           IN_PLANES,
+            #                           OUT_PLANES,
+            #                           BOARD_SIZE).to(device)
             # self.player.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_a = self.player.model.state_dict()
@@ -40,10 +45,10 @@ class Evaluator:
             self.player.model.load_state_dict(state_a)
         else:
             self.player = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-            self.player.model = PVNet(N_BLOCKS,
-                                      IN_PLANES,
-                                      OUT_PLANES,
-                                      BOARD_SIZE).to(device)
+            self.player.model = neural_net.PVNet(N_BLOCKS,
+                                                 IN_PLANES,
+                                                 OUT_PLANES,
+                                                 BOARD_SIZE).to(device)
 
         if model_path_b == 'random':
             print('load best model:', model_path_b)
@@ -57,10 +62,15 @@ class Evaluator:
                                           N_MCTS,
                                           IN_PLANES,
                                           noise=False)
-            self.enemy.model = PVNet(N_BLOCKS,
-                                     IN_PLANES,
-                                     OUT_PLANES,
-                                     BOARD_SIZE).to(device)
+            self.enemy.model = neural_net.NoisyPVNet(N_BLOCKS,
+                                                     IN_PLANES,
+                                                     OUT_PLANES,
+                                                     BOARD_SIZE,
+                                                     sigma_zero=0).to(device)
+            # self.enemy.model = neural_net.PVNet(N_BLOCKS,
+            #                                     IN_PLANES,
+            #                                     OUT_PLANES,
+            #                                     BOARD_SIZE).to(device)
             # self.enemy.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_b = self.enemy.model.state_dict()
@@ -70,10 +80,10 @@ class Evaluator:
 
         else:
             self.enemy = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-            self.enemy.model = PVNet(N_BLOCKS,
-                                     IN_PLANES,
-                                     OUT_PLANES,
-                                     BOARD_SIZE).to(device)
+            self.enemy.model = neural_net.PVNet(N_BLOCKS,
+                                                IN_PLANES,
+                                                OUT_PLANES,
+                                                BOARD_SIZE).to(device)
 
     def get_action(self, root_id, board, turn, enemy_turn):
         if turn != enemy_turn:

@@ -17,8 +17,8 @@ import online_eval
 import utils
 
 '''
-env_small = 9x9
-env_regular = 15x15
+env_small: 9x9
+env_regular: 15x15
 '''
 from env import env_small as game
 
@@ -46,7 +46,6 @@ BATCH_SIZE = 32
 LR = 1e-4
 L2 = 1e-4
 
-
 # Hyperparameter sharing
 online_eval.BOARD_SIZE = BOARD_SIZE
 online_eval.N_BLOCKS = N_BLOCKS
@@ -54,11 +53,53 @@ online_eval.IN_PLANES = IN_PLANES
 online_eval.OUT_PLANES = OUT_PLANES
 agents.PRINT_MCTS = PRINT_SELFPLAY
 
+# Numpy printing style
+np.set_printoptions(suppress=True)
+
+# Set random seeds
+np.random.seed(0)
+torch.manual_seed(0)
+torch.cuda.manual_seed_all(0)
+
+# Global variables
+rep_memory = deque(maxlen=MEMORY_SIZE)
+cur_memory = deque()
+cur_augment = deque()
+step = 0
+start_iter = 1
+total_epoch = 0
+result = {'Black': 0, 'White': 0, 'Draw': 0, 'Resign': 0}
+
+if USE_TENSORBOARD:
+    Writer = SummaryWriter()
+
+# Set gpu or cpu
+use_cuda = torch.cuda.is_available()
+device = torch.device('cuda' if use_cuda else 'cpu')
+print('cuda:', use_cuda)
+
+# Initialize agent & model
+Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES, noise=False)
+Agent.model = neural_net.NoisyPVNet(N_BLOCKS,
+                                    IN_PLANES,
+                                    OUT_PLANES,
+                                    BOARD_SIZE,
+                                    sigma_zero=0.25).to(device)
+
+# Agent.model = neural_net.PVNet(N_BLOCKS,
+#                                IN_PLANES,
+#                                OUT_PLANES,
+#                                BOARD_SIZE).to(device)
+
+# Agent.model = neural_net.PVNetW(IN_PLANES, BOARD_SIZE).to(device)
+
 logging.basicConfig(
     filename='logs/log_{}.txt'.format(datetime.now().strftime('%y%m%d')),
     level=logging.WARNING)
 
 logging.warning(
+    '\nCUDA: {}'
+    '\nMODEL: {}'
     '\nBOARD_SIZE: {}'
     '\nN_MCTS: {}'
     '\nTAU_THRES: {}'
@@ -74,6 +115,8 @@ logging.warning(
     '\nBATCH_SIZE: {}'
     '\nLR: {}'
     '\nL2: {}'.format(
+        use_cuda,
+        type(Agent.model).__name__,
         BOARD_SIZE,
         N_MCTS,
         TAU_THRES,
@@ -124,7 +167,7 @@ def self_play(n_selfplay):
             if PRINT_SELFPLAY:
                 utils.render_str(board, BOARD_SIZE, action_index)
 
-            # ====================== start mcts ============================ #
+            # ====================== start MCTS ============================ #
 
             if time_step < TAU_THRES:
                 tau = 1
@@ -259,6 +302,7 @@ def self_play(n_selfplay):
                                                reward_white))
 
             # =========================  result  =========================== #
+
                 if PRINT_SELFPLAY:
                     utils.render_str(board, BOARD_SIZE, action_index)
 
@@ -457,8 +501,8 @@ def eval_model(i, player_path, enemy_path):
 
     winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
 
-    print('win%: {:.2f}%'.format(winrate))
-    logging.warning('win%: {:.2f}%'.format(winrate))
+    print('winrate: {:.2f}%'.format(winrate))
+    logging.warning('winrate: {:.2f}%'.format(winrate))
     return winrate
 
 
@@ -569,42 +613,8 @@ def reset_iter(result, n_iter):
 
 
 if __name__ == '__main__':
-    # numpy printing style
-    np.set_printoptions(suppress=True)
 
-    # set random seeds
-    np.random.seed(0)
-    torch.manual_seed(0)
-    torch.cuda.manual_seed_all(0)
-
-    # global variable
-    rep_memory = deque(maxlen=MEMORY_SIZE)
-    cur_memory = deque()
-    cur_augment = deque()
-
-    if USE_TENSORBOARD:
-        Writer = SummaryWriter()
-
-    result = {'Black': 0, 'White': 0, 'Draw': 0, 'Resign': 0}
-    step = 0
-    start_iter = 1
-    total_epoch = 0
-
-    # gpu or cpu
-    use_cuda = torch.cuda.is_available()
-    device = torch.device('cuda' if use_cuda else 'cpu')
-    print('cuda:', use_cuda)
-    logging.warning('cuda: {}'.format(use_cuda))
-
-    # init agent & model
-    Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES, noise=False)
-    Agent.model = neural_net.NoisyPVNet(N_BLOCKS,
-                                        IN_PLANES,
-                                        OUT_PLANES,
-                                        BOARD_SIZE).to(device)
-    # Agent.model = neural_net.PVNetW(IN_PLANES, BOARD_SIZE).to(device)
-
-# ====================== self-play & training ====================== #
+    # ====================== self-play & training ====================== #
 
     model_path = None
     dataset_path = None

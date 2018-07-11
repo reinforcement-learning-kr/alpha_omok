@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 import agents
-from neural_net import PVNet, PVNetW
+import neural_net
 import utils
 
 '''
@@ -27,7 +27,7 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 # ===================================================================== #
 
 player_model_path = None
-enemy_model_path = None
+enemy_model_path = 'human'
 
 # ===================================================================== #
 
@@ -56,11 +56,17 @@ class Evaluator(object):
                                            N_MCTS,
                                            IN_PLANES,
                                            noise=False)
-            self.player.model = PVNet(N_BLOCKS,
-                                      IN_PLANES,
-                                      OUT_PLANES,
-                                      BOARD_SIZE).to(device)
-            # self.player.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
+            # self.player.model = neural_net.PVNet(N_BLOCKS,
+            #                                      IN_PLANES,
+            #                                      OUT_PLANES,
+            #                                      BOARD_SIZE).to(device)
+            self.player.model = neural_net.NoisyPVNet(N_BLOCKS,
+                                                      IN_PLANES,
+                                                      OUT_PLANES,
+                                                      BOARD_SIZE,
+                                                      sigma_zero=0).to(device)
+            # self.player.model = neural_net.PVNetW(IN_PLANES,
+            #                                       BOARD_SIZE).to(device)
 
             state_a = self.player.model.state_dict()
             state_a.update(torch.load(
@@ -72,10 +78,10 @@ class Evaluator(object):
                                            N_MCTS,
                                            IN_PLANES,
                                            noise=False)
-            self.player.model = PVNet(N_BLOCKS,
-                                      IN_PLANES,
-                                      OUT_PLANES,
-                                      BOARD_SIZE).to(device)
+            self.player.model = neural_net.PVNet(N_BLOCKS,
+                                                 IN_PLANES,
+                                                 OUT_PLANES,
+                                                 BOARD_SIZE).to(device)
 
         if model_path_b == 'random':
             print('load enemy model:', model_path_b)
@@ -99,11 +105,17 @@ class Evaluator(object):
                                           N_MCTS,
                                           IN_PLANES,
                                           noise=False)
-            self.enemy.model = PVNet(N_BLOCKS,
-                                     IN_PLANES,
-                                     OUT_PLANES,
-                                     BOARD_SIZE).to(device)
-            # self.enemy.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
+            # self.enemy.model = neural_net.PVNet(N_BLOCKS,
+            #                                     IN_PLANES,
+            #                                     OUT_PLANES,
+            #                                     BOARD_SIZE).to(device)
+            self.enemy.model = neural_net.NoisyPVNet(N_BLOCKS,
+                                                     IN_PLANES,
+                                                     OUT_PLANES,
+                                                     BOARD_SIZE,
+                                                     sigma_zero=0).to(device)
+            # self.enemy.model = neural_net.PVNetW(IN_PLANES,
+            #                                      BOARD_SIZE).to(device)
 
             state_b = self.enemy.model.state_dict()
             state_b.update(torch.load(
@@ -115,10 +127,10 @@ class Evaluator(object):
                                           N_MCTS,
                                           IN_PLANES,
                                           noise=False)
-            self.enemy.model = PVNet(N_BLOCKS,
-                                     IN_PLANES,
-                                     OUT_PLANES,
-                                     BOARD_SIZE).to(device)
+            self.enemy.model = neural_net.PVNet(N_BLOCKS,
+                                                IN_PLANES,
+                                                OUT_PLANES,
+                                                BOARD_SIZE).to(device)
 
     def get_action(self, root_id, board, turn, enemy_turn):
 

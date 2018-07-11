@@ -107,7 +107,7 @@ class PVNet(nn.Module):
 
 
 class NoisyLinear(nn.Linear):
-    def __init__(self, inplanes, planes, sigma_zero=0.25, bias=True):
+    def __init__(self, inplanes, planes, sigma_zero=0.25, bias=False):
         super(NoisyLinear, self).__init__(inplanes, planes, bias=bias)
         sigma_init = sigma_zero / np.math.sqrt(inplanes)
         self.sigma_weight = nn.Parameter(
@@ -135,12 +135,14 @@ class NoisyLinear(nn.Linear):
 
 
 class NoisyPolicyHead(nn.Module):
-    def __init__(self, planes, board_size):
+    def __init__(self, planes, board_size, sigma_zero):
         super(NoisyPolicyHead, self).__init__()
         self.policy_head = nn.Conv2d(planes, 2, kernel_size=1, bias=False)
         self.policy_bn = nn.BatchNorm2d(2)
         self.relu = nn.ReLU()
-        self.policy_fc = NoisyLinear(board_size**2 * 2, board_size**2)
+        self.policy_fc = NoisyLinear(board_size**2 * 2,
+                                     board_size**2,
+                                     sigma_zero)
         self.log_softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
@@ -155,13 +157,13 @@ class NoisyPolicyHead(nn.Module):
 
 
 class NoisyPVNet(nn.Module):
-    def __init__(self, n_block, inplanes, planes, board_size):
+    def __init__(self, n_block, inplanes, planes, board_size, sigma_zero):
         super(NoisyPVNet, self).__init__()
         self.conv1 = conv3x3(inplanes, planes)
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU()
         self.layers = self._make_layer(ResBlock, planes, n_block)
-        self.policy_head = NoisyPolicyHead(planes, board_size)
+        self.policy_head = NoisyPolicyHead(planes, board_size, sigma_zero)
         self.value_head = ValueHead(planes, board_size)
 
         for m in self.modules():
