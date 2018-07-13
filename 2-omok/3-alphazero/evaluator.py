@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 import agents
-from neural_net import PVNet, PVNetW
+import neural_net
 import utils
 
 '''
@@ -22,8 +22,8 @@ BOARD_SIZE = game.Return_BoardParams()[0]
 N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
-N_MCTS = 30
-N_MATCH = 5
+N_MCTS = 2000
+N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -38,7 +38,7 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
 # ===================================================================== #
 
-player_model_path = './data/180708_3_7232_step_model.pickle'
+player_model_path = None
 enemy_model_path = 'human'
 
 # ===================================================================== #
@@ -77,17 +77,21 @@ class Evaluator(object):
                                            N_MCTS,
                                            IN_PLANES,
                                            noise=False)
-            '''
-            self.player.model = PVNet(N_BLOCKS,
-                                      IN_PLANES,
-                                      OUT_PLANES,
-                                      BOARD_SIZE).to(device)
-            '''                                      
-            self.player.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
+            # self.player.model = neural_net.PVNet(N_BLOCKS,
+            #                                      IN_PLANES,
+            #                                      OUT_PLANES,
+            #                                      BOARD_SIZE).to(device)
+            self.player.model = neural_net.NoisyPVNet(N_BLOCKS,
+                                                      IN_PLANES,
+                                                      OUT_PLANES,
+                                                      BOARD_SIZE,
+                                                      sigma_zero=0).to(device)
+            # self.player.model = neural_net.PVNetW(IN_PLANES,
+            #                                       BOARD_SIZE).to(device)
 
             state_a = self.player.model.state_dict()
             state_a.update(torch.load(
-              model_path_a, map_location='cuda:0' if use_cuda else 'cpu'))
+                model_path_a, map_location='cuda:0' if use_cuda else 'cpu'))
             self.player.model.load_state_dict(state_a)
         else:
             print('load player model:', model_path_a)
@@ -95,10 +99,10 @@ class Evaluator(object):
                                            N_MCTS,
                                            IN_PLANES,
                                            noise=False)
-            self.player.model = PVNet(N_BLOCKS,
-                                      IN_PLANES,
-                                      OUT_PLANES,
-                                      BOARD_SIZE).to(device)
+            self.player.model = neural_net.PVNet(N_BLOCKS,
+                                                 IN_PLANES,
+                                                 OUT_PLANES,
+                                                 BOARD_SIZE).to(device)
 
         if model_path_b == 'random':
             print('load enemy model:', model_path_b)
@@ -126,17 +130,21 @@ class Evaluator(object):
                                           N_MCTS,
                                           IN_PLANES,
                                           noise=False)
-            '''
-            self.enemy.model = PVNet(N_BLOCKS,
-                                     IN_PLANES,
-                                     OUT_PLANES,
-                                     BOARD_SIZE).to(device)
-            '''                                     
-            self.enemy.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
+            # self.enemy.model = neural_net.PVNet(N_BLOCKS,
+            #                                     IN_PLANES,
+            #                                     OUT_PLANES,
+            #                                     BOARD_SIZE).to(device)
+            self.enemy.model = neural_net.NoisyPVNet(N_BLOCKS,
+                                                     IN_PLANES,
+                                                     OUT_PLANES,
+                                                     BOARD_SIZE,
+                                                     sigma_zero=0).to(device)
+            # self.enemy.model = neural_net.PVNetW(IN_PLANES,
+            #                                      BOARD_SIZE).to(device)
 
             state_b = self.enemy.model.state_dict()
             state_b.update(torch.load(
-              model_path_b, map_location='cuda:0' if use_cuda else 'cpu'))
+                model_path_b, map_location='cuda:0' if use_cuda else 'cpu'))
             self.enemy.model.load_state_dict(state_b)
         else:
             print('load enemy model:', model_path_b)
@@ -144,10 +152,10 @@ class Evaluator(object):
                                           N_MCTS,
                                           IN_PLANES,
                                           noise=False)
-            self.enemy.model = PVNet(N_BLOCKS,
-                                     IN_PLANES,
-                                     OUT_PLANES,
-                                     BOARD_SIZE).to(device)
+            self.enemy.model = neural_net.PVNet(N_BLOCKS,
+                                                IN_PLANES,
+                                                OUT_PLANES,
+                                                BOARD_SIZE).to(device)
 
         self.player_pi = None
         self.enemy_pi = None
@@ -246,8 +254,6 @@ def main():
     for i in range(N_MATCH):
         board = np.zeros([BOARD_SIZE, BOARD_SIZE])
         root_id = (0,)
-        # evaluator.player.root_id = root_id
-        # evaluator.enemy.root_id = root_id
         win_index = 0
         action_index = None
 

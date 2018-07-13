@@ -5,3 +5,4 @@ venv3
 *.pyc
 runs
 *.txt
+models
