@@ -76,6 +76,7 @@ function reqGameboard()
 				}
 	
 				// Check_win 0: playing, 1: black win, 2: white win, 3: draw
+				/*
 				switch (ret.win_index)
 				{
 					case 0:
@@ -95,9 +96,9 @@ function reqGameboard()
 					default:
 						break;
 				}
-	
-				player_message.innerHTML = ret.player_message;
-				enemy_message.innerHTML = ret.enemy_message;	
+				*/
+				player_message.innerHTML = 'Player : ' + ret.player_message;
+				enemy_message.innerHTML = 'Enemy : ' + ret.enemy_message;	
 	
 				updateBoard();
 			}

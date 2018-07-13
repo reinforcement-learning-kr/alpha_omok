@@ -15,6 +15,10 @@ class AgentInfo:
     def __init__(self, board_size):
 
         self.pi = np.zeros([board_size, board_size])
+        self.pi_size = board_size
+        self.visit = np.zeros([board_size, board_size])
+        self.visit_size = board_size
+
         self.message = ''
 
                 

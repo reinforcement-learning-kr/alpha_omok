@@ -1,13 +1,17 @@
 var role = document.getElementById("agent_call").getAttribute("role")
+var debug = document.getElementById("agent_call").getAttribute("debug")
 var c = document.getElementById("board");
 var ctx = c.getContext("2d");
+var debug_text = document.getElementById("debug");
 var message = document.getElementById("message");
-var pi_size = 9
+var game_board_size = 9
 var radius = 14;
 var blank = 20;
 var turn = 1; // 1 black 2 white
 var width = (game_board_size - 1) * 32 + blank * 2;
 var height = (game_board_size - 1) * 32 + blank * 2;
+
+debug_text.innerHTML = debug;
 
 var boardArray = new Array(game_board_size); 
 for (var i = 0; i < game_board_size; i++) {
@@ -16,6 +20,32 @@ for (var i = 0; i < game_board_size; i++) {
 		boardArray[i][j] = 0.0;
 	}
 }
+
+var player_pi_colors = [
+	"#e0e0e0",
+	"#FFF5CC",
+	"#FFE670",
+	"#FFCC33",
+	"#FFAF33",
+	"#FF9933",
+	"#FF6F33",
+	"#FF5500",
+	"#E6281E",
+	"#C81E14"
+];
+
+var enemy_pi_colors = [
+	"#e0e0e0",
+	"#F7FCF0",
+	"#E0F3DB",
+	"#CCEBC5",
+	"#A8DDB5",
+	"#7BCCC4",
+	"#4EB3D3",
+	"#2B8CBE",
+	"#0868AC",
+	"#084081"
+];
 
 function reqAgent()
 {
@@ -26,52 +56,52 @@ function reqAgent()
 		if(xhr.status == 200) 
 		{
 			ret = JSON.parse(xhr.responseText);
+			message.innerHTML = xhr.responseText;
 			
-			pi_size = ret.pi_size
+			game_board_size = ret.debug_size
 
-			for (var i = 0; i < pi_size; i++) 
+			for (var i = 0; i < game_board_size; i++) 
 			{
-				for (j = 0; j < pi_size; j++) 
+				for (j = 0; j < game_board_size; j++) 
 				{ 
-					idx = i + j * pi_size;
-					boardArray[i][j] = ret.pi_values[idx]
+					idx = i + j * game_board_size;
+					boardArray[i][j] = ret.debug_values[idx]
 				}
 			}
-
-			message.innerHTML = ret.message;
+			
+			message.innerHTML = role + ' : ' + ret.message;
 
 			updateBoard();	
 		}
 	};
 
-	xhr.open('GET', 'http://127.0.0.1:5000/agent?role=' + role, true);
+	xhr.open('GET', 'http://127.0.0.1:5000/agent?role=' + role + '&debug=' + debug, true);
 	xhr.send();
 }
 
 function clearBoard()
 {
-	for (var i = 0; i < pi_size; i++) 
+	for (var i = 0; i < game_board_size; i++) 
 	{
-		for (j = 0; j < pi_size; j++) 
+		for (j = 0; j < game_board_size; j++) 
 		{ 
-			boardArray[i][j] = 0;
+			boardArray[i][j] = 0.0;
 		}
 	}
-
 }
 
-function updateBoard(){
+function updateBoard()
+{
 	// board fill color
-	ctx.fillStyle="#ffcc66";
+	ctx.fillStyle="#efefef";
 	ctx.fillRect(0, 0, width, height);
 
 	// board draw line
-	// ctx.strokeStyle="#333300";
-	// ctx.fillStyle="#333300";
-	ctx.strokeStyle = 'black';
-	ctx.fillStyle="#FF0000";
+	ctx.strokeStyle = '#ffffff';
 	ctx.lineWidth = 1
-	for (i = 0; i < game_board_size; i++) { 
+
+	for (i = 0; i < game_board_size; i++) 
+	{ 
 		// horizontal line draw
 		ctx.beginPath();
 		ctx.moveTo(blank + i * 32 + 0.5, blank);
@@ -84,134 +114,87 @@ function updateBoard(){
 		ctx.lineTo(height - blank, blank + i * 32 + 0.5);
 		ctx.stroke();
 	}
+	
+	ctx.fillStyle="#000000";
+	ctx.font="11px Arial";
 
-	/*
-	// board draw point
-	var circleRadius = 3;
-	for (i = 0; i < 3; i++) { 
-		for (j = 0; j < 3; j++) { 
-			// board circle draw
-			ctx.beginPath();
-			ctx.arc(blank + 3 * 32 + i * 6 * 32, blank + 3 * 32  + j * 6 * 32, circleRadius, 0, 2*Math.PI);
-			ctx.fill();
-			ctx.stroke();
-		}
-	}
-	*/
+	max_pi_val = 0.0;
+	min_pi_val = 1.0;
 
-	// board draw clicked
-	for (i = 0; i < game_board_size; i++) { 
-		for (j = 0; j < game_board_size; j++) {
-			if (boardArray[i][j] == 1) {
-				ctx.beginPath();
-				ctx.strokeStyle="#000000";
-				ctx.fillStyle="#000000";
-				ctx.arc(blank + i * 32, blank + j * 32, radius, 0, 2*Math.PI);
-				ctx.fill();
-				ctx.stroke();
-			} else if (boardArray[i][j] == 2){
-				ctx.beginPath();
-				ctx.strokeStyle="#ffffff";
-				ctx.fillStyle="#ffffff";
-				ctx.arc(blank + i * 32, blank + j * 32, radius, 0, 2*Math.PI);
-				ctx.fill();
-				ctx.stroke();
+	for (i = 0; i < game_board_size; i++) 
+	{ 
+		for (j = 0; j < game_board_size; j++)
+		{
+			pi_val = boardArray[i][j];
+
+			if (pi_val > max_pi_val)
+			{
+				max_pi_val = pi_val
+			}
+
+			if (pi_val < min_pi_val && pi_val != 0.0)
+			{
+				min_pi_val = pi_val
 			}
 		}
 	}
+	
+	if (max_pi_val == 0)
+	{
+		max_pi_val = 1.0;
+	}
 
+	// board draw clicked
+	for (i = 0; i < game_board_size; i++) 
+	{ 
+		for (j = 0; j < game_board_size; j++)
+		{
+			pi_val = boardArray[i][j];
 
+			if (pi_val == 0.0)
+			{
+				pi_val_idx = 0;
+			}
+			else
+			{
+				pi_val_idx = parseInt((pi_val - min_pi_val) * 8.0 / (max_pi_val - min_pi_val));
+				pi_val_idx = pi_val_idx + 1;
+			}
+
+			if(role == "player")
+			{
+				ctx.fillStyle = player_pi_colors[pi_val_idx];
+			}
+			else
+			{
+				ctx.fillStyle = enemy_pi_colors[pi_val_idx];
+			}
+
+			ctx.beginPath();
+			ctx.arc(blank + i * 32, blank + j * 32, radius, 0, 2*Math.PI);
+			ctx.fill();
+			ctx.stroke();
+			
+			ctx.fillStyle="#000000";
+
+			if (debug == "pi")
+			{
+				pi_val_cut = pi_val.toExponential(1);
+				pi_val_str = pi_val_cut.toString();					
+				pi_val_str_lines = pi_val_str.split("e")
+				ctx.textAlign="center"; 
+				ctx.fillText(pi_val_str_lines[0], blank + i * 32, blank - 1 + j * 32);
+				ctx.fillText("e" + pi_val_str_lines[1], blank + i * 32, blank + 9 + j * 32);
+			}
+			else
+			{
+				pi_val_str = pi_val.toString();	
+				ctx.textAlign="center"; 
+				ctx.fillText(pi_val_str, blank + i * 32, blank + 4 + j * 32);
+			}
+		}
+	}
 }
 
 updateBoard();
 setInterval(reqAgent, 500);//1000 is miliseconds
-
-/* Mouse Event */
-function getMousePos(canvas, evt) {
-	var rect = canvas.getBoundingClientRect();
-	return {
-	  x: evt.clientX - rect.left,
-	  y: evt.clientY - rect.top
-	};
-}
-
-function getMouseRoundPos(xPos, yPos){
-	var x = (xPos - blank) / 32;
-	var resultX = Math.round(x);
-	var y = (yPos - blank) / 32;
-	var resultY = Math.round(y);
-
-	return {
-		x: resultX,
-		y: resultY
-	};
-}
-
-c.addEventListener('mousemove', function(evt) {
-	var mousePos = getMousePos(c, evt);
-	drawNotClicked(mousePos.x, mousePos.y);
-}, false);
-
-c.addEventListener('mousedown', function(evt) {
-	var mousePos = getMousePos(c, evt);
-	isClicked(mousePos.x, mousePos.y);
-}, false);
-
-function drawNotClicked(xPos, yPos){
-	resultPos = getMouseRoundPos(xPos, yPos);
-
-	if (resultPos.x > -1 && resultPos.x < game_board_size && resultPos.y > -1
-	 && resultPos.y < game_board_size && boardArray[resultPos.x][resultPos.y] == 0){
-		updateBoard();
-		ctx.beginPath();
-		ctx.globalAlpha=0.8;
-		if (turn < 2) {
-			ctx.strokeStyle="#000000";
-			ctx.fillStyle="#000000";
-		} else {
-			ctx.strokeStyle="#ffffff";
-			ctx.fillStyle="#ffffff";	
-		}
-		ctx.arc(blank + resultPos.x * 32, blank + resultPos.y * 32, radius, 0, 2*Math.PI);
-		ctx.fill();
-		ctx.stroke();
-		ctx.globalAlpha=1;
-	}
-};
-
-function isClicked(xPos, yPos){
-	resultPos = getMouseRoundPos(xPos, yPos);
-	if (resultPos.x > -1 && resultPos.x < game_board_size && resultPos.y > -1
-	 && resultPos.y < game_board_size && boardArray[resultPos.x][resultPos.y] == 0){
-		// boardArray[resultPos.x][resultPos.y] = turn;
-		// checkOmok(turn, resultPos.x, resultPos.y);
-		// turn = 3 - turn; //turn change
-	}
-
-	action_idx = resultPos.x + resultPos.y * game_board_size;
-
-	reqAction(action_idx)
-
-	updateBoard();
-}
-
-/* is Omok?? */
-function checkOmok(turn, xPos, yPos){
-	if (addOmok(turn, xPos, yPos, -1, -1) + addOmok(turn, xPos, yPos, 1, 1) == 4) alert("end");
-	if (addOmok(turn, xPos, yPos, 0, -1) + addOmok(turn, xPos, yPos, 0, 1) == 4) alert("end");
-	if (addOmok(turn, xPos, yPos, 1, -1) + addOmok(turn, xPos, yPos, -1, 1) == 4) alert("end");
-	if (addOmok(turn, xPos, yPos, -1, 0) + addOmok(turn, xPos, yPos, 1, 0) == 4) alert("end");
-}
-
-function addOmok(turn, xPos, yPos, xDir, yDir){
-	if (xPos + xDir < 0) return 0;
-	if (xPos + xDir > game_board_size - 1) return 0;
-	if (yPos + yDir < 0) return 0;
-	if (yPos + yDir > game_board_size - 1) return 0;
-
-	if (boardArray[xPos + xDir][yPos + yDir] == turn) {
-		return 1 + addOmok(turn, xPos + xDir, yPos + yDir, xDir, yDir);
-	} else {
-		return 0;
-	}
-}

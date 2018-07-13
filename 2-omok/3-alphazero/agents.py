@@ -27,6 +27,7 @@ class ZeroAgent(object):
         self.model = None
         self.tree = {}
         self.message = 'Hi, this is Zero.'
+        self.visit = None
 
     def reset(self):
         self.root_id = None
@@ -43,12 +44,18 @@ class ZeroAgent(object):
             child_id = self.root_id + (action_index,)
             visit[action_index] = self.tree[child_id]['n']
 
+        self.visit = visit
+
         if visit.max() > 1000:
             tau = 0.1
 
         pi = visit**(1 / tau)
         pi /= pi.sum()
         return pi
+
+    def get_visit(self):
+        
+        return self.visit
 
     def _init_mcts(self, root_id, board, turn):
         self.root_id = root_id
@@ -226,6 +233,7 @@ class PUCTAgent(object):
         self.board = None
         self.turn = None
         self.tree = {}
+        self.visit = None
 
     def reset(self):
         self.root_id = None
@@ -397,6 +405,9 @@ class PUCTAgent(object):
     def get_message(self):
         return ''
 
+    def get_visit(self):
+        return self.visit
+
 class UCTAgent(object):
     def __init__(self, board_size, num_mcts):
         self.board_size = board_size
@@ -407,6 +418,7 @@ class UCTAgent(object):
         self.board = None
         self.turn = None
         self.tree = {}
+        self.visit = None
 
     def reset(self):
         self.root_id = None
@@ -581,9 +593,13 @@ class UCTAgent(object):
     def get_message(self):
         return ''
 
+    def get_visit(self):
+        return self.visit
+
 class RandomAgent(object):
     def __init__(self, board_size):
         self.board_size = board_size
+        self.visit = None
 
     def get_pi(self, root_id, board, turn, tau):
         self.root_id = root_id
@@ -605,6 +621,8 @@ class RandomAgent(object):
     def get_message(self):
         return ''        
 
+    def get_visit(self):
+        return self.visit
 
 class HumanAgent(object):
     COLUMN = {"a": 0, "b": 1, "c": 2,
@@ -616,6 +634,7 @@ class HumanAgent(object):
     def __init__(self, board_size):
         self.board_size = board_size
         self._init_board_label()
+        self.visit = None
 
     def get_pi(self, root_id, board, turn, tau):
         self.root_id = root_id
@@ -654,6 +673,8 @@ class HumanAgent(object):
     def get_message(self):
         return ''        
 
+    def get_visit(self):
+        return self.visit
 
 import subprocess
 import threading
@@ -664,6 +685,7 @@ class WebAgent(object):
         self.board_size = board_size
         self.wait_action_idx = -1
         self.cv = threading.Condition()
+        self.visit = None
 
     def get_pi(self, root_id, board, turn, tau):
         self.root_id = root_id
@@ -699,3 +721,6 @@ class WebAgent(object):
 
     def get_message(self):
         return ''        
+        
+    def get_visit(self):
+        return self.visit

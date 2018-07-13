@@ -22,7 +22,7 @@ BOARD_SIZE = game.Return_BoardParams()[0]
 N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
-N_MCTS = 2000
+N_MCTS = 30
 N_MATCH = 5
 
 use_cuda = torch.cuda.is_available()
@@ -151,16 +151,20 @@ class Evaluator(object):
 
         self.player_pi = None
         self.enemy_pi = None
+        self.player_visit = None
+        self.enemy_visit = None
 
     def get_action(self, root_id, board, turn, enemy_turn):
 
         if turn != enemy_turn:
             pi = self.player.get_pi(root_id, board, turn, tau=0.01)
             self.player_pi = pi
+            self.player_visit = self.player.get_visit()
             action, action_index = utils.get_action(pi)
         else:
             pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
             self.enemy_pi = pi
+            self.enemy_visit = self.enemy.get_visit()
             action, action_index = utils.get_action(pi)
 
         return action, action_index
@@ -206,6 +210,20 @@ class Evaluator(object):
             return None
 
         return self.enemy_pi
+
+    def get_player_visit(self):
+    
+        if self.player_visit is None:
+            return None
+
+        return self.player_visit
+
+    def get_enemy_visit(self):
+
+        if self.enemy_visit is None:
+            return None
+
+        return self.enemy_visit
 
 evaluator = Evaluator(player_model_path, enemy_model_path) # 임시로 전역변수 할당
 
@@ -258,6 +276,8 @@ def main():
 
             player_agent_info.pi = evaluator.get_player_pi()
             enemy_agent_info.pi = evaluator.get_enemy_pi()
+            player_agent_info.visit = evaluator.get_player_visit()
+            enemy_agent_info.visit = evaluator.get_enemy_visit()
 
             if turn == enemy_turn:
                 evaluator.enemy.del_parents(root_id)
@@ -333,9 +353,9 @@ def home():
 def GameboardView():
     return flask.render_template('gameboard_view.html')
 
-@app.route('/agent_view/<role>')
-def AgentView(role):
-    return flask.render_template('agent_view.html', role=role)
+@app.route('/agent_view/<role>/<debug>')
+def AgentView(role, debug):
+    return flask.render_template('agent_view.html', role=role, debug=debug)
 
 @app.route('/action')
 def action():
@@ -371,19 +391,29 @@ def gameboard():
 def agent():
 
     role = flask.request.args.get("role")
+    debug = flask.request.args.get("debug")
 
     data = {"success": False}
+
+    player_agent_info.message = evaluator.get_player_message()
+    enemy_agent_info.message = evaluator.get_enemy_message()
 
     if role == 'player':
         agent_info = player_agent_info
     else:
         agent_info = enemy_agent_info
 
-    pi = agent_info.pi
+    if debug == 'pi':
+        debug_size = agent_info.pi_size
+        pi = agent_info.pi
+        debug_val = pi.reshape(pi.size).astype(float)
+    else:
+        debug_size = agent_info.visit_size
+        visit = agent_info.visit
+        debug_val = visit.reshape(visit.size).astype(float)
 
-    data["pi_size"] = pi.shape[0]
-    pi_val = pi.reshape(pi.size).astype(float)
-    data["pi_values"] = pi_val.tolist()    
+    data["debug_size"] = debug_size
+    data["debug_values"] = debug_val.tolist()    
     data["message"] = agent_info.message
 
     data["success"] = True
