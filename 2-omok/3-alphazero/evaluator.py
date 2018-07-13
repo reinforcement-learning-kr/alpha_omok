@@ -11,6 +11,13 @@ env_regular = 15x15
 '''
 from env import env_small as game
 
+### WebAPI
+import flask
+import threading
+app = flask.Flask(__name__)
+from info import GameInfo
+from info import AgentInfo
+
 BOARD_SIZE = game.Return_BoardParams()[0]
 N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
@@ -20,6 +27,11 @@ N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
+
+### WebAPI
+gi = GameInfo(BOARD_SIZE)
+player_agent_info = AgentInfo(BOARD_SIZE)
+enemy_agent_info = AgentInfo(BOARD_SIZE)
 
 # =========================== input model path ======================== #
 #    'human': human play    'random': random    None: raw model MCTS    #
@@ -31,6 +43,11 @@ enemy_model_path = 'human'
 
 # ===================================================================== #
 
+# WebAPI
+
+player_model_path = './data/model_85_0624.pickle'
+#enemy_model_path = 'web'
+enemy_model_path = './data/model_85_0624.pickle'
 
 class Evaluator(object):
     def __init__(self, model_path_a, model_path_b):
@@ -50,23 +67,29 @@ class Evaluator(object):
             print('load player model:', model_path_a)
             self.player = agents.HumanAgent(BOARD_SIZE)
 
+        elif model_path_a == 'web':
+            print('load player model:', model_path_a)
+            self.player = agents.WebAgent(BOARD_SIZE)
+
         elif model_path_a:
             print('load player model:', model_path_a)
             self.player = agents.ZeroAgent(BOARD_SIZE,
                                            N_MCTS,
                                            IN_PLANES,
                                            noise=False)
-            # self.player.model = neural_net.PVNet(N_BLOCKS,
-            #                                      IN_PLANES,
-            #                                      OUT_PLANES,
-            #                                      BOARD_SIZE).to(device)
+            '''
+            self.player.model = neural_net.PVNet(N_BLOCKS,
+                                                  IN_PLANES,
+                                                  OUT_PLANES,
+                                                  BOARD_SIZE).to(device)
             self.player.model = neural_net.NoisyPVNet(N_BLOCKS,
                                                       IN_PLANES,
                                                       OUT_PLANES,
                                                       BOARD_SIZE,
                                                       sigma_zero=0).to(device)
-            # self.player.model = neural_net.PVNetW(IN_PLANES,
-            #                                       BOARD_SIZE).to(device)
+            '''
+
+            self.player.model = neural_net.PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_a = self.player.model.state_dict()
             state_a.update(torch.load(
@@ -99,23 +122,28 @@ class Evaluator(object):
             print('load enemy model:', model_path_b)
             self.enemy = agents.HumanAgent(BOARD_SIZE)
 
+        elif model_path_b == 'web':
+            print('load enemy model:', model_path_b)
+            self.enemy = agents.WebAgent(BOARD_SIZE)
+
         elif model_path_b:
             print('load enemy model:', model_path_b)
             self.enemy = agents.ZeroAgent(BOARD_SIZE,
                                           N_MCTS,
                                           IN_PLANES,
                                           noise=False)
-            # self.enemy.model = neural_net.PVNet(N_BLOCKS,
-            #                                     IN_PLANES,
-            #                                     OUT_PLANES,
-            #                                     BOARD_SIZE).to(device)
+            '''
+            self.enemy.model = neural_net.PVNet(N_BLOCKS,
+                                                 IN_PLANES,
+                                                 OUT_PLANES,
+                                                 BOARD_SIZE).to(device)
             self.enemy.model = neural_net.NoisyPVNet(N_BLOCKS,
                                                      IN_PLANES,
                                                      OUT_PLANES,
                                                      BOARD_SIZE,
                                                      sigma_zero=0).to(device)
-            # self.enemy.model = neural_net.PVNetW(IN_PLANES,
-            #                                      BOARD_SIZE).to(device)
+            '''
+            self.enemy.model = neural_net.PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_b = self.enemy.model.state_dict()
             state_b.update(torch.load(
@@ -132,13 +160,22 @@ class Evaluator(object):
                                                 OUT_PLANES,
                                                 BOARD_SIZE).to(device)
 
+        self.player_pi = None
+        self.enemy_pi = None
+        self.player_visit = None
+        self.enemy_visit = None
+
     def get_action(self, root_id, board, turn, enemy_turn):
 
         if turn != enemy_turn:
             pi = self.player.get_pi(root_id, board, turn, tau=0.01)
+            self.player_pi = pi
+            self.player_visit = self.player.get_visit()
             action, action_index = utils.get_action(pi)
         else:
             pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
+            self.enemy_pi = pi
+            self.enemy_visit = self.enemy.get_visit()
             action, action_index = utils.get_action(pi)
 
         return action, action_index
@@ -147,15 +184,70 @@ class Evaluator(object):
         self.player.reset()
         self.enemy.reset()
 
+    ### WebAPI
+    def put_action(self, action_idx, turn, enemy_turn):
+
+        if turn != enemy_turn:
+            if type(self.player) is agents.WebAgent:
+                self.player.put_action(action_idx)
+        else:
+            if type(self.enemy) is agents.WebAgent:
+                self.enemy.put_action(action_idx)
+
+    def get_player_message(self):
+        
+        if self.player is None:
+            return ''
+
+        return self.player.get_message()
+
+    def get_enemy_message(self):
+        
+        if self.enemy is None:
+            return ''
+        
+        return self.enemy.get_message()
+
+    def get_player_pi(self):
+
+        if self.player_pi is None:
+            return None
+
+        return self.player_pi
+
+    def get_enemy_pi(self):
+
+        if self.enemy_pi is None:
+            return None
+
+        return self.enemy_pi
+
+    def get_player_visit(self):
+    
+        if self.player_visit is None:
+            return None
+
+        return self.player_visit
+
+    def get_enemy_visit(self):
+
+        if self.enemy_visit is None:
+            return None
+
+        return self.enemy_visit
+
+evaluator = Evaluator(player_model_path, enemy_model_path) # 임시로 전역변수 할당
 
 def main():
     print('cuda:', use_cuda)
 
-    evaluator = Evaluator(player_model_path, enemy_model_path)
+    g_evaluator = evaluator
+
     env = game.GameState('text')
     result = {'Player': 0, 'Enemy': 0, 'Draw': 0}
     turn = 0
     enemy_turn = 1
+    gi.enemy_turn = enemy_turn
     player_elo = 1500
     enemy_elo = 1500
 
@@ -175,8 +267,7 @@ def main():
 
         while win_index == 0:
             utils.render_str(board, BOARD_SIZE, action_index)
-            action, action_index = evaluator.get_action(
-                root_id, board, turn, enemy_turn)
+            action, action_index = evaluator.get_action(root_id, board, turn, enemy_turn)
 
             if turn != enemy_turn:
                 # player turn
@@ -186,6 +277,16 @@ def main():
                 root_id = evaluator.enemy.root_id + (action_index,)
 
             board, check_valid_pos, win_index, turn, _ = env.step(action)
+
+            # WebAPI
+            gi.game_board = board
+            gi.win_index = win_index
+            gi.curr_turn = turn
+
+            player_agent_info.pi = evaluator.get_player_pi()
+            enemy_agent_info.pi = evaluator.get_enemy_pi()
+            player_agent_info.visit = evaluator.get_player_visit()
+            enemy_agent_info.visit = evaluator.get_enemy_visit()
 
             if turn == enemy_turn:
                 evaluator.enemy.del_parents(root_id)
@@ -236,6 +337,8 @@ def main():
                 utils.render_str(board, BOARD_SIZE, action_index)
                 # Change turn
                 enemy_turn = abs(enemy_turn - 1)
+                gi.enemy_turn = enemy_turn
+
                 turn = 0
                 pw, ew, dr = result['Player'], result['Enemy'], result['Draw']
                 winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
@@ -250,10 +353,94 @@ def main():
                     player_elo, enemy_elo))
                 evaluator.reset()
 
+### WebAPI
+@app.route('/')
+def home():
+    return flask.render_template('index.html')
+
+@app.route('/gameboard_view')
+def GameboardView():
+    return flask.render_template('gameboard_view.html')
+
+@app.route('/agent_view/<role>/<debug>')
+def AgentView(role, debug):
+    return flask.render_template('agent_view.html', role=role, debug=debug)
+
+@app.route('/action')
+def action():
+
+    action_idx = int(flask.request.args.get("action_idx"))
+    data = {"success": False}
+    evaluator.put_action(action_idx, gi.curr_turn, gi.enemy_turn)
+
+    data["success"] = True
+
+    return flask.jsonify(data)
+
+@app.route('/gameboard')
+def gameboard():
+
+    gi.player_message = evaluator.get_player_message()
+    gi.enemy_message = evaluator.get_enemy_message()
+    print('gi.player_message' + gi.player_message)
+
+    data = {"success": False}
+    data["game_board_size"] = gi.game_board.shape[0]
+    game_board = gi.game_board.reshape(gi.game_board.size).astype(int)
+    data["game_board_values"] = game_board.tolist()    
+    data["win_index"] = gi.win_index
+    data["curr_turn"] = gi.curr_turn   
+    data["player_message"] = gi.player_message
+    data["enemy_message"] = gi.enemy_message
+    data["success"] = True
+
+    return flask.jsonify(data)    
+
+@app.route('/agent')
+def agent():
+
+    role = flask.request.args.get("role")
+    debug = flask.request.args.get("debug")
+
+    data = {"success": False}
+
+    player_agent_info.message = evaluator.get_player_message()
+    enemy_agent_info.message = evaluator.get_enemy_message()
+
+    if role == 'player':
+        agent_info = player_agent_info
+    else:
+        agent_info = enemy_agent_info
+
+    if debug == 'pi':
+        debug_size = agent_info.pi_size
+        pi = agent_info.pi
+        debug_val = pi.reshape(pi.size).astype(float)
+    else:
+        debug_size = agent_info.visit_size
+        visit = agent_info.visit
+        debug_val = visit.reshape(visit.size).astype(float)
+
+    data["debug_size"] = debug_size
+    data["debug_values"] = debug_val.tolist()    
+    data["message"] = agent_info.message
+
+    data["success"] = True
+
+    return flask.jsonify(data)    
 
 if __name__ == '__main__':
+    
     np.set_printoptions(suppress=True)
     np.random.seed(0)
     torch.manual_seed(0)
-    torch.cuda.manual_seed_all(0)
+    
+    if use_cuda == True:
+        torch.cuda.manual_seed_all(0)
+
+    ### WebAPI
+    print("Activate WebAPI...")
+    app_th = threading.Thread(target=app.run, kwargs={"host":"0.0.0.0", "port":5000})
+    app_th.start()
+
     main()
