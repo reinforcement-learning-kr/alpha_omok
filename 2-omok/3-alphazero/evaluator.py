@@ -18,6 +18,13 @@ app = flask.Flask(__name__)
 from info import GameInfo
 from info import AgentInfo
 
+'''
+import logging
+log = logging.getLogger('werkzeug')
+log.disabled = True
+app.logger.disabled = True
+'''
+
 BOARD_SIZE = game.Return_BoardParams()[0]
 N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
@@ -366,6 +373,10 @@ def GameboardView():
 def AgentView(role, debug):
     return flask.render_template('agent_view.html', role=role, debug=debug)
 
+@app.route('/monitoring_view')
+def MonitoringView():
+    return flask.render_template('monitoring_view.html')
+
 @app.route('/action')
 def action():
 
@@ -428,6 +439,25 @@ def agent():
     data["success"] = True
 
     return flask.jsonify(data)    
+
+@app.route('/monitoring')
+def monitoring():
+
+    gi.player_message = evaluator.get_player_message()
+    gi.enemy_message = evaluator.get_enemy_message()
+    print('gi.player_message' + gi.player_message)
+
+    data = {"success": False}
+    data["game_board_size"] = gi.game_board.shape[0]
+    game_board = gi.game_board.reshape(gi.game_board.size).astype(int)
+    data["game_board_values"] = game_board.tolist()    
+    data["win_index"] = gi.win_index
+    data["curr_turn"] = gi.curr_turn   
+    data["player_message"] = gi.player_message
+    data["enemy_message"] = gi.enemy_message
+    data["success"] = True
+
+    return flask.jsonify(data)   
 
 if __name__ == '__main__':
     
