@@ -1,12 +1,15 @@
+import logging
+
 import torch
 
 import agents
-from neural_net import PVNet
+import neural_net
 import utils
+
 
 BOARD_SIZE = 9
 N_BLOCKS = 10
-IN_PLANES = 7  # history * 2 + 1
+IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
 N_MCTS = 400
 
@@ -19,39 +22,68 @@ class Evaluator:
         self.model_path_b = model_path_b
 
         if model_path_a:
-            print('load player model:', model_path_a)
-            self.player = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-            self.player.model = PVNet(N_BLOCKS,
-                                      IN_PLANES,
-                                      OUT_PLANES,
-                                      BOARD_SIZE).to(device)
-            self.player.model.load_state_dict(torch.load(model_path_a))
+            print('load current model:', model_path_a)
+            logging.warning('load current model: {}'.format(model_path_a))
+            self.player = agents.ZeroAgent(BOARD_SIZE,
+                                           N_MCTS,
+                                           IN_PLANES,
+                                           noise=False)
+            self.player.model = neural_net.NoisyPVNet(N_BLOCKS,
+                                                      IN_PLANES,
+                                                      OUT_PLANES,
+                                                      BOARD_SIZE,
+                                                      sigma_zero=0).to(device)
+            # self.player.model = PVNet(N_BLOCKS,
+            #                           IN_PLANES,
+            #                           OUT_PLANES,
+            #                           BOARD_SIZE).to(device)
+            # self.player.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
+
+            state_a = self.player.model.state_dict()
+            state_a.update(torch.load(
+                model_path_a, map_location='cuda: 0' if use_cuda else 'cpu'))
+            self.player.model.load_state_dict(state_a)
         else:
             self.player = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-            self.player.model = PVNet(N_BLOCKS,
-                                      IN_PLANES,
-                                      OUT_PLANES,
-                                      BOARD_SIZE).to(device)
+            self.player.model = neural_net.PVNet(N_BLOCKS,
+                                                 IN_PLANES,
+                                                 OUT_PLANES,
+                                                 BOARD_SIZE).to(device)
 
         if model_path_b == 'random':
             print('load best model:', model_path_b)
+            logging.warning('load best model: {}'.format(model_path_b))
+
             self.enemy = agents.RandomAgent(BOARD_SIZE)
 
         elif model_path_b:
             print('load best model:', model_path_b)
-            self.enemy = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-            self.enemy.model = PVNet(N_BLOCKS,
-                                     IN_PLANES,
-                                     OUT_PLANES,
-                                     BOARD_SIZE).to(device)
-            self.enemy.model.load_state_dict(torch.load(model_path_b))
+            self.enemy = agents.ZeroAgent(BOARD_SIZE,
+                                          N_MCTS,
+                                          IN_PLANES,
+                                          noise=False)
+            self.enemy.model = neural_net.NoisyPVNet(N_BLOCKS,
+                                                     IN_PLANES,
+                                                     OUT_PLANES,
+                                                     BOARD_SIZE,
+                                                     sigma_zero=0).to(device)
+            # self.enemy.model = neural_net.PVNet(N_BLOCKS,
+            #                                     IN_PLANES,
+            #                                     OUT_PLANES,
+            #                                     BOARD_SIZE).to(device)
+            # self.enemy.model = PVNetW(IN_PLANES, BOARD_SIZE).to(device)
+
+            state_b = self.enemy.model.state_dict()
+            state_b.update(torch.load(
+                model_path_b, map_location='cuda: 0' if use_cuda else 'cpu'))
+            self.enemy.model.load_state_dict(state_b)
 
         else:
             self.enemy = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
-            self.enemy.model = PVNet(N_BLOCKS,
-                                     IN_PLANES,
-                                     OUT_PLANES,
-                                     BOARD_SIZE).to(device)
+            self.enemy.model = neural_net.PVNet(N_BLOCKS,
+                                                IN_PLANES,
+                                                OUT_PLANES,
+                                                BOARD_SIZE).to(device)
 
     def get_action(self, root_id, board, turn, enemy_turn):
         if turn != enemy_turn:

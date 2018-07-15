@@ -38,3 +38,14 @@ You can use your mouse to put stones on the board.
 
 ---
 
+### Visualization
+
+http://127.0.0.1:5000/gameboard_view
+http://127.0.0.1:5000/agent_view/player/visit
+http://127.0.0.1:5000/agent_view/player/pi
+http://127.0.0.1:5000/agent_view/enemy/visit
+http://127.0.0.1:5000/agent_view/enemy/pi
+
+---
+
+
