@@ -15,15 +15,22 @@ from env import env_small as game
 import flask
 import threading
 app = flask.Flask(__name__)
+
+import logging
+log = logging.getLogger('werkzeug')
+log.disabled = True
+app.logger.disabled = True
+
 from info import GameInfo
 from info import AgentInfo
 
+# Parameters
 BOARD_SIZE = game.Return_BoardParams()[0]
 N_BLOCKS = 10
 IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
 N_MCTS = 2000
-N_MATCH = 12
+N_MATCH = 10
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -38,16 +45,11 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #    'puct': PUCT MCTS      'uct': UCT MCTS                             #
 # ===================================================================== #
 
-player_model_path = None
-enemy_model_path = 'human'
+player_model_path = './data/180715_65_206348_step_model.pickle'
+#enemy_model_path = 'web'
+enemy_model_path = './data/180715_70_233905_step_model.pickle'
 
 # ===================================================================== #
-
-# WebAPI
-
-player_model_path = './data/model_85_0624.pickle'
-#enemy_model_path = 'web'
-enemy_model_path = './data/model_85_0624.pickle'
 
 class Evaluator(object):
     def __init__(self, model_path_a, model_path_b):
@@ -77,19 +79,18 @@ class Evaluator(object):
                                            N_MCTS,
                                            IN_PLANES,
                                            noise=False)
-            '''
+
             self.player.model = neural_net.PVNet(N_BLOCKS,
                                                   IN_PLANES,
                                                   OUT_PLANES,
                                                   BOARD_SIZE).to(device)
-            self.player.model = neural_net.NoisyPVNet(N_BLOCKS,
-                                                      IN_PLANES,
-                                                      OUT_PLANES,
-                                                      BOARD_SIZE,
-                                                      sigma_zero=0).to(device)
-            '''
+            # self.player.model = neural_net.NoisyPVNet(N_BLOCKS,
+            #                                           IN_PLANES,
+            #                                           OUT_PLANES,
+            #                                           BOARD_SIZE,
+            #                                           sigma_zero=0).to(device)
 
-            self.player.model = neural_net.PVNetW(IN_PLANES, BOARD_SIZE).to(device)
+            # self.player.model = neural_net.PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_a = self.player.model.state_dict()
             state_a.update(torch.load(
@@ -132,18 +133,18 @@ class Evaluator(object):
                                           N_MCTS,
                                           IN_PLANES,
                                           noise=False)
-            '''
+            
             self.enemy.model = neural_net.PVNet(N_BLOCKS,
                                                  IN_PLANES,
                                                  OUT_PLANES,
                                                  BOARD_SIZE).to(device)
-            self.enemy.model = neural_net.NoisyPVNet(N_BLOCKS,
-                                                     IN_PLANES,
-                                                     OUT_PLANES,
-                                                     BOARD_SIZE,
-                                                     sigma_zero=0).to(device)
-            '''
-            self.enemy.model = neural_net.PVNetW(IN_PLANES, BOARD_SIZE).to(device)
+            # self.enemy.model = neural_net.NoisyPVNet(N_BLOCKS,
+            #                                          IN_PLANES,
+            #                                          OUT_PLANES,
+            #                                          BOARD_SIZE,
+            #                                          sigma_zero=0).to(device)
+            
+            # self.enemy.model = neural_net.PVNetW(IN_PLANES, BOARD_SIZE).to(device)
 
             state_b = self.enemy.model.state_dict()
             state_b.update(torch.load(
@@ -243,7 +244,7 @@ def main():
 
     g_evaluator = evaluator
 
-    env = game.GameState('text')
+    env = game.GameState('pygame')
     result = {'Player': 0, 'Enemy': 0, 'Draw': 0}
     turn = 0
     enemy_turn = 1
@@ -294,9 +295,9 @@ def main():
             else:
                 evaluator.player.del_parents(root_id)
 
-            # used for debugging
-            if not check_valid_pos:
-                raise ValueError('no legal move!')
+            # # used for debugging
+            # if not check_valid_pos:
+            #     raise ValueError('no legal move!')
 
             if win_index != 0:
                 if turn == enemy_turn:

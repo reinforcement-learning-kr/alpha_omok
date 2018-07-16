@@ -24,7 +24,7 @@ from env import env_small as game
 
 # Game
 BOARD_SIZE = game.Return_BoardParams()[0]
-N_MCTS = 400
+N_MCTS = 10
 TAU_THRES = 6
 RESIGN_MODE = False
 PRINT_SELFPLAY = True
@@ -36,7 +36,7 @@ OUT_PLANES = 128
 
 # Training
 USE_TENSORBOARD = True
-N_SELFPLAY = 100
+N_SELFPLAY = 1
 TOTAL_ITER = 1000000
 MEMORY_SIZE = 1000000
 N_EPOCHS = 1
@@ -345,10 +345,10 @@ def train(lr, n_epochs, n_iter):
 
     num_sample = len(cur_augment) // 4
 
-    if len(rep_memory) >= num_sample:
-        train_memory.extend(random.sample(rep_memory, num_sample))
+    # if len(rep_memory) >= num_sample:
+    #     train_memory.extend(random.sample(rep_memory, num_sample))
 
-    train_memory.extend(cur_augment)
+    rep_memory.extend(cur_augment)
 
     optimizer = optim.Adam(Agent.model.parameters(),
                            lr=lr,
@@ -359,11 +359,38 @@ def train(lr, n_epochs, n_iter):
     #                       momentum=0.9,
     #                       weight_decay=L2)
 
-    dataloader = DataLoader(train_memory,
-                            batch_size=BATCH_SIZE,
+    dataloader = DataLoader(rep_memory,
+                            batch_size=32,
                             shuffle=True,
                             drop_last=True,
                             pin_memory=use_cuda)
+
+    batch_sampling = []
+
+    for i, (s, pi, z) in enumerate(dataloader):
+        s_batch = s.to(device).float()
+        pi_batch = pi.to(device).float()
+        z_batch = z.to(device).float()
+
+        p_batch, v_batch = Agent.model(s_batch)
+
+        v_loss = (v_batch - z_batch)**2
+        p_loss = -(pi_batch * (p_batch + 1e-5).log()).sum(dim=1)
+        loss = v_loss + p_loss 
+
+        loss_np = loss.data.cpu().numpy()[0]
+
+        Size = np.shape(loss_np)
+        MaxLoss = np.ones(Size) * np.amax(loss_np) 
+        Prob = np.divide(loss_np,MaxLoss) + 0.2
+        Selection_Matrix = np.random.uniform(0,1,Size)
+        selected = np.where(Prob - Selection_Matrix > 0)
+
+        s_batch_new  = s_batch[selected[0]]
+        pi_batch_new = pi_batch[selected[0]]
+        z_batch_new  = z_batch[selected[0]]
+
+        batch_sampling.append((s_batch_new, pi_batch_new, z_batch_new))
 
     print('=' * 58)
     print(' ' * 20 + ' Start Learning ' + ' ' * 20)
@@ -372,6 +399,7 @@ def train(lr, n_epochs, n_iter):
     print('augment memory size:', len(cur_augment))
     print('replay memory size:', len(rep_memory))
     print('train memory size:', len(train_memory))
+    # print('batch sampling size:', len(batch_sampling))
     print('optimizer: {}'.format(optimizer))
     logging.warning('=' * 58)
     logging.warning(' ' * 20 + ' Start Learning ' + ' ' * 20)
@@ -383,7 +411,7 @@ def train(lr, n_epochs, n_iter):
     logging.warning('optimizer: {}'.format(optimizer))
 
     for epoch in range(n_epochs):
-        for i, (s, pi, z) in enumerate(dataloader):
+        for i, (s, pi, z) in enumerate(batch_sampling):
             s_batch = s.to(device).float()
             pi_batch = pi.to(device).float()
             z_batch = z.to(device).float()

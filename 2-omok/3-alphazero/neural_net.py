@@ -140,9 +140,12 @@ class NoisyPolicyHead(nn.Module):
         self.policy_head = nn.Conv2d(planes, 2, kernel_size=1, bias=False)
         self.policy_bn = nn.BatchNorm2d(2)
         self.relu = nn.ReLU()
-        self.policy_fc = NoisyLinear(board_size**2 * 2,
-                                     board_size**2,
-                                     sigma_zero)
+        self.policy_fc1 = NoisyLinear(board_size**2 * 2,
+                                      board_size**2 * 2,
+                                      sigma_zero)
+        self.policy_fc2 = NoisyLinear(board_size**2 * 2,
+                                      board_size**2,
+                                      sigma_zero)
         self.log_softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
@@ -150,9 +153,12 @@ class NoisyPolicyHead(nn.Module):
         out = self.policy_bn(out)
         out = self.relu(out)
         out = out.view(out.size(0), -1)
-        out = self.policy_fc(out)
+        out = self.policy_fc1(out)
+        out = self.relu(out)
+        out = self.policy_fc2(out)
         out = self.log_softmax(out)
         out = out.exp()
+        
         return out
 
 
