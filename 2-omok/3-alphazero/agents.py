@@ -1,4 +1,5 @@
 import sys
+import threading
 import time
 
 import numpy as np
@@ -22,8 +23,6 @@ class ZeroAgent(object):
         self.c_puct = 5
         self.noise = noise
         self.root_id = None
-        # self.board = None
-        # self.turn = None
         self.model = None
         self.tree = {}
         self.message = 'Hi, this is Zero.'
@@ -31,7 +30,6 @@ class ZeroAgent(object):
 
     def reset(self):
         self.root_id = None
-        # self.turn = None
         self.tree.clear()
 
     def get_pi(self, root_id, board, turn, tau):
@@ -54,7 +52,6 @@ class ZeroAgent(object):
         return pi
 
     def get_visit(self):
-        
         return self.visit
 
     def _init_mcts(self, root_id, board, turn):
@@ -221,6 +218,7 @@ class ZeroAgent(object):
 
     def get_message(self):
         return self.message
+
 
 class PUCTAgent(object):
     def __init__(self, board_size, num_mcts):
@@ -407,6 +405,7 @@ class PUCTAgent(object):
 
     def get_visit(self):
         return self.visit
+
 
 class UCTAgent(object):
     def __init__(self, board_size, num_mcts):
@@ -596,6 +595,7 @@ class UCTAgent(object):
     def get_visit(self):
         return self.visit
 
+
 class RandomAgent(object):
     def __init__(self, board_size):
         self.board_size = board_size
@@ -619,10 +619,11 @@ class RandomAgent(object):
         return
 
     def get_message(self):
-        return ''        
+        return ''
 
     def get_visit(self):
         return self.visit
+
 
 class HumanAgent(object):
     COLUMN = {"a": 0, "b": 1, "c": 2,
@@ -671,16 +672,14 @@ class HumanAgent(object):
         return
 
     def get_message(self):
-        return ''        
+        return ''
 
     def get_visit(self):
         return self.visit
 
-import subprocess
-import threading
 
 class WebAgent(object):
-    
+
     def __init__(self, board_size):
         self.board_size = board_size
         self.wait_action_idx = -1
@@ -693,7 +692,7 @@ class WebAgent(object):
         self.cv.acquire()
         while self.wait_action_idx == -1:
             self.cv.wait()
-        
+
         action_index = self.wait_action_idx
         self.wait_action_idx = -1
 
@@ -704,8 +703,8 @@ class WebAgent(object):
         return pi
 
     def put_action(self, action_idx):
-        
-        if action_idx < 0 and action_idx >= board_size**2:
+
+        if action_idx < 0 and action_idx >= self.board_size**2:
             return
 
         self.cv.acquire()
@@ -720,7 +719,7 @@ class WebAgent(object):
         return
 
     def get_message(self):
-        return ''        
-        
+        return ''
+
     def get_visit(self):
         return self.visit

@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 from torch import nn
-import torch.nn.functional as F
 
 
 def conv3x3(in_planes, out_planes):
@@ -104,6 +103,7 @@ class PVNet(nn.Module):
         p = self.policy_head(x)
         v = self.value_head(x)
         return p, v
+
 
 if __name__ == '__main__':
     # test

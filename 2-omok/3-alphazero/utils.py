@@ -23,6 +23,7 @@ def legal_actions(node_id, board_size):
     all_action = {a for a in range(board_size**2)}
     action = set(node_id[1:])
     actions = all_action - action
+
     return list(actions)
 
 
@@ -233,88 +234,6 @@ def get_reward(win_index, leaf_id):
         reward = 0.
 
     return reward
-
-
-def symmetry_dataset(state, pi):
-    s_shape = state.shape
-    history = state[:-1]
-    c = state[-1]
-
-    pi_shape = pi.shape
-    p = pi.reshape(s_shape[1], s_shape[1])
-
-    sym_state = []
-
-    for s in history:
-        sym_state.append(np.rot90(s, 1))
-
-    sym_state.append(c)
-    state = np.asarray(sym_state).reshape(s_shape)
-
-    p = np.rot90(p, 1)
-    pi = p.reshape(pi_shape)
-
-    for s in history:
-        sym_state.append(np.rot90(s, 2))
-
-    sym_state.append(c)
-    state = np.asarray(sym_state).reshape(s_shape)
-
-    p = np.rot90(p, 2)
-    pi = p.reshape(pi_shape)
-
-    for s in history:
-        sym_state.append(np.rot90(s, 3))
-
-    sym_state.append(c)
-    state = np.asarray(sym_state).reshape(s_shape)
-
-    p = np.rot90(p, 3)
-    pi = p.reshape(pi_shape)
-
-    for s in history:
-        sym_state.append(np.fliplr(s))
-
-    sym_state.append(c)
-    state = np.asarray(sym_state).reshape(s_shape)
-
-    p = np.fliplr(p)
-    pi = p.reshape(pi_shape)
-
-    for s in history:
-        rot_s = np.rot90(s, 1)
-        sym_state.append(np.fliplr(rot_s))
-
-    sym_state.append(c)
-    state = np.asarray(sym_state).reshape(s_shape)
-
-    rot_p = np.rot90(p, 1)
-    p = np.fliplr(rot_p)
-    pi = p.reshape(pi_shape)
-
-    for s in history:
-        rot_s = np.rot90(s, 2)
-        sym_state.append(np.fliplr(rot_s))
-
-    sym_state.append(c)
-    state = np.asarray(sym_state).reshape(s_shape)
-
-    rot_p = np.rot90(p, 2)
-    p = np.fliplr(rot_p)
-    pi = p.reshape(pi_shape)
-
-    for s in history:
-        rot_s = np.rot90(s, 3)
-        sym_state.append(np.fliplr(rot_s))
-
-    sym_state.append(c)
-    state = np.asarray(sym_state).reshape(s_shape)
-
-    rot_p = np.rot90(p, 3)
-    p = np.fliplr(rot_p)
-    pi = p.reshape(pi_shape)
-
-    return state, pi
 
 
 def get_action_eval(pi, board):

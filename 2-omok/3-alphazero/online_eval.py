@@ -24,16 +24,15 @@ class Evaluator:
         if model_path_a:
             print('load current model:', model_path_a)
             logging.warning('load current model: {}'.format(model_path_a))
+
             self.player = agents.ZeroAgent(BOARD_SIZE,
                                            N_MCTS,
                                            IN_PLANES,
                                            noise=False)
-
             self.player.model = neural_net.PVNet(N_BLOCKS,
                                                  IN_PLANES,
                                                  OUT_PLANES,
                                                  BOARD_SIZE).to(device)
-
             state_a = self.player.model.state_dict()
             state_a.update(torch.load(
                 model_path_a, map_location='cuda: 0' if use_cuda else 'cpu'))
@@ -47,27 +46,24 @@ class Evaluator:
 
         if model_path_b == 'random':
             print('load best model:', model_path_b)
-            logging.warning('load best model: {}'.format(model_path_b))
-
             self.enemy = agents.RandomAgent(BOARD_SIZE)
 
         elif model_path_b:
             print('load best model:', model_path_b)
+            logging.warning('load best model: {}'.format(model_path_b))
+
             self.enemy = agents.ZeroAgent(BOARD_SIZE,
                                           N_MCTS,
                                           IN_PLANES,
                                           noise=False)
-
             self.enemy.model = neural_net.PVNet(N_BLOCKS,
                                                 IN_PLANES,
                                                 OUT_PLANES,
                                                 BOARD_SIZE).to(device)
-
             state_b = self.enemy.model.state_dict()
             state_b.update(torch.load(
                 model_path_b, map_location='cuda: 0' if use_cuda else 'cpu'))
             self.enemy.model.load_state_dict(state_b)
-
         else:
             self.enemy = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES)
             self.enemy.model = neural_net.PVNet(N_BLOCKS,
