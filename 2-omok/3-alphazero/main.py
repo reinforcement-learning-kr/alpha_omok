@@ -1,3 +1,7 @@
+'''
+env_small: 9x9
+env_regular: 15x15
+'''
 from collections import deque
 from datetime import datetime
 import logging
@@ -12,15 +16,11 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
 import agents
+from env import env_small as game
 import neural_net
 import online_eval
 import utils
 
-'''
-env_small: 9x9
-env_regular: 15x15
-'''
-from env import env_small as game
 
 # Game
 BOARD_SIZE = game.Return_BoardParams()[0]
