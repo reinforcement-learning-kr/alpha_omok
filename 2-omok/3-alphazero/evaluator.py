@@ -44,7 +44,7 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 # ===================================================================== #
 
 player_model_path = 'web'
-enemy_model_path = './data/180715_70_233905_step_model.pickle'
+enemy_model_path = './data/180719_69_248486_step_model.pickle'
 
 # ===================================================================== #
 
@@ -69,6 +69,7 @@ class Evaluator(object):
 
         elif model_path_a == 'web':
             print('load player model:', model_path_a)
+            print("http://127.0.0.1:5000/gameboard_view")
             self.player = agents.WebAgent(BOARD_SIZE)
 
         elif model_path_a:
@@ -117,6 +118,7 @@ class Evaluator(object):
 
         elif model_path_b == 'web':
             print('load enemy model:', model_path_b)
+            print("http://127.0.0.1:5000/gameboard_view")
             self.enemy = agents.WebAgent(BOARD_SIZE)
 
         elif model_path_b:
@@ -223,7 +225,7 @@ class Evaluator(object):
         return self.enemy_visit
 
 
-evaluator = Evaluator(player_model_path, enemy_model_path)  # 임시로 전역변수 할당
+evaluator = Evaluator(player_model_path, enemy_model_path)
 
 
 def main():
@@ -377,7 +379,7 @@ def gameboard():
 
     gi.player_message = evaluator.get_player_message()
     gi.enemy_message = evaluator.get_enemy_message()
-    print('gi.player_message' + gi.player_message)
+    # print('gi.player_message' + gi.player_message)
 
     data = {"success": False}
     data["game_board_size"] = gi.game_board.shape[0]
