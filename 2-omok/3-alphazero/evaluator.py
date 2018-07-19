@@ -437,8 +437,8 @@ if __name__ == '__main__':
 
     # WebAPI
     print("Activate WebAPI...")
-    app_th = threading.Thread(target=app.run, kwargs={
-                              "host": "0.0.0.0", "port": 5000})
+    app_th = threading.Thread(target=app.run,
+                              kwargs={"host": "0.0.0.0", "port": 5000})
     app_th.start()
 
     main()
