@@ -172,6 +172,9 @@ class Evaluator(object):
         self.player_visit = None
         self.enemy_visit = None
 
+        self.player_monitor = self.player
+        self.enemy_monitor = self.enemy
+
     def get_action(self, root_id, board, turn, enemy_turn):
 
         if turn != enemy_turn:
@@ -186,6 +189,15 @@ class Evaluator(object):
             action, action_index = utils.get_action(pi)
 
         return action, action_index
+
+    def get_pv(self, root_id, turn, enemy_turn):
+    
+        if turn != enemy_turn:
+            p, v = self.player_monitor.get_pv(root_id)
+        else:
+            p, v = self.enemy_monitor.get_pv(root_id)
+
+        return p, v
 
     def reset(self):
         self.player.reset()
@@ -276,6 +288,8 @@ def main():
             utils.render_str(board, BOARD_SIZE, action_index)
             action, action_index = evaluator.get_action(root_id, board, turn, enemy_turn)
 
+            p, v = evaluator.get_pv(root_id, turn, enemy_turn) # p, v 모니터링
+
             if turn != enemy_turn:
                 # player turn
                 root_id = evaluator.player.root_id + (action_index,)
@@ -290,6 +304,8 @@ def main():
             gi.win_index = win_index
             gi.curr_turn = turn
 
+            move = np.count_nonzero(board)
+
             player_agent_info.pi = evaluator.get_player_pi()
             enemy_agent_info.pi = evaluator.get_enemy_pi()
             player_agent_info.visit = evaluator.get_player_visit()
@@ -297,15 +313,21 @@ def main():
 
             if turn == enemy_turn:
                 evaluator.enemy.del_parents(root_id)
+                enemy_agent_info.add_value(move, v)
 
             else:
                 evaluator.player.del_parents(root_id)
+                player_agent_info.add_value(move, v)
 
             # used for debugging
             if not check_valid_pos:
                 raise ValueError('no legal move!')
 
             if win_index != 0:
+                
+                player_agent_info.clear_values()
+                enemy_agent_info.clear_values()
+
                 if turn == enemy_turn:
                     if win_index == 3:
                         result['Draw'] += 1
@@ -443,18 +465,11 @@ def agent():
 @app.route('/monitoring')
 def monitoring():
 
-    gi.player_message = evaluator.get_player_message()
-    gi.enemy_message = evaluator.get_enemy_message()
-    print('gi.player_message' + gi.player_message)
-
     data = {"success": False}
-    data["game_board_size"] = gi.game_board.shape[0]
-    game_board = gi.game_board.reshape(gi.game_board.size).astype(int)
-    data["game_board_values"] = game_board.tolist()    
-    data["win_index"] = gi.win_index
-    data["curr_turn"] = gi.curr_turn   
-    data["player_message"] = gi.player_message
-    data["enemy_message"] = gi.enemy_message
+    data["player_agent_moves"] = player_agent_info.moves
+    data["player_agent_values"] = player_agent_info.values
+    data["enemy_agent_moves"] = enemy_agent_info.moves
+    data["enemy_agent_values"] = enemy_agent_info.values
     data["success"] = True
 
     return flask.jsonify(data)   
