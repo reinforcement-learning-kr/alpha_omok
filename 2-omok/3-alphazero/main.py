@@ -1,3 +1,7 @@
+'''
+env_small: 9x9
+env_regular: 15x15
+'''
 from collections import deque
 from datetime import datetime
 import logging
@@ -12,15 +16,11 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
 import agents
+from env import env_small as game
 import neural_net
 import online_eval
 import utils
 
-'''
-env_small: 9x9
-env_regular: 15x15
-'''
-from env import env_small as game
 
 # Game
 BOARD_SIZE = game.Return_BoardParams()[0]
@@ -38,7 +38,7 @@ OUT_PLANES = 128
 USE_TENSORBOARD = True
 N_SELFPLAY = 100
 TOTAL_ITER = 1000000
-MEMORY_SIZE = 1000000
+MEMORY_SIZE = 100000
 N_EPOCHS = 1
 N_MATCH = 100
 EVAL_THRES = 16
@@ -79,19 +79,12 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 print('cuda:', use_cuda)
 
 # Initialize agent & model
-Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES, noise=False)
-Agent.model = neural_net.NoisyPVNet(N_BLOCKS,
-                                    IN_PLANES,
-                                    OUT_PLANES,
-                                    BOARD_SIZE,
-                                    sigma_zero=0.25).to(device)
+Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES, noise=True)
 
-# Agent.model = neural_net.PVNet(N_BLOCKS,
-#                                IN_PLANES,
-#                                OUT_PLANES,
-#                                BOARD_SIZE).to(device)
-
-# Agent.model = neural_net.PVNetW(IN_PLANES, BOARD_SIZE).to(device)
+Agent.model = neural_net.PVNet(N_BLOCKS,
+                               IN_PLANES,
+                               OUT_PLANES,
+                               BOARD_SIZE).to(device)
 
 logging.basicConfig(
     filename='logs/log_{}.txt'.format(datetime.now().strftime('%y%m%d')),
