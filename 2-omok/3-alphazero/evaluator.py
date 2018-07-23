@@ -43,8 +43,8 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = 'web'
-enemy_model_path = './data/180719_69_248486_step_model.pickle'
+player_model_path = './data/180720_71_250888_step_model.pickle'
+enemy_model_path = './data/180720_71_250888_step_model.pickle'
 
 # ===================================================================== #
 
@@ -153,6 +153,9 @@ class Evaluator(object):
         self.player_visit = None
         self.enemy_visit = None
 
+        self.player_monitor = self.player
+        self.enemy_monitor = self.enemy
+
     def get_action(self, root_id, board, turn, enemy_turn):
 
         if turn != enemy_turn:
@@ -167,6 +170,15 @@ class Evaluator(object):
             action, action_index = utils.get_action(pi)
 
         return action, action_index
+
+    def get_pv(self, root_id, turn, enemy_turn):
+    
+        if turn != enemy_turn:
+            p, v = self.player_monitor.get_pv(root_id)
+        else:
+            p, v = self.enemy_monitor.get_pv(root_id)
+
+        return p, v
 
     def reset(self):
         self.player.reset()
@@ -260,6 +272,8 @@ def main():
             action, action_index = evaluator.get_action(
                 root_id, board, turn, enemy_turn)
 
+            p, v = evaluator.get_pv(root_id, turn, enemy_turn) # p, v 모니터링
+
             if turn != enemy_turn:
                 # player turn
                 root_id = evaluator.player.root_id + (action_index,)
@@ -274,6 +288,8 @@ def main():
             gi.win_index = win_index
             gi.curr_turn = turn
 
+            move = np.count_nonzero(board)
+
             player_agent_info.pi = evaluator.get_player_pi()
             enemy_agent_info.pi = evaluator.get_enemy_pi()
             player_agent_info.visit = evaluator.get_player_visit()
@@ -281,15 +297,21 @@ def main():
 
             if turn == enemy_turn:
                 evaluator.enemy.del_parents(root_id)
+                enemy_agent_info.add_value(move, v)
 
             else:
                 evaluator.player.del_parents(root_id)
+                player_agent_info.add_value(move, v)
 
             # used for debugging
             if not check_valid_pos:
                 raise ValueError('no legal move!')
 
             if win_index != 0:
+                
+                player_agent_info.clear_values()
+                enemy_agent_info.clear_values()
+
                 if turn == enemy_turn:
                     if win_index == 3:
                         result['Draw'] += 1
@@ -361,6 +383,9 @@ def GameboardView():
 def AgentView(role, debug):
     return flask.render_template('agent_view.html', role=role, debug=debug)
 
+@app.route('/monitoring_view')
+def MonitoringView():
+    return flask.render_template('monitoring_view.html')
 
 @app.route('/action')
 def action():
@@ -427,6 +452,17 @@ def agent():
 
     return flask.jsonify(data)
 
+@app.route('/monitoring')
+def monitoring():
+
+    data = {"success": False}
+    data["player_agent_moves"] = player_agent_info.moves
+    data["player_agent_values"] = player_agent_info.values
+    data["enemy_agent_moves"] = enemy_agent_info.moves
+    data["enemy_agent_values"] = enemy_agent_info.values
+    data["success"] = True
+
+    return flask.jsonify(data)   
 
 if __name__ == '__main__':
 
