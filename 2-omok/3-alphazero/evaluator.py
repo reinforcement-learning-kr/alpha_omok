@@ -31,7 +31,7 @@ OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
 N_MCTS = 2000
-N_MATCH = 5
+N_MATCH = 6
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -302,11 +302,11 @@ def main():
 
             if turn == enemy_turn:
                 evaluator.enemy.del_parents(root_id)
-                enemy_agent_info.add_value(move, v)
+                player_agent_info.add_value(move, v)
 
             else:
                 evaluator.player.del_parents(root_id)
-                player_agent_info.add_value(move, v)
+                enemy_agent_info.add_value(move, v)
 
             # used for debugging
             if not check_valid_pos:
