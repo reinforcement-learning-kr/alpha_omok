@@ -46,6 +46,13 @@ BATCH_SIZE = 32
 LR = 1e-4
 L2 = 1e-4
 
+# Load Model
+model_path = None
+dataset_path = None
+best_model_path = None
+
+first_train = True
+
 # Hyperparameter sharing
 online_eval.BOARD_SIZE = BOARD_SIZE
 online_eval.N_BLOCKS = N_BLOCKS
@@ -608,12 +615,6 @@ def reset_iter(result, n_iter):
 if __name__ == '__main__':
 
     # ====================== self-play & training ====================== #
-
-    model_path = None
-    dataset_path = None
-    best_model_path = None
-
-    first_train = True
 
     if first_train:
         datetime_now = datetime.now().strftime('%y%m%d')
