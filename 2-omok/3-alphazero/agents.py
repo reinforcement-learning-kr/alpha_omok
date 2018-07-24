@@ -219,6 +219,15 @@ class ZeroAgent(object):
     def get_message(self):
         return self.message
 
+    def get_pv(self, root_id):
+    
+        state = utils.get_state_pt(root_id, self.board_size, self.inplanes)
+        state_input = torch.tensor([state]).to(device).float()
+        policy, value = self.model(state_input)
+        p = policy.data.cpu().numpy()[0]
+        v = value.item()
+        
+        return p, v
 
 class PUCTAgent(object):
     def __init__(self, board_size, num_mcts):
