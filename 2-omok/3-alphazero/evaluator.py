@@ -50,8 +50,8 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = None
-enemy_model_path = None
+player_model_path = './data/180725_92_442132_step_model.pickle'
+enemy_model_path = 'web'
 
 # ===================================================================== #
 
@@ -179,9 +179,15 @@ class Evaluator(object):
     def get_pv(self, root_id, turn, enemy_turn):
 
         if turn != enemy_turn:
-            p, v = self.player_monitor.get_pv(root_id)
+            if player_model_path != 'web':
+                p, v = self.player_monitor.get_pv(root_id)
+            else:
+                p, v = self.enemy_monitor.get_pv(root_id)
         else:
-            p, v = self.enemy_monitor.get_pv(root_id)
+            if enemy_model_path != 'web':
+                p, v = self.enemy_monitor.get_pv(root_id)
+            else:
+                p, v = self.player_monitor.get_pv(root_id)
 
         return p, v
 
