@@ -20,11 +20,18 @@ from info import AgentInfo
 
 
 BOARD_SIZE = game.Return_BoardParams()[0]
-N_BLOCKS = 10
-IN_PLANES = 5  # history * 2 + 1
-OUT_PLANES = 128
-N_MCTS = 3000
-N_MATCH = 12
+
+N_BLOCKS_PLAYER = 10
+N_BLOCKS_ENEMY = 20
+
+IN_PLANES_PLAYER = 5  # history * 2 + 1
+IN_PLANES_ENEMY = 5
+
+OUT_PLANES_PLAYER = 128
+OUT_PLANES_ENEMY = 128
+
+N_MCTS = 2000
+N_MATCH = 5
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -76,11 +83,11 @@ class Evaluator(object):
             print('load player model:', model_path_a)
             self.player = agents.ZeroAgent(BOARD_SIZE,
                                            N_MCTS,
-                                           IN_PLANES,
+                                           IN_PLANES_PLAYER,
                                            noise=False)
-            self.player.model = neural_net.PVNet(N_BLOCKS,
-                                                 IN_PLANES,
-                                                 OUT_PLANES,
+            self.player.model = neural_net.PVNet(N_BLOCKS_PLAYER,
+                                                 IN_PLANES_PLAYER,
+                                                 OUT_PLANES_PLAYER,
                                                  BOARD_SIZE).to(device)
             state_a = self.player.model.state_dict()
             my_state_a = torch.load(
@@ -93,11 +100,11 @@ class Evaluator(object):
             print('load player model:', model_path_a)
             self.player = agents.ZeroAgent(BOARD_SIZE,
                                            N_MCTS,
-                                           IN_PLANES,
+                                           IN_PLANES_PLAYER,
                                            noise=False)
-            self.player.model = neural_net.PVNet(N_BLOCKS,
-                                                 IN_PLANES,
-                                                 OUT_PLANES,
+            self.player.model = neural_net.PVNet(N_BLOCKS_PLAYER,
+                                                 IN_PLANES_PLAYER,
+                                                 OUT_PLANES_PLAYER,
                                                  BOARD_SIZE).to(device)
 
         if model_path_b == 'random':
@@ -125,11 +132,11 @@ class Evaluator(object):
             print('load enemy model:', model_path_b)
             self.enemy = agents.ZeroAgent(BOARD_SIZE,
                                           N_MCTS,
-                                          IN_PLANES,
+                                          IN_PLANES_ENEMY,
                                           noise=False)
-            self.enemy.model = neural_net.PVNet(N_BLOCKS,
-                                                IN_PLANES,
-                                                OUT_PLANES,
+            self.enemy.model = neural_net.PVNet(N_BLOCKS_ENEMY,
+                                                IN_PLANES_ENEMY,
+                                                OUT_PLANES_ENEMY,
                                                 BOARD_SIZE).to(device)
             state_b = self.enemy.model.state_dict()
             my_state_b = torch.load(
@@ -142,11 +149,11 @@ class Evaluator(object):
             print('load enemy model:', model_path_b)
             self.enemy = agents.ZeroAgent(BOARD_SIZE,
                                           N_MCTS,
-                                          IN_PLANES,
+                                          IN_PLANES_ENEMY,
                                           noise=False)
-            self.enemy.model = neural_net.PVNet(N_BLOCKS,
-                                                IN_PLANES,
-                                                OUT_PLANES,
+            self.enemy.model = neural_net.PVNet(N_BLOCKS_ENEMY,
+                                                IN_PLANES_ENEMY,
+                                                OUT_PLANES_ENEMY,
                                                 BOARD_SIZE).to(device)
         self.player_pi = None
         self.enemy_pi = None
