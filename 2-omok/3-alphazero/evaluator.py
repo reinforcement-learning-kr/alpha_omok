@@ -21,7 +21,7 @@ from info import AgentInfo
 
 BOARD_SIZE = game.Return_BoardParams()[0]
 
-N_BLOCKS_PLAYER = 20
+N_BLOCKS_PLAYER = 10
 N_BLOCKS_ENEMY = 10
 
 IN_PLANES_PLAYER = 5  # history * 2 + 1
@@ -30,7 +30,7 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 2400
+N_MCTS = 2000
 N_MATCH = 5
 
 use_cuda = torch.cuda.is_available()
@@ -50,8 +50,8 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = './data/180724_88_402000_step_model.pickle'
-enemy_model_path = './data/180724_87_397806_step_model.pickle'
+player_model_path = None
+enemy_model_path = None
 
 # ===================================================================== #
 
