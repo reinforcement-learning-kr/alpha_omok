@@ -1,6 +1,6 @@
 """
-env_small = 9x9
-env_regular = 15x15
+env_small: 9x9
+env_regular: 15x15
 """
 import logging
 
