@@ -1,7 +1,7 @@
-'''
+"""
 env_small: 9x9
 env_regular: 15x15
-'''
+"""
 from collections import deque
 from datetime import datetime
 import logging
@@ -21,6 +21,9 @@ import neural_net
 import online_eval
 import utils
 
+logging.basicConfig(
+    filename='logs/log_{}.txt'.format(datetime.now().strftime('%y%m%d')),
+    level=logging.WARNING)
 
 # Game
 BOARD_SIZE = game.Return_BoardParams()[0]
@@ -41,7 +44,7 @@ TOTAL_ITER = 1000000
 MEMORY_SIZE = 100000
 N_EPOCHS = 1
 N_MATCH = 100
-EVAL_THRES = 16
+EVAL_THRES = 30
 BATCH_SIZE = 32
 LR = 1e-4
 L2 = 1e-4
@@ -92,10 +95,6 @@ Agent.model = neural_net.PVNet(N_BLOCKS,
                                IN_PLANES,
                                OUT_PLANES,
                                BOARD_SIZE).to(device)
-
-logging.basicConfig(
-    filename='logs/log_{}.txt'.format(datetime.now().strftime('%y%m%d')),
-    level=logging.WARNING)
 
 logging.warning(
     '\nCUDA: {}'
@@ -279,9 +278,6 @@ def self_play(n_selfplay):
 
                 if RESIGN_MODE:
                     if episode + 1 == n_resign_thres:
-                        # resign_val.sort()
-                        # idx = (len(resign_val) // 200) - 1
-                        # resign_v = resign_val[idx]
                         resign_v = min(resign_val)
                         resign_val.clear()
 
@@ -391,7 +387,7 @@ def train(lr, n_epochs, n_iter):
             p_batch, v_batch = Agent.model(s_batch)
 
             v_loss = F.mse_loss(v_batch, z_batch)
-            p_loss = -(pi_batch * (p_batch + 1e-5).log()).sum(dim=1).mean()
+            p_loss = -(pi_batch * (p_batch + 1e-8).log()).sum(dim=1).mean()
             loss = v_loss + p_loss
 
             loss_v.append(v_loss.item())
@@ -516,7 +512,7 @@ def train_and_eval(lr, best_model_path):
 
         winrate = eval_model(i, player_path, best_model_path)
 
-        if winrate > 60:
+        if winrate > 55:
             best_model_path = player_path
             print('Find Best Model')
             logging.warning('Find Best Model')
@@ -542,7 +538,7 @@ def train_and_eval_with_decay(lr, best_model_path):
         winrate = eval_model(i, player_path, best_model_path)
         winrates.append(winrate)
 
-        if winrate > 60:
+        if winrate > 55:
             best_model_path = player_path
             print('Find Best Model')
             logging.warning('Find Best Model')
@@ -554,12 +550,10 @@ def train_and_eval_with_decay(lr, best_model_path):
 
         if ng_count == 10:
             old_lr = lr
-
             if lr > 1e-8:
                 lr *= 0.1
             else:
                 lr = 1e-8
-
             print('Reduce LR: {} -> {}'.format(old_lr, lr))
             logging.warning('Reduce LR: {} -> {}'.format(old_lr, lr))
             ng_count = 0
@@ -644,5 +638,6 @@ if __name__ == '__main__':
             print('Load the Previous Best Model')
             logging.warning('Load the Previous Best Model')
             load_data(best_model_path, dataset_path=False)
-        save_dataset(rep_memory, n_iter, step)
+        if n_iter % 5 == 0:
+            save_dataset(rep_memory, n_iter, step)
         reset_iter(result, n_iter)

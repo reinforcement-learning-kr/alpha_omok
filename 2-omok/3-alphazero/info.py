@@ -1,5 +1,6 @@
 import numpy as np
-    
+
+
 class GameInfo:
 
     def __init__(self, board_size):
@@ -9,7 +10,8 @@ class GameInfo:
         self.curr_turn = 0
         self.player_message = ''
         self.enemy_message = ''
-    
+
+
 class AgentInfo:
 
     def __init__(self, board_size):
@@ -23,11 +25,11 @@ class AgentInfo:
         self.message = ''
 
     def add_value(self, move, value):
-        
+
         self.moves.append(move)
 
         value = (value + 1.0) / 2.0 * 100.0
-        
+
         self.values.append(value)
 
     def clear_values(self):

@@ -1,6 +1,6 @@
 """
-env_small = 9x9
-env_regular = 15x15
+env_small: 9x9
+env_regular: 15x15
 """
 import logging
 
@@ -22,7 +22,7 @@ from info import AgentInfo
 BOARD_SIZE = game.Return_BoardParams()[0]
 
 N_BLOCKS_PLAYER = 10
-N_BLOCKS_ENEMY = 20
+N_BLOCKS_ENEMY = 10
 
 IN_PLANES_PLAYER = 5  # history * 2 + 1
 IN_PLANES_ENEMY = 5
@@ -31,7 +31,7 @@ OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
 N_MCTS = 2000
-N_MATCH = 5
+N_MATCH = 6
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -50,8 +50,8 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = './data/180720_71_250888_step_model.pickle'
-enemy_model_path = './data/180720_71_250888_step_model.pickle'
+player_model_path = './data/180725_92_442132_step_model.pickle'
+enemy_model_path = 'web'
 
 # ===================================================================== #
 
@@ -76,7 +76,6 @@ class Evaluator(object):
 
         elif model_path_a == 'web':
             print('load player model:', model_path_a)
-            print("http://127.0.0.1:5000/gameboard_view")
             self.player = agents.WebAgent(BOARD_SIZE)
 
         elif model_path_a:
@@ -125,7 +124,6 @@ class Evaluator(object):
 
         elif model_path_b == 'web':
             print('load enemy model:', model_path_b)
-            print("http://127.0.0.1:5000/gameboard_view")
             self.enemy = agents.WebAgent(BOARD_SIZE)
 
         elif model_path_b:
@@ -179,11 +177,17 @@ class Evaluator(object):
         return action, action_index
 
     def get_pv(self, root_id, turn, enemy_turn):
-    
+
         if turn != enemy_turn:
-            p, v = self.player_monitor.get_pv(root_id)
+            if player_model_path != 'web':
+                p, v = self.player_monitor.get_pv(root_id)
+            else:
+                p, v = self.enemy_monitor.get_pv(root_id)
         else:
-            p, v = self.enemy_monitor.get_pv(root_id)
+            if enemy_model_path != 'web':
+                p, v = self.enemy_monitor.get_pv(root_id)
+            else:
+                p, v = self.player_monitor.get_pv(root_id)
 
         return p, v
 
@@ -279,7 +283,7 @@ def main():
             action, action_index = evaluator.get_action(
                 root_id, board, turn, enemy_turn)
 
-            p, v = evaluator.get_pv(root_id, turn, enemy_turn) # p, v 모니터링
+            p, v = evaluator.get_pv(root_id, turn, enemy_turn)  # p, v 모니터링
 
             if turn != enemy_turn:
                 # player turn
@@ -304,18 +308,18 @@ def main():
 
             if turn == enemy_turn:
                 evaluator.enemy.del_parents(root_id)
-                enemy_agent_info.add_value(move, v)
+                player_agent_info.add_value(move, v)
 
             else:
                 evaluator.player.del_parents(root_id)
-                player_agent_info.add_value(move, v)
+                enemy_agent_info.add_value(move, v)
 
             # used for debugging
             if not check_valid_pos:
                 raise ValueError('no legal move!')
 
             if win_index != 0:
-                
+
                 player_agent_info.clear_values()
                 enemy_agent_info.clear_values()
 
@@ -390,9 +394,11 @@ def GameboardView():
 def AgentView(role, debug):
     return flask.render_template('agent_view.html', role=role, debug=debug)
 
+
 @app.route('/monitoring_view')
 def MonitoringView():
     return flask.render_template('monitoring_view.html')
+
 
 @app.route('/action')
 def action():
@@ -459,6 +465,7 @@ def agent():
 
     return flask.jsonify(data)
 
+
 @app.route('/monitoring')
 def monitoring():
 
@@ -469,7 +476,8 @@ def monitoring():
     data["enemy_agent_values"] = enemy_agent_info.values
     data["success"] = True
 
-    return flask.jsonify(data)   
+    return flask.jsonify(data)
+
 
 if __name__ == '__main__':
 
