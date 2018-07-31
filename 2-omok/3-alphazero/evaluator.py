@@ -52,7 +52,7 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 
 MONITORING = True
 
-player_model_path = './data/180801_11100_88800_step_model.pickle'
+player_model_path = 'web'
 enemy_model_path = './data/180801_11100_88800_step_model.pickle'
 
 # ===================================================================== #
@@ -167,12 +167,10 @@ class Evaluator(object):
 
         if turn != enemy_turn:
             pi = self.player.get_pi(root_id, board, turn, tau=0.01)
-            self.player_pi = pi
             self.player_visit = self.player.get_visit()
             action, action_index = utils.argmax_pi(pi)
         else:
             pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
-            self.enemy_pi = pi
             self.enemy_visit = self.enemy.get_visit()
             action, action_index = utils.argmax_pi(pi)
 
@@ -183,13 +181,17 @@ class Evaluator(object):
         if turn != enemy_turn:
             if player_model_path == 'web' or player_model_path == 'human':
                 p, v = self.enemy_monitor.get_pv(root_id)
+                self.player_pi = p.copy()
             else:
                 p, v = self.player_monitor.get_pv(root_id)
+                self.enemy_pi = p.copy()
         else:
             if enemy_model_path == 'web' or enemy_model_path == 'human':
                 p, v = self.player_monitor.get_pv(root_id)
+                self.player_pi = p.copy()
             else:
                 p, v = self.enemy_monitor.get_pv(root_id)
+                self.enemy_pi = p.copy()
 
         return p, v
 
@@ -284,7 +286,7 @@ def main():
             utils.render_str(board, BOARD_SIZE, action_index)
             action, action_index = evaluator.get_action(
                 root_id, board, turn, enemy_turn)
-            
+
             if MONITORING:
                 p, v = evaluator.get_pv(root_id, turn, enemy_turn)
 
