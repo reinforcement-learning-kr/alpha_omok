@@ -216,6 +216,15 @@ def get_action(pi):
     return action, action_index
 
 
+def argmax_pi(pi):
+    action_size = len(pi)
+    action = np.zeros(action_size)
+    max_idx = np.argwhere(pi == pi.max())
+    action_index = max_idx[np.random.choice(len(max_idx))]
+    action[action_index] = 1
+    return action, action_index[0]
+
+
 def get_reward(win_index, leaf_id):
     turn = get_turn(leaf_id)
 

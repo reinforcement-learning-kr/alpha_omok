@@ -30,8 +30,8 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 2000
-N_MATCH = 6
+N_MCTS = 2400
+N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -50,8 +50,10 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = './data/180725_92_442132_step_model.pickle'
-enemy_model_path = 'web'
+MONITORING = True
+
+player_model_path = './data/180801_11100_88800_step_model.pickle'
+enemy_model_path = './data/180801_11100_88800_step_model.pickle'
 
 # ===================================================================== #
 
@@ -167,27 +169,27 @@ class Evaluator(object):
             pi = self.player.get_pi(root_id, board, turn, tau=0.01)
             self.player_pi = pi
             self.player_visit = self.player.get_visit()
-            action, action_index = utils.get_action(pi)
+            action, action_index = utils.argmax_pi(pi)
         else:
             pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
             self.enemy_pi = pi
             self.enemy_visit = self.enemy.get_visit()
-            action, action_index = utils.get_action(pi)
+            action, action_index = utils.argmax_pi(pi)
 
         return action, action_index
 
     def get_pv(self, root_id, turn, enemy_turn):
 
         if turn != enemy_turn:
-            if player_model_path != 'web':
-                p, v = self.player_monitor.get_pv(root_id)
-            else:
+            if player_model_path == 'web' or player_model_path == 'human':
                 p, v = self.enemy_monitor.get_pv(root_id)
+            else:
+                p, v = self.player_monitor.get_pv(root_id)
         else:
-            if enemy_model_path != 'web':
-                p, v = self.enemy_monitor.get_pv(root_id)
-            else:
+            if enemy_model_path == 'web' or enemy_model_path == 'human':
                 p, v = self.player_monitor.get_pv(root_id)
+            else:
+                p, v = self.enemy_monitor.get_pv(root_id)
 
         return p, v
 
@@ -282,8 +284,9 @@ def main():
             utils.render_str(board, BOARD_SIZE, action_index)
             action, action_index = evaluator.get_action(
                 root_id, board, turn, enemy_turn)
-
-            p, v = evaluator.get_pv(root_id, turn, enemy_turn)  # p, v 모니터링
+            
+            if MONITORING:
+                p, v = evaluator.get_pv(root_id, turn, enemy_turn)
 
             if turn != enemy_turn:
                 # player turn
@@ -308,11 +311,13 @@ def main():
 
             if turn == enemy_turn:
                 evaluator.enemy.del_parents(root_id)
-                player_agent_info.add_value(move, v)
+                if MONITORING:
+                    player_agent_info.add_value(move, v)
 
             else:
                 evaluator.player.del_parents(root_id)
-                enemy_agent_info.add_value(move, v)
+                if MONITORING:
+                    enemy_agent_info.add_value(move, v)
 
             # used for debugging
             if not check_valid_pos:
@@ -489,9 +494,10 @@ if __name__ == '__main__':
         torch.cuda.manual_seed_all(0)
 
     # WebAPI
-    print("Activate WebAPI...")
-    app_th = threading.Thread(target=app.run,
-                              kwargs={"host": "0.0.0.0", "port": 5000})
-    app_th.start()
+    if MONITORING:
+        print("Activate WebAPI...")
+        app_th = threading.Thread(target=app.run,
+                                  kwargs={"host": "0.0.0.0", "port": 5000})
+        app_th.start()
 
     main()

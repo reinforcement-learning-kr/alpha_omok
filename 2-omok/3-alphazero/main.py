@@ -171,7 +171,7 @@ def self_play(n_selfplay):
             if time_step < TAU_THRES:
                 tau = 1
             else:
-                tau = 1e-2
+                tau = 0
             pi = Agent.get_pi(root_id, board, turn, tau)
 
             if PRINT_SELFPLAY:
