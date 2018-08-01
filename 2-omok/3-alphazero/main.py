@@ -171,7 +171,7 @@ def self_play(n_selfplay):
             if time_step < TAU_THRES:
                 tau = 1
             else:
-                tau = 0
+                tau = 1e-2
             pi = Agent.get_pi(root_id, board, turn, tau)
 
             if PRINT_SELFPLAY:
@@ -518,45 +518,6 @@ def train_and_eval(lr, best_model_path):
             logging.warning('Find Best Model')
             success = True
             return best_model_path, success
-
-    print('Do Not Find Best Model')
-    logging.warning('Do Not Find Best Model')
-    success = False
-    return best_model_path, success
-
-
-def train_and_eval_with_decay(lr, best_model_path):
-    winrates = []
-    ng_count = 0
-    for i in range(EVAL_THRES):
-        train(lr, N_EPOCHS, n_iter)
-        save_model(Agent, n_iter, step)
-
-        player_path = 'data/{}_{}_{}_step_model.pickle'.format(
-            datetime_now, n_iter, step)
-
-        winrate = eval_model(i, player_path, best_model_path)
-        winrates.append(winrate)
-
-        if winrate > 55:
-            best_model_path = player_path
-            print('Find Best Model')
-            logging.warning('Find Best Model')
-            success = True
-            return best_model_path, success
-
-        if winrate < max(winrates):
-            ng_count += 1
-
-        if ng_count == 10:
-            old_lr = lr
-            if lr > 1e-8:
-                lr *= 0.1
-            else:
-                lr = 1e-8
-            print('Reduce LR: {} -> {}'.format(old_lr, lr))
-            logging.warning('Reduce LR: {} -> {}'.format(old_lr, lr))
-            ng_count = 0
 
     print('Do Not Find Best Model')
     logging.warning('Do Not Find Best Model')
