@@ -27,13 +27,13 @@ function update_plot()
 
 function reqMonitoring()
 {
-	var xhr = new XMLHttpRequest();
-	
-		xhr.onload = function() 
-		{
-			if(xhr.status == 200) 
-			{
-				ret = JSON.parse(xhr.responseText);
+    var xhr = new XMLHttpRequest();
+    
+        xhr.onload = function() 
+        {
+            if(xhr.status == 200) 
+            {
+                ret = JSON.parse(xhr.responseText);
                 
                 player_move = ret.player_agent_moves;
                 player_value = ret.player_agent_values;
@@ -41,11 +41,11 @@ function reqMonitoring()
                 enemy_value = ret.enemy_agent_values;
                 
                 update_plot();
-			}
-		};
-	
-		xhr.open('GET', 'http://127.0.0.1:5000/monitoring', true);
-		xhr.send();
+            }
+        };
+    
+        xhr.open('GET', 'http://127.0.0.1:5000/monitoring', true);
+        xhr.send();
 }
 
 setInterval(reqMonitoring, 500);//1000 is miliseconds

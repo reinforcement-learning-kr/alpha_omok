@@ -27,10 +27,12 @@ class ZeroAgent(object):
         self.tree = {}
         self.message = 'Hi, this is Zero.'
         self.visit = None
+        self.is_real_root = True
 
     def reset(self):
         self.root_id = None
         self.tree.clear()
+        self.is_real_root = True
 
     def get_pi(self, root_id, board, turn, tau):
         self._init_mcts(root_id, board, turn)
@@ -56,11 +58,9 @@ class ZeroAgent(object):
 
     def _init_mcts(self, root_id, board, turn):
         self.root_id = root_id
-        # self.board = board
-        # self.turn = turn
-        self.model.eval()
 
         if self.root_id not in self.tree:
+            self.is_real_root = True
             # init root node
             self.tree[self.root_id] = {'child': [],
                                        'n': 0.,
@@ -68,20 +68,27 @@ class ZeroAgent(object):
                                        'q': 0.,
                                        'p': 0.}
         # add noise
-        elif self.noise:
-            children = self.tree[self.root_id]['child']
-            noise_probs = np.random.dirichlet(
-                self.alpha * np.ones(len(children)))
+        else:
+            self.is_real_root = False
+            if self.noise:
+                children = self.tree[self.root_id]['child']
+                noise_probs = np.random.dirichlet(
+                    self.alpha * np.ones(len(children)))
 
-            for i, action_index in enumerate(children):
-                child_id = self.root_id + (action_index,)
-                self.tree[child_id]['p'] = 0.75 * \
-                    self.tree[child_id]['p'] + 0.25 * noise_probs[i]
+                for i, action_index in enumerate(children):
+                    child_id = self.root_id + (action_index,)
+                    self.tree[child_id]['p'] = 0.75 * \
+                        self.tree[child_id]['p'] + 0.25 * noise_probs[i]
 
     def _mcts(self, root_id):
         start = time.time()
 
-        for i in range(self.num_mcts):
+        if self.is_real_root:
+            num_mcts = self.num_mcts + 1
+        else:
+            num_mcts = self.num_mcts
+
+        for i in range(num_mcts):
             if PRINT_MCTS:
                 sys.stdout.write('simulation: {}\r'.format(i + 1))
                 sys.stdout.flush()
@@ -89,8 +96,10 @@ class ZeroAgent(object):
 
             # selection
             leaf_id, win_index = self._selection(root_id)
+
             # expansion and evaluation
             value, reward = self._expansion_evaluation(leaf_id, win_index)
+
             # backup
             self._backup(leaf_id, value, reward)
 
@@ -137,10 +146,12 @@ class ZeroAgent(object):
     def _expansion_evaluation(self, leaf_id, win_index):
         leaf_state = utils.get_state_pt(
             leaf_id, self.board_size, self.inplanes)
-        state_input = torch.tensor([leaf_state]).to(device).float()
-        policy, value = self.model(state_input)
-        policy = policy.data.cpu().numpy()[0]
-        value = value.data.cpu().numpy()[0]
+        self.model.eval()
+        with torch.no_grad():
+            state_input = torch.tensor([leaf_state]).to(device).float()
+            policy, value = self.model(state_input)
+            policy = policy.data.cpu().numpy()[0]
+            value = value.data.cpu().numpy()[0]
 
         if win_index == 0:
             # expansion
@@ -220,13 +231,13 @@ class ZeroAgent(object):
         return self.message
 
     def get_pv(self, root_id):
-
         state = utils.get_state_pt(root_id, self.board_size, self.inplanes)
-        state_input = torch.tensor([state]).to(device).float()
-        policy, value = self.model(state_input)
-        p = policy.data.cpu().numpy()[0]
-        v = value.item()
-
+        self.model.eval()
+        with torch.no_grad():
+            state_input = torch.tensor([state]).to(device).float()
+            policy, value = self.model(state_input)
+            p = policy.data.cpu().numpy()[0]
+            v = value.data.cpu().numpy()[0]
         return p, v
 
 
@@ -245,10 +256,12 @@ class RZeroAgent(object):
         self.tree = {}
         self.message = 'Hi, this is Zero.'
         self.visit = None
+        self.is_real_root = True
 
     def reset(self):
         self.root_id = None
         self.tree.clear()
+        self.is_real_root = True
 
     def get_pi(self, root_id, board, turn, tau):
         self._init_mcts(root_id, board, turn)
@@ -261,6 +274,7 @@ class RZeroAgent(object):
             visit[action_index] = self.tree[child_id]['n']
 
         self.visit = visit
+        print(self.visit.sum())
 
         if visit.max() > 1000:
             tau = 0.1
@@ -275,30 +289,44 @@ class RZeroAgent(object):
     def _init_mcts(self, root_id, board, turn):
         self.root_id = root_id
         # init root node
-        self.tree[self.root_id] = {'child': [],
-                                   'n': 0.,
-                                   'w': 0.,
-                                   'q': 0.,
-                                   'p': 0.}
-        # add noise
-        if self.noise:
-            children = self.tree[self.root_id]['child']
-            noise_probs = np.random.dirichlet(
-                self.alpha * np.ones(len(children)))
+        if self.root_id not in self.tree:
+            self.is_real_root = True
+            self.tree[self.root_id] = {'child': [],
+                                       'n': 0.,
+                                       'w': 0.,
+                                       'q': 0.,
+                                       'p': 0.}
 
-            for i, action_index in enumerate(children):
+        elif self.tree[self.root_id]['child']:
+            self.is_real_root = False
+            if self.noise:
+                noise_probs = np.random.dirichlet(
+                    self.alpha * np.ones(
+                        len(self.tree[self.root_id]['child'])))
+
+            for i, action_index in enumerate(self.tree[self.root_id]['child']):
                 child_id = self.root_id + (action_index,)
-                self.tree[child_id]['p'] = 0.75 * \
-                    self.tree[child_id]['p'] + 0.25 * noise_probs[i]
+                self.tree[child_id]['n'] = 0.
+                self.tree[child_id]['w'] = 0.
+                self.tree[child_id]['q'] = 0.
+
+                if self.noise:
+                    self.tree[child_id]['p'] = 0.75 * \
+                        self.tree[child_id]['p'] + 0.25 * noise_probs[i]
 
     def _mcts(self, root_id):
         start = time.time()
 
-        for i in range(self.num_mcts + 1):
+        if self.is_real_root:
+            num_mcts = self.num_mcts + 1
+        else:
+            num_mcts = self.num_mcts
+
+        for i in range(num_mcts):
             if PRINT_MCTS:
-                sys.stdout.write('simulation: {}\r'.format(i))
+                sys.stdout.write('simulation: {}\r'.format(i + 1))
                 sys.stdout.flush()
-                self.message = 'AlphaZero simulation: {}\r'.format(i)
+                self.message = 'AlphaZero simulation: {}\r'.format(i + 1)
 
             # selection
             leaf_id, win_index = self._selection(root_id)
@@ -309,12 +337,12 @@ class RZeroAgent(object):
 
         finish = time.time() - start
         if PRINT_MCTS:
-            print("{} simulations end ({:0.0f}s)".format(i, finish))
+            print("{} simulations end ({:0.0f}s)".format(i + 1, finish))
 
     def _selection(self, root_id):
         node_id = root_id
 
-        while self.tree[node_id]['n'] > 0:
+        while self.tree[node_id]['child']:
             board = utils.get_board(node_id, self.board_size)
             win_index = utils.check_win(board, self.win_mark)
 
@@ -339,8 +367,7 @@ class RZeroAgent(object):
                 qu[child_id] = q + u
 
             max_value = max(qu.values())
-            ids = [key for key, value in qu.items()
-                   if value == max_value]
+            ids = [key for key, value in qu.items() if value == max_value]
             node_id = ids[np.random.choice(len(ids))]
 
         board = utils.get_board(node_id, self.board_size)
@@ -350,11 +377,12 @@ class RZeroAgent(object):
     def _expansion_evaluation(self, leaf_id, win_index):
         leaf_state = utils.get_state_pt(
             leaf_id, self.board_size, self.inplanes)
-        state_input = torch.tensor([leaf_state]).to(device).float()
         self.model.eval()
-        policy, value = self.model(state_input)
-        policy = policy.data.cpu().numpy()[0]
-        value = value.data.cpu().numpy()[0]
+        with torch.no_grad():
+            state_input = torch.tensor([leaf_state]).to(device).float()
+            policy, value = self.model(state_input)
+            policy = policy.data.cpu().numpy()[0]
+            value = value.data.cpu().numpy()[0]
 
         if win_index == 0:
             # expansion
@@ -390,6 +418,7 @@ class RZeroAgent(object):
 
                 self.tree[leaf_id]['child'].append(action_index)
 
+            assert len(self.tree[leaf_id]['child']) == len(actions)
             # return value
             reward = False
             return value, reward
@@ -434,14 +463,13 @@ class RZeroAgent(object):
         return self.message
 
     def get_pv(self, root_id):
-
         state = utils.get_state_pt(root_id, self.board_size, self.inplanes)
-        state_input = torch.tensor([state]).to(device).float()
         self.model.eval()
-        policy, value = self.model(state_input)
-        p = policy.data.cpu().numpy()[0]
-        v = value.item()
-
+        with torch.no_grad():
+            state_input = torch.tensor([state]).to(device).float()
+            policy, value = self.model(state_input)
+            p = policy.data.cpu().numpy()[0]
+            v = value.data.cpu().numpy()[0]
         return p, v
 
 
