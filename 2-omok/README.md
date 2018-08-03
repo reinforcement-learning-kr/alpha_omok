@@ -12,7 +12,7 @@ The games that I implemented is as follows.
 
 ### Omok
 
-<img src="./Images/omok.PNG" width="400px" />
+<img src="./images/omok.PNG" width="400px" />
 
 
 
@@ -26,7 +26,7 @@ You can use your mouse to put stones on the board
 
 ### Mini-Omok
 
-<img src="./Images/mini_omok.PNG" width="400px" />
+<img src="./images/mini_omok.PNG" width="400px" />
 
 
 

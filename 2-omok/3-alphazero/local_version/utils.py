@@ -32,14 +32,11 @@ def check_win(board, win_mark):
     board = board.copy()
     num_mark = np.count_nonzero(board)
     board_size = len(board)
-
     current_grid = np.zeros([win_mark, win_mark])
-
     # check win
     for row in range(board_size - win_mark + 1):
         for col in range(board_size - win_mark + 1):
             current_grid = board[row: row + win_mark, col: col + win_mark]
-
             sum_horizontal = np.sum(current_grid, axis=1)
             sum_vertical = np.sum(current_grid, axis=0)
             sum_diagonal_1 = np.sum(current_grid.diagonal())
@@ -48,23 +45,18 @@ def check_win(board, win_mark):
             # Black wins! (Horizontal and Vertical)
             if win_mark in sum_horizontal or win_mark in sum_vertical:
                 return 1
-
             # Black wins! (Diagonal)
             if win_mark == sum_diagonal_1 or win_mark == sum_diagonal_2:
                 return 1
-
             # White wins! (Horizontal and Vertical)
             if -win_mark in sum_horizontal or -win_mark in sum_vertical:
                 return 2
-
             # White wins! (Diagonal)
             if -win_mark == sum_diagonal_1 or -win_mark == sum_diagonal_2:
                 return 2
-
     # Draw (board is full)
     if num_mark == board_size * board_size:
         return 3
-
     # If No winner or no draw
     return 0
 
@@ -85,7 +77,6 @@ def render_str(board, board_size, action_index):
         col = action_index % board_size
     count = np.count_nonzero(board)
     board_str = '\n  {}\n'.format(ALPHABET[:board_size * 2])
-
     for i in range(board_size):
         for j in range(board_size):
             if j == 0:
@@ -144,7 +135,6 @@ def get_state_tf(id, turn, board_size, channel_size):
 
         if length_game - i < channel_size:
             channel_idx = length_game - i - 1
-
             if i % 2 == 0:
                 state[:, :, channel_idx] = state_1
             else:
@@ -186,12 +176,12 @@ def get_state_pt(node_id, board_size, channel_size):
 
     history.append(color * color_idx)
     state = np.stack(history)
+
     return state
 
 
 def get_board(node_id, board_size):
     board = np.zeros(board_size**2)
-
     for i, action_index in enumerate(node_id[1:]):
         if i % 2 == 0:
             board[action_index] = 1
@@ -213,6 +203,7 @@ def get_action(pi):
     action = np.zeros(action_size)
     action_index = np.random.choice(action_size, p=pi)
     action[action_index] = 1
+
     return action, action_index
 
 
@@ -222,18 +213,17 @@ def argmax_pi(pi):
     max_idx = np.argwhere(pi == pi.max())
     action_index = max_idx[np.random.choice(len(max_idx))]
     action[action_index] = 1
+
     return action, action_index[0]
 
 
 def get_reward(win_index, leaf_id):
     turn = get_turn(leaf_id)
-
     if win_index == 1:
         if turn == 1:
             reward = 1.
         else:
             reward = -1.
-
     elif win_index == 2:
         if turn == 1:
             reward = -1.
@@ -259,19 +249,12 @@ def get_action_eval(pi, board):
     valid_pi /= valid_pi.sum()
     action_index = np.random.choice(action_size, p=valid_pi)
     action[action_index] = 1
+
     return action, action_index
-
-
-def convert_id(node_id):
-    base_id = deque([None, None], maxlen=2)
-    for i in node_id[1:]:
-        base_id.append(i)
-    return tuple(base_id)
 
 
 def augment_dataset(memory, board_size):
     aug_dataset = []
-
     for (s, pi, z) in memory:
         for i in range(4):
             s_rot = np.rot90(s, i, axes=(1, 2)).copy()
@@ -284,9 +267,3 @@ def augment_dataset(memory, board_size):
             aug_dataset.append((s_flip, pi_flip, z))
 
     return aug_dataset
-
-
-if __name__ == '__main__':
-    # test
-    node_id = (0, 1, 3, 56, 22, 33, 12, 58, 74, 22)
-    print(convert_id(node_id))

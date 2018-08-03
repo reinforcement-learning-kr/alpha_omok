@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 import agents
 from env import env_small as game
 import neural_net
-import online_eval
+import evaluator
 import utils
 
 logging.basicConfig(
@@ -57,10 +57,13 @@ best_model_path = None
 first_train = True
 
 # Hyperparameter sharing
-online_eval.BOARD_SIZE = BOARD_SIZE
-online_eval.N_BLOCKS = N_BLOCKS
-online_eval.IN_PLANES = IN_PLANES
-online_eval.OUT_PLANES = OUT_PLANES
+evaluator.BOARD_SIZE = BOARD_SIZE
+evaluator.N_BLOCKS_PLAYER = N_BLOCKS
+evaluator.N_BLOCKS_ENEMY = N_BLOCKS
+evaluator.IN_PLANES_PLAYER = IN_PLANES
+evaluator.IN_PLANES_ENEMY = IN_PLANES
+evaluator.OUT_PLANES_PLAYER = OUT_PLANES
+evaluator.OUT_PLANES_ENEMY = OUT_PLANES
 agents.PRINT_MCTS = PRINT_SELFPLAY
 
 # Numpy printing style
@@ -135,6 +138,7 @@ logging.warning(
 
 def self_play(n_selfplay):
     global cur_augment
+    global Agent
 
     state_black = deque()
     state_white = deque()
@@ -192,34 +196,36 @@ def self_play(n_selfplay):
             # ====================== print evaluation ====================== #
 
             Agent.model.eval()
-            state_input = torch.tensor([state]).to(device).float()
-            p, v = Agent.model(state_input)
+            with torch.no_grad():
+                state_input = torch.tensor([state]).to(device).float()
+                p, v = Agent.model(state_input)
+                p = p.data.cpu().numpy()[0]
+                v = v.item()
 
             if PRINT_SELFPLAY:
                 print(
                     '\nProb:\n{}'.format(
-                        p.data.cpu().numpy()[0].reshape(
-                            BOARD_SIZE, BOARD_SIZE).round(decimals=2)))
+                        p.reshape(BOARD_SIZE, BOARD_SIZE).round(decimals=2)))
 
             if turn == 0:
                 if PRINT_SELFPLAY:
                     print("\nBlack's win%: {:.2f}%".format(
-                        (v.item() + 1) / 2 * 100))
+                        (v + 1) / 2 * 100))
                 if RESIGN_MODE:
                     if episode < n_resign_thres:
-                        resign_val_balck.append(v.item())
-                    elif v.item() < resign_v:
+                        resign_val_balck.append(v)
+                    elif v < resign_v:
                         resign_index = 2
                         if PRINT_SELFPLAY:
                             print('"Black Resign!"')
             else:
                 if PRINT_SELFPLAY:
                     print("\nWhite's win%: {:.2f}%".format(
-                        (v.item() + 1) / 2 * 100))
+                        (v + 1) / 2 * 100))
                 if RESIGN_MODE:
                     if episode < n_resign_thres:
                         resign_val_white.append(v.item())
-                    elif v.item() < resign_v:
+                    elif v < resign_v:
                         resign_index = 1
                         if PRINT_SELFPLAY:
                             print('"White Resign!"')
@@ -326,9 +332,8 @@ def self_play(n_selfplay):
 
 
 def train(lr, n_epochs, n_iter):
-    global step
-    global Writer
-    global total_epoch
+    global step, total_epoch
+    global Agent, Writer
     global cur_augment
 
     Agent.model.train()
@@ -440,7 +445,7 @@ def eval_model(i, player_path, enemy_path):
     logging.warning('=' * 58)
 
     Agent.model.eval()
-    evaluator = online_eval.Evaluator(player_path, enemy_path)
+    online_eval = evaluator.OnlineEvaluator(player_path, enemy_path)
 
     env_eval = game.GameState('text')
 
@@ -451,19 +456,19 @@ def eval_model(i, player_path, enemy_path):
     for i in range(N_MATCH):
         board = np.zeros([BOARD_SIZE, BOARD_SIZE])
         root_id = (0,)
-        evaluator.player.root_id = root_id
-        evaluator.enemy.root_id = root_id
+        online_eval.player.root_id = root_id
+        online_eval.enemy.root_id = root_id
         win_index = 0
         action_index = None
         while win_index == 0:
-            action, action_index = evaluator.get_action(
+            action, action_index = online_eval.get_action(
                 root_id, board, turn, enemy_turn)
             if turn != enemy_turn:
-                root_id = evaluator.player.root_id + (action_index,)
-                evaluator.enemy.root_id = root_id
+                root_id = online_eval.player.root_id + (action_index,)
+                online_eval.enemy.root_id = root_id
             else:
-                root_id = evaluator.enemy.root_id + (action_index,)
-                evaluator.player.root_id = root_id
+                root_id = online_eval.enemy.root_id + (action_index,)
+                online_eval.player.root_id = root_id
 
             board, chk_legal_move, win_index, turn, _ = env_eval.step(action)
 
@@ -493,12 +498,13 @@ def eval_model(i, player_path, enemy_path):
                 pw, ew, dr = result['Player'], result['Enemy'], result['Draw']
                 winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
 
-                evaluator.reset()
+                online_eval.reset()
 
     winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
 
     print('winrate: {:.2f}%'.format(winrate))
     logging.warning('winrate: {:.2f}%'.format(winrate))
+
     return winrate
 
 
@@ -517,11 +523,13 @@ def train_and_eval(lr, best_model_path):
             print('Find Best Model')
             logging.warning('Find Best Model')
             success = True
+
             return best_model_path, success
 
     print('Do Not Find Best Model')
     logging.warning('Do Not Find Best Model')
     success = False
+
     return best_model_path, success
 
 
