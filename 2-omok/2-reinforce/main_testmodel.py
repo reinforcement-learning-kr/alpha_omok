@@ -4,7 +4,7 @@ Data : 2018.03.12, 2018.03.28, 2018.05.11, 2018.06.04
 Project : Make your own Alpha Zero
 Objective : find the problem of code. Let's Debugging!!
 '''
-from utils import render_str, get_state_pt, get_action, valid_actions, symmetry_choice
+from utils import get_state_pt, get_action, symmetry_choice
 from neural_net import PVNet
 import numpy as np
 from collections import deque
@@ -16,9 +16,7 @@ from torch.utils.data import DataLoader
 from agent import Player
 import datetime
 
-import sys
-sys.path.append("env/")
-import env_small as game
+import env.env_small as game
 from evaluator import Evaluator
 
 STATE_SIZE = 9
@@ -289,15 +287,14 @@ def eval_model(player_model_path, enemy_model_path):
 
                 pw, ew, dr = result['Player'], result['Enemy'], result['Draw']
                 winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
-                '''
-                print('')
-                print('=' * 20, " {}  Game End  ".format(i + 1), '=' * 20)
-                print('Player Win: {}  Enemy Win: {}  Draw: {}  Winrate: {:.2f}%'.format(
-                    pw, ew, dr, winrate))
-                print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
-                    player_elo, enemy_elo))
-                
-                '''
+
+                # print('')
+                # print('=' * 20, " {}  Game End  ".format(i + 1), '=' * 20)
+                # print('Player Win: {}  Enemy Win: {}  Draw: {}  Winrate: {:.2f}%'.format(
+                #     pw, ew, dr, winrate))
+                # print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
+                #     player_elo, enemy_elo))
+
                 evaluator.reset()
     winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
     print('winrate:', winrate)
