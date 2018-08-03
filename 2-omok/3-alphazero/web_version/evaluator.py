@@ -365,6 +365,7 @@ def main():
                         print('\nPlayer Win!')
                         player_elo, enemy_elo = elo(
                             player_elo, enemy_elo, 1, 0)
+                else:
                     if win_index == 3:
                         result['Draw'] += 1
                         print('\nDraw!')
@@ -508,5 +509,4 @@ if __name__ == '__main__':
     app_th = threading.Thread(target=app.run,
                               kwargs={"host": "0.0.0.0", "port": 5000})
     app_th.start()
-
     main()
