@@ -7,7 +7,7 @@ import logging
 import numpy as np
 import torch
 
-from .. import agents
+import agents
 from env import env_small as game
 import neural_net
 import utils
@@ -50,8 +50,8 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = './data/180802_91_395498_step_model.pickle'
-enemy_model_path = './data/180724_91_435547_step_model.pickle'
+player_model_path = './data/180803_12700_101600_step_model.pickle'
+enemy_model_path = './data/180803_12600_100800_step_model.pickle'
 
 # ===================================================================== #
 
