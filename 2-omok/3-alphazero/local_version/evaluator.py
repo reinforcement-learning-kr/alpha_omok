@@ -21,7 +21,7 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 300
+N_MCTS = 3000
 N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
