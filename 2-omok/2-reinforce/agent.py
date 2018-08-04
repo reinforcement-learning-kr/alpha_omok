@@ -1,6 +1,5 @@
 import sys
 import time
-import utils
 from utils import check_win, get_state_pt, valid_actions
 from copy import deepcopy
 import torch
