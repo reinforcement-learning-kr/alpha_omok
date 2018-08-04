@@ -824,22 +824,26 @@ class HumanAgent(object):
               "j": 9, "k": 10, "l": 11,
               "m": 12, "n": 13, "o": 14}
 
-    def __init__(self, board_size):
+    def __init__(self, board_size, env):
         self.board_size = board_size
         self._init_board_label()
+        self.root_id = (0,)
+        self.env = env
 
     def get_pi(self, root_id, board, turn, tau):
         self.root_id = root_id
 
         while True:
-            try:
-                action_index = self.input_action(self.last_label)
-            except Exception:
-                continue
-            else:
+            action = 0
+
+            board, check_valid_pos, win_index, turn, action_index = self.env.step(action)
+
+            if check_valid_pos == True:
                 pi = np.zeros(self.board_size**2, 'float')
                 pi[action_index] = 1
-                return pi
+                break
+
+        return pi
 
     def _init_board_label(self):
         self.last_label = str(self.board_size)
