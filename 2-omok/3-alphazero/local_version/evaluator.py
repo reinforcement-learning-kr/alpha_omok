@@ -10,7 +10,6 @@ from env import env_small as game
 import neural_net
 import utils
 
-
 BOARD_SIZE = game.Return_BoardParams()[0]
 
 N_BLOCKS_PLAYER = 10
@@ -28,17 +27,15 @@ N_MATCH = 12
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
 
-
 # =========================== input model path ======================== #
 #   'human': human play   'random': random     None: raw model MCTS     #
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = './data/180802_91_395498_step_model.pickle'
-enemy_model_path = './data/180724_91_435547_step_model.pickle'
+player_model_path = './data/180713_55_162830_step_model.pickle'
+enemy_model_path = 'human'
 
 # ===================================================================== #
-
 
 class Evaluator(object):
     def __init__(self, model_path_a, model_path_b):
@@ -53,7 +50,7 @@ class Evaluator(object):
             self.player = agents.UCTAgent(BOARD_SIZE, N_MCTS)
         elif model_path_a == 'human':
             print('load player model:', model_path_a)
-            self.player = agents.HumanAgent(BOARD_SIZE)
+            self.player = agents.HumanAgent(BOARD_SIZE, env)
         elif model_path_a == 'web':
             print('load player model:', model_path_a)
             self.player = agents.WebAgent(BOARD_SIZE)
@@ -95,7 +92,7 @@ class Evaluator(object):
             self.enemy = agents.UCTAgent(BOARD_SIZE, N_MCTS)
         elif model_path_b == 'human':
             print('load enemy model:', model_path_b)
-            self.enemy = agents.HumanAgent(BOARD_SIZE)
+            self.enemy = agents.HumanAgent(BOARD_SIZE, env)
         elif model_path_b == 'web':
             print('load enemy model:', model_path_b)
             self.enemy = agents.WebAgent(BOARD_SIZE)
@@ -129,11 +126,11 @@ class Evaluator(object):
 
     def get_action(self, root_id, board, turn, enemy_turn):
         if turn != enemy_turn:
-            pi = self.player.get_pi(root_id, board, turn, tau=0.01)
-            action, action_index = utils.get_action(pi)
+            pi = self.player.get_pi(root_id, board, turn, tau=0.01)         
         else:
             pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
-            action, action_index = utils.get_action(pi)
+
+        action, action_index = utils.get_action(pi)
 
         return action, action_index
 
@@ -189,7 +186,13 @@ def elo(player_elo, enemy_elo, p_winscore, e_winscore):
 def main():
     evaluator = Evaluator(player_model_path, enemy_model_path)
 
-    env = game.GameState('text')
+    if player_model_path == 'human' or enemy_model_path == 'human':
+        game_mode = 'pygame'
+    else:
+        game_mode = 'text'
+        
+    env = game.GameState(game_mode)
+
     result = {'Player': 0, 'Enemy': 0, 'Draw': 0}
     turn = 0
     enemy_turn = 1

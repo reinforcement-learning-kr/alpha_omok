@@ -110,8 +110,6 @@ class GameState:
 
             # No stone: 0, Black stone: 1, White stone = -1
             self.gameboard = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE])
-            # self.state = np.zeros([GAMEBOARD_SIZE, GAMEBOARD_SIZE, INPUT_CHANNEL])
-            # self.state[:, :, 16] = 1
 
             # black turn: 0, white turn: 1
             self.turn = 0
@@ -136,6 +134,7 @@ class GameState:
 
         # action = np.reshape(input_, (GAMEBOARD_SIZE, GAMEBOARD_SIZE))
 
+        action_index = 0
         if mouse_pos != 0:
             for i in range(len(self.X_coord)):
                 for j in range(len(self.Y_coord)):
@@ -144,6 +143,8 @@ class GameState:
                         check_valid_pos = True
                         x_index = i
                         y_index = j
+
+                        action_index = y_index * GAMEBOARD_SIZE + x_index
 
                         # If selected spot is already occupied, it is not valid move!
                         if self.gameboard[y_index, x_index] == 1 or self.gameboard[y_index, x_index] == -1:
@@ -161,7 +162,7 @@ class GameState:
                 check_valid_pos = False
 
         # Change the gameboard according to the stone's index
-        if check_valid_pos:
+        if np.any(input_) != 0:
             # update state
             # self.state = update_state(self.state, self.turn, x_index, y_index)
 
@@ -195,7 +196,7 @@ class GameState:
         win_index = check_win(self.gameboard, WIN_STONES)
         self.display_win(win_index)
 
-        return self.gameboard, check_valid_pos, win_index, self.turn, (y_index, x_index)
+        return self.gameboard, check_valid_pos, win_index, self.turn, action_index
 
     # Exit the game
     def terminate(self):
