@@ -239,7 +239,7 @@ class Evaluator(object):
 
 class OnlineEvaluator(Evaluator):
     def __init__(self, model_path_a, model_path_b):
-        super(OnlineEvaluator).__init__(model_path_a, model_path_b)
+        super().__init__(model_path_a, model_path_b)
 
     def get_action(self, root_id, board, turn, enemy_turn):
         if turn != enemy_turn:
@@ -252,21 +252,14 @@ class OnlineEvaluator(Evaluator):
                 p = p.data[0].cpu().numpy()
             action, action_index = utils.get_action_eval(p, board)
         else:
-            if self.model_path_b == 'random':
-                pi = self.enemy.get_pi(root_id, board, turn, tau=1)
-                action, action_index = utils.get_action_eval(pi, board)
-            elif self.model_path_b == 'puct':
-                pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
-                action, action_index = utils.get_action_eval(pi, board)
-            else:
-                self.enemy.model.eval()
-                with torch.no_grad():
-                    state = utils.get_state_pt(
-                        root_id, BOARD_SIZE, IN_PLANES_ENEMY)
-                    state_input = torch.tensor([state]).to(device).float()
-                    p, v = self.enemy.model(state_input)
-                    p = p.data[0].cpu().numpy()
-                action, action_index = utils.get_action_eval(p, board)
+            self.enemy.model.eval()
+            with torch.no_grad():
+                state = utils.get_state_pt(
+                    root_id, BOARD_SIZE, IN_PLANES_ENEMY)
+                state_input = torch.tensor([state]).to(device).float()
+                p, v = self.enemy.model(state_input)
+                p = p.data[0].cpu().numpy()
+            action, action_index = utils.get_action_eval(p, board)
 
         return action, action_index
 
