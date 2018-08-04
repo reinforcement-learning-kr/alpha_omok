@@ -21,7 +21,7 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 3000
+N_MCTS = 300
 N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
@@ -32,13 +32,22 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = './data/180713_55_162830_step_model.pickle'
-enemy_model_path = 'human'
+player_model_path = ''
+enemy_model_path = ''
 
 # ===================================================================== #
 
+    
 class Evaluator(object):
     def __init__(self, model_path_a, model_path_b):
+
+        if model_path_a == 'human' or model_path_b == 'human':
+            game_mode = 'pygame'
+        else:
+            game_mode = 'text'
+            
+        self.env = game.GameState(game_mode)
+
         if model_path_a == 'random':
             print('load player model:', model_path_a)
             self.player = agents.RandomAgent(BOARD_SIZE)
@@ -50,7 +59,7 @@ class Evaluator(object):
             self.player = agents.UCTAgent(BOARD_SIZE, N_MCTS)
         elif model_path_a == 'human':
             print('load player model:', model_path_a)
-            self.player = agents.HumanAgent(BOARD_SIZE, env)
+            self.player = agents.HumanAgent(BOARD_SIZE, self.env)
         elif model_path_a == 'web':
             print('load player model:', model_path_a)
             self.player = agents.WebAgent(BOARD_SIZE)
@@ -92,7 +101,7 @@ class Evaluator(object):
             self.enemy = agents.UCTAgent(BOARD_SIZE, N_MCTS)
         elif model_path_b == 'human':
             print('load enemy model:', model_path_b)
-            self.enemy = agents.HumanAgent(BOARD_SIZE, env)
+            self.enemy = agents.HumanAgent(BOARD_SIZE, self.env)
         elif model_path_b == 'web':
             print('load enemy model:', model_path_b)
             self.enemy = agents.WebAgent(BOARD_SIZE)
@@ -133,6 +142,9 @@ class Evaluator(object):
         action, action_index = utils.get_action(pi)
 
         return action, action_index
+
+    def return_env(self):
+        return self.env
 
     def reset(self):
         self.player.reset()
@@ -182,16 +194,10 @@ def elo(player_elo, enemy_elo, p_winscore, e_winscore):
 
     return player_elo, enemy_elo
 
-
 def main():
     evaluator = Evaluator(player_model_path, enemy_model_path)
 
-    if player_model_path == 'human' or enemy_model_path == 'human':
-        game_mode = 'pygame'
-    else:
-        game_mode = 'text'
-        
-    env = game.GameState(game_mode)
+    env = evaluator.return_env()
 
     result = {'Player': 0, 'Enemy': 0, 'Draw': 0}
     turn = 0
