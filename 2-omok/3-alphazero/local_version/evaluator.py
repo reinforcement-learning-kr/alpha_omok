@@ -214,7 +214,7 @@ def main():
             print('Player Color: White')
 
         while win_index == 0:
-            # utils.render_str(board, BOARD_SIZE, action_index)
+            utils.render_str(board, BOARD_SIZE, action_index)
             action, action_index = evaluator.get_action(
                 root_id, board, turn, enemy_turn)
 
