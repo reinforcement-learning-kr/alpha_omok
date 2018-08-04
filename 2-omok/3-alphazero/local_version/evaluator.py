@@ -32,12 +32,12 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = ''
-enemy_model_path = ''
+player_model_path = None
+enemy_model_path = None
 
 # ===================================================================== #
 
-    
+
 class Evaluator(object):
     def __init__(self, model_path_a, model_path_b):
 
@@ -45,7 +45,7 @@ class Evaluator(object):
             game_mode = 'pygame'
         else:
             game_mode = 'text'
-            
+
         self.env = game.GameState(game_mode)
 
         if model_path_a == 'random':
@@ -135,7 +135,7 @@ class Evaluator(object):
 
     def get_action(self, root_id, board, turn, enemy_turn):
         if turn != enemy_turn:
-            pi = self.player.get_pi(root_id, board, turn, tau=0.01)         
+            pi = self.player.get_pi(root_id, board, turn, tau=0.01)
         else:
             pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
 
@@ -153,7 +153,7 @@ class Evaluator(object):
 
 class OnlineEvaluator(Evaluator):
     def __init__(self, model_path_a, model_path_b):
-        super(OnlineEvaluator).__init__(model_path_a, model_path_b)
+        super().__init__(model_path_a, model_path_b)
 
     def get_action(self, root_id, board, turn, enemy_turn):
         if turn != enemy_turn:
@@ -166,21 +166,14 @@ class OnlineEvaluator(Evaluator):
                 p = p.data[0].cpu().numpy()
             action, action_index = utils.get_action_eval(p, board)
         else:
-            if self.model_path_b == 'random':
-                pi = self.enemy.get_pi(root_id, board, turn, tau=1)
-                action, action_index = utils.get_action_eval(pi, board)
-            elif self.model_path_b == 'puct':
-                pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
-                action, action_index = utils.get_action_eval(pi, board)
-            else:
-                self.enemy.model.eval()
-                with torch.no_grad():
-                    state = utils.get_state_pt(
-                        root_id, BOARD_SIZE, IN_PLANES_ENEMY)
-                    state_input = torch.tensor([state]).to(device).float()
-                    p, v = self.enemy.model(state_input)
-                    p = p.data[0].cpu().numpy()
-                action, action_index = utils.get_action_eval(p, board)
+            self.enemy.model.eval()
+            with torch.no_grad():
+                state = utils.get_state_pt(
+                    root_id, BOARD_SIZE, IN_PLANES_ENEMY)
+                state_input = torch.tensor([state]).to(device).float()
+                p, v = self.enemy.model(state_input)
+                p = p.data[0].cpu().numpy()
+            action, action_index = utils.get_action_eval(p, board)
 
         return action, action_index
 
@@ -193,6 +186,7 @@ def elo(player_elo, enemy_elo, p_winscore, e_winscore):
     enemy_elo += 32 * (e_winscore - ex_ew)
 
     return player_elo, enemy_elo
+
 
 def main():
     evaluator = Evaluator(player_model_path, enemy_model_path)

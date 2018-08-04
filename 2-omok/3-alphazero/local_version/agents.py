@@ -383,7 +383,6 @@ class RZeroAgent(object):
                                        'p': prior_p}
 
                 self.tree[leaf_id]['child'].append(action_index)
-
             # return value
             reward = False
             return value, reward
@@ -836,7 +835,8 @@ class HumanAgent(object):
         while True:
             action = 0
 
-            board, check_valid_pos, win_index, turn, action_index = self.env.step(action)
+            board, check_valid_pos, win_index, turn, action_index = self.env.step(
+                action)
 
             if check_valid_pos == True:
                 pi = np.zeros(self.board_size**2, 'float')
