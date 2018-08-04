@@ -92,7 +92,7 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 print('cuda:', use_cuda)
 
 # Initialize agent & model
-Agent = agents.RZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES, noise=True)
+Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES, noise=True)
 
 Agent.model = neural_net.PVNet(N_BLOCKS,
                                IN_PLANES,
