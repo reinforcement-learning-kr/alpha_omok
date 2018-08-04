@@ -137,7 +137,7 @@ logging.warning(
 
 
 def self_play(n_selfplay):
-    global cur_augment
+    global cur_augment, cur_memory
     global Agent
 
     state_black = deque()
@@ -224,7 +224,7 @@ def self_play(n_selfplay):
                         (v + 1) / 2 * 100))
                 if RESIGN_MODE:
                     if episode < n_resign_thres:
-                        resign_val_white.append(v.item())
+                        resign_val_white.append(v)
                     elif v < resign_v:
                         resign_index = 1
                         if PRINT_SELFPLAY:
@@ -562,7 +562,7 @@ def load_data(model_path, dataset_path):
             rep_memory = deque(pickle.load(f), maxlen=MEMORY_SIZE)
 
 
-def reset_iter(result, n_iter):
+def reset_iter(result):
     global total_epoch
     global cur_memory
     global cur_augment
@@ -609,4 +609,4 @@ if __name__ == '__main__':
             load_data(best_model_path, dataset_path=False)
         if n_iter % 5 == 0:
             save_dataset(rep_memory, n_iter, step)
-        reset_iter(result, n_iter)
+        reset_iter(result)
