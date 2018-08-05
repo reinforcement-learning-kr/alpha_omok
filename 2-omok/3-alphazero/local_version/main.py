@@ -29,6 +29,7 @@ logging.basicConfig(
 BOARD_SIZE = game.Return_BoardParams()[0]
 N_MCTS = 400
 TAU_THRES = 6
+SEED = 0
 RESIGN_MODE = False
 PRINT_SELFPLAY = True
 
@@ -66,13 +67,19 @@ evaluator.OUT_PLANES_PLAYER = OUT_PLANES
 evaluator.OUT_PLANES_ENEMY = OUT_PLANES
 agents.PRINT_MCTS = PRINT_SELFPLAY
 
+# Set gpu or cpu
+use_cuda = torch.cuda.is_available()
+device = torch.device('cuda' if use_cuda else 'cpu')
+print('cuda:', use_cuda)
+
 # Numpy printing style
 np.set_printoptions(suppress=True)
 
 # Set random seeds
-np.random.seed(0)
-torch.manual_seed(0)
-torch.cuda.manual_seed_all(0)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+if use_cuda:
+    torch.cuda.manual_seed_all(SEED)
 
 # Global variables
 rep_memory = deque(maxlen=MEMORY_SIZE)
@@ -82,14 +89,8 @@ step = 0
 start_iter = 1
 total_epoch = 0
 result = {'Black': 0, 'White': 0, 'Draw': 0, 'Resign': 0}
-
 if USE_TENSORBOARD:
     Writer = SummaryWriter()
-
-# Set gpu or cpu
-use_cuda = torch.cuda.is_available()
-device = torch.device('cuda' if use_cuda else 'cpu')
-print('cuda:', use_cuda)
 
 # Initialize agent & model
 Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES, noise=True)
@@ -102,6 +103,8 @@ Agent.model = neural_net.PVNet(N_BLOCKS,
 logging.warning(
     '\nCUDA: {}'
     '\nMODEL: {}'
+    '\nAGENT: {}'
+    '\nSEED: {}'
     '\nBOARD_SIZE: {}'
     '\nN_MCTS: {}'
     '\nTAU_THRES: {}'
@@ -119,6 +122,8 @@ logging.warning(
     '\nL2: {}'.format(
         use_cuda,
         type(Agent.model).__name__,
+        type(Agent).__name__,
+        SEED,
         BOARD_SIZE,
         N_MCTS,
         TAU_THRES,
@@ -137,7 +142,7 @@ logging.warning(
 
 
 def self_play(n_selfplay):
-    global cur_augment
+    global cur_memory, cur_augment
     global Agent
 
     state_black = deque()
@@ -224,7 +229,7 @@ def self_play(n_selfplay):
                         (v + 1) / 2 * 100))
                 if RESIGN_MODE:
                     if episode < n_resign_thres:
-                        resign_val_white.append(v.item())
+                        resign_val_white.append(v)
                     elif v < resign_v:
                         resign_index = 1
                         if PRINT_SELFPLAY:
@@ -334,7 +339,7 @@ def self_play(n_selfplay):
 def train(lr, n_epochs, n_iter):
     global step, total_epoch
     global Agent, Writer
-    global cur_augment
+    global cur_augment, rep_memory
 
     Agent.model.train()
 
@@ -562,7 +567,7 @@ def load_data(model_path, dataset_path):
             rep_memory = deque(pickle.load(f), maxlen=MEMORY_SIZE)
 
 
-def reset_iter(result, n_iter):
+def reset_iter(result):
     global total_epoch
     global cur_memory
     global cur_augment
@@ -609,4 +614,4 @@ if __name__ == '__main__':
             load_data(best_model_path, dataset_path=False)
         if n_iter % 5 == 0:
             save_dataset(rep_memory, n_iter, step)
-        reset_iter(result, n_iter)
+        reset_iter(result)
