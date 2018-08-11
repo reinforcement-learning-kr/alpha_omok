@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <meta charset="utf-8">
+    <title>CSS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      #jb-container {
+        width: 940px;
+        margin: 2px auto;
+        padding: 2px;
+        border: 1px solid #bcbcbc;
+      }
+      #jb-header {
+        padding: 2px;
+        margin-bottom: 2px;
+        border: 1px solid #bcbcbc;
+      }
+      #jb-content {
+        height: 800px;
+        display: flex;
+        flex-flow: row nowrap; /* Align on the same line */
+        justify-content: space-between; /* Equal margin between the child elements */        
+      }
+      #jb-content-left {
+        width: 300px;
+        padding: 2px;
+        margin-bottom: 2px;
+        border: 1px solid #bcbcbc;
+      }
+      #jb-content-center {
+        width: 300px;
+        padding: 2px;
+        margin-bottom: 2px;
+        border: 1px solid #bcbcbc;
+      }
+      #jb-content-right {
+        width: 300px;
+        padding: 2px;
+        margin-bottom: 2px;
+        border: 1px solid #bcbcbc;
+      }
+      #jb-bottom {
+        clear: both;
+        padding: 2px;
+        border: 1px solid #bcbcbc;
+      }      
+      #jb-footer {
+        clear: both;
+        padding: 2px;
+        border: 1px solid #bcbcbc;
+      }
+      @media ( max-width: 480px ) {
+        #jb-container {
+          width: auto;
+        }
+        #jb-content {
+          float: none;
+          width: auto;
+        }
+        #jb-sidebar {
+          float: none;
+          width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="jb-container">
+      <div id="jb-header">
+        <h3>RLKorea 알파오목팀</h3>
+        <p>민규식, 김정대, 이웅원, 김태영 </p>
+      </div>
+      <div id="jb-content">
+        <div id="jb-content-left">
+          <h2>Player</h2>
+          <p><div id="player_message"></div></p>
+          <div id="boardWraaper">
+            <canvas id="player_agent_p" height=300></canvas>
+          </div>
+          <div id="boardWraaper">
+            <canvas id="player_agent_visit" height=300></canvas>
+          </div>
+        </div>
+        <div id="jb-content-center">
+          <h2>Board</h2>
+          <p><div id="board_message"></div></p>
+          <div id="boardWraaper">
+            <canvas id="board" height=300></canvas>
+          </div>
+        </div>
+        <div id="jb-content-right">
+          <h2>Enemy</h2>
+          <p><div id="enemy_message"></div></p>
+          <div id="boardWraaper">
+            <canvas id="enemy_agent_p" height=300></canvas>
+          </div>
+          <div id="boardWraaper">
+            <canvas id="enemy_agent_visit" height=300></canvas>
+          </div>
+        </div>
+      </div>
+      <div id="jb-bottom">
+          <div id="v_monitoring"></div>
+      </div>
+      <div id="jb-footer">
+        <h3>Sponsored by InSpace, TTA</h3>
+      </div>
+    </div>
+  </body>
+
+  <script type="text/javascript" src="{{url_for('static', filename='dashboard.js')}}"></script>
+
+</html>

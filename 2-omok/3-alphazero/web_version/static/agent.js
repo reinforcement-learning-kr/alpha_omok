@@ -90,7 +90,7 @@ function clearBoard()
 	}
 }
 
-function updateBoard()
+function updateStatusBoard()
 {
 	// board fill color
 	ctx.fillStyle="#efefef";
