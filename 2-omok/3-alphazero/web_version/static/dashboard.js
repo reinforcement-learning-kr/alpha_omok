@@ -22,32 +22,78 @@ for (var i = 0; i < game_board_size; i++) {
 		boardArray[i][j] = 0;
 	}
 }
-var player_pi_colors = [
-	"#e0e0e0",
-	"#FFF5CC",
-	"#FFE670",
-	"#FFCC33",
-	"#FFAF33",
-	"#FF9933",
-	"#FF6F33",
-	"#FF5500",
-	"#E6281E",
-	"#C81E14"
+
+var headmap_color_blues = [
+	"#f7fbff",
+	"#deebf7",
+	"#c6dbef",
+	"#9ecae1",
+	"#6baed6",
+	"#4292c6",
+	"#2171b5",
+	"#08519c",
+	"#08306b"
 ];
 
-var enemy_pi_colors = [
-	"#e0e0e0",
-	"#F7FCF0",
-	"#E0F3DB",
-	"#CCEBC5",
-	"#A8DDB5",
-	"#7BCCC4",
-	"#4EB3D3",
-	"#2B8CBE",
-	"#0868AC",
-	"#084081"
+var headmap_color_greens = [
+	"#f7fcf5",
+	"#e5f5e0",
+	"#c7e9c0",
+	"#a1d99b",
+	"#74c476",
+	"#41ab5d",
+	"#238b45",
+	"#006d2c",
+	"#00441b"
 ];
 
+var heatmap_color_grays = [
+	"#ffffff",
+	"#f0f0f0",
+	"#d9d9d9",
+	"#bdbdbd",
+	"#969696",
+	"#737373",
+	"#525252",
+	"#252525",
+	"#000000"
+];
+
+var heatmap_color_oranges = [
+	"#fff5eb",
+	"#fee6ce",
+	"#fdd0a2",
+	"#fdae6b",
+	"#fd8d3c",
+	"#f16913",
+	"#d94801",
+	"#a63603",
+	"#7f2704"
+];
+
+var heatmap_color_purples = [
+	"#fcfbfd",
+	"#efedf5",
+	"#dadaeb",
+	"#bcbddc",
+	"#9e9ac8",
+	"#807dba",
+	"#6a51a3",
+	"#54278f",
+	"#3f007d"
+];
+
+var heatmap_color_reds = [
+	"#fff5f0",
+	"#fee0d2",
+	"#fcbba1",
+	"#fc9272",
+	"#fb6a4a",
+	"#ef3b2c",
+	"#cb181d",
+	"#a50f15",
+	"#67000d"
+];
 
 var player_p_boardArray = new Array(game_board_size); 
 for (var i = 0; i < game_board_size; i++) {
@@ -85,6 +131,8 @@ var player_value = [];
 var enemy_move = [];
 var enemy_value = [];
 
+var action_index = -1;
+
 function updateBoard(ret)
 {
     if (ret.curr_turn == 0) // black turn: 0, white turn: 1
@@ -94,7 +142,9 @@ function updateBoard(ret)
     else 
     {
         turn = 2 // white
-    }
+	}
+	
+	action_index = ret.action_index
 
     game_board_size = ret.game_board_size
 
@@ -162,13 +212,12 @@ function updateVPlot(ret)
 }
 
 function renderBoard(){
+
 	// board fill color
 	ctx.fillStyle="#ffcc66";
 	ctx.fillRect(0, 0, width, height);
 
 	// board draw line
-	// ctx.strokeStyle="#333300";
-	// ctx.fillStyle="#333300";
 	ctx.strokeStyle = 'black';
 	ctx.fillStyle="#FF0000";
 	ctx.lineWidth = 1
@@ -186,9 +235,10 @@ function renderBoard(){
 		ctx.stroke();
 	}
 
-	// board draw clicked
+	// board draw
 	for (i = 0; i < game_board_size; i++) { 
-		for (j = 0; j < game_board_size; j++) {
+		for (j = 0; j < game_board_size; j++) 
+		{
 			if (boardArray[i][j] == 1) {
 				ctx.beginPath();
 				ctx.strokeStyle="#000000";
@@ -204,10 +254,29 @@ function renderBoard(){
 				ctx.fill();
 				ctx.stroke();
 			}
+			
+			ctx.lineWidth = 2;
+
+			if(action_index == (j * game_board_size + i))
+			{
+				if (boardArray[i][j] == 1) {
+					ctx.beginPath();
+					ctx.strokeStyle="#ffffff";
+					ctx.arc(blank + i * 32, blank + j * 32, radius / 2.0, 0, 2*Math.PI);
+					ctx.stroke();
+				} else if (boardArray[i][j] == 2){
+					ctx.beginPath();
+					ctx.strokeStyle="#000000";
+					ctx.arc(blank + i * 32, blank + j * 32, radius / 2.0, 0, 2*Math.PI);
+					ctx.stroke();
+				}
+			}
+
+			ctx.lineWidth = 1;
 		}
     }
     
-    board_message.innerHTML = "AlphaZero vs AlphaZero";
+    board_message.innerHTML = "AlphaOmoc vs AlphaOmoc";
 }
 
 function renderStatusBoard(agent, item_name)
@@ -234,7 +303,7 @@ function renderStatusBoard(agent, item_name)
 	ctx_target.fillRect(0, 0, width, height);
 
 	// board draw line
-	ctx_target.strokeStyle = '#ffffff';
+	ctx_target.strokeStyle = '#cdcdcd';
 	ctx_target.lineWidth = 1
 
     if (agent == "player" && item_name == "p")
@@ -254,6 +323,8 @@ function renderStatusBoard(agent, item_name)
         target_boardArrary = enemy_visit_boardArray;
     }        
 
+	
+	// draw line
 	for (i = 0; i < game_board_size; i++) 
 	{ 
 		// horizontal line draw
@@ -268,81 +339,145 @@ function renderStatusBoard(agent, item_name)
 		ctx_target.lineTo(height - blank, blank + i * 32 + 0.5);
 		ctx_target.stroke();
 	}
-	
+
+	// draw game board
+	for (i = 0; i < game_board_size; i++) 
+	{ 
+		for (j = 0; j < game_board_size; j++)
+		{
+			if (boardArray[i][j] == 1) 
+			{
+				ctx_target.beginPath();
+				ctx_target.strokeStyle="#999999";
+				ctx_target.fillStyle="#999999";
+				ctx_target.arc(blank + i * 32, blank + j * 32, radius/2.0, 0, 2*Math.PI);
+				ctx_target.fill();
+				ctx_target.stroke();
+			} 
+			else if (boardArray[i][j] == 2)
+			{
+				ctx_target.beginPath();
+				ctx_target.strokeStyle="#ffffff";
+				ctx_target.fillStyle="#ffffff";
+				ctx_target.arc(blank + i * 32, blank + j * 32, radius/2.0, 0, 2*Math.PI);
+				ctx_target.fill();
+				ctx_target.stroke();
+			}
+		}
+	}
+
+	ctx_target.globalAlpha = 0.5;
 	ctx_target.fillStyle="#000000";
 	ctx_target.font="11px Arial";
 
-	max_pi_val = 0.0;
-	min_pi_val = 1.0;
+	max_item_val = 0.0;
+	min_item_val = 1.0;
 
 	for (i = 0; i < game_board_size; i++) 
 	{ 
 		for (j = 0; j < game_board_size; j++)
 		{
-			pi_val = target_boardArrary[i][j];
+			item_val = target_boardArrary[i][j];
 
-			if (pi_val > max_pi_val)
+			if (item_val > max_item_val)
 			{
-				max_pi_val = pi_val
+				max_item_val = item_val
 			}
 
-			if (pi_val < min_pi_val && pi_val != 0.0)
+			if (item_val < min_item_val && item_val != 0.0)
 			{
-				min_pi_val = pi_val
+				min_item_val = item_val
 			}
 		}
 	}
 	
-	if (max_pi_val == 0)
+	if (max_item_val == 0)
 	{
-		max_pi_val = 1.0;
+		max_item_val = 1.0;
 	}
 
-	// board draw clicked
 	for (i = 0; i < game_board_size; i++) 
 	{ 
 		for (j = 0; j < game_board_size; j++)
 		{
-			pi_val = target_boardArrary[i][j];
+			item_val = target_boardArrary[i][j];
 
-			if (pi_val == 0.0)
+			if (item_val == 0.0)
 			{
-				pi_val_idx = 0;
+				item_val_idx = 0;
 			}
 			else
 			{
-				pi_val_idx = parseInt((pi_val - min_pi_val) * 8.0 / (max_pi_val - min_pi_val));
-				pi_val_idx = pi_val_idx + 1;
+				item_val_idx = parseInt((item_val - min_item_val) * 7.0 / (max_item_val - min_item_val));
+				item_val_idx = item_val_idx + 1;
 			}
 
-			if(agent == "player")
+			if(agent == "player" && item_name == "p")
 			{
-				ctx_target.fillStyle = player_pi_colors[pi_val_idx];
+				ctx_target.fillStyle = headmap_color_blues[item_val_idx];
 			}
-			else
+			else if(agent == "player" && item_name == "visit")
 			{
-				ctx_target.fillStyle = enemy_pi_colors[pi_val_idx];
+				ctx_target.fillStyle = heatmap_color_purples[item_val_idx];
 			}
+			else if(agent == "enemy" && item_name == "p")
+			{
+				ctx_target.fillStyle = heatmap_color_oranges[item_val_idx];
+			}
+			else if(agent == "enemy" && item_name == "visit")
+			{
+				ctx_target.fillStyle = heatmap_color_reds[item_val_idx];
+			}			
 
 			ctx_target.beginPath();
-			ctx_target.arc(blank + i * 32, blank + j * 32, radius, 0, 2*Math.PI);
+			ctx_target.rect(blank - 16 + i * 32, blank - 16 + j * 32, 32, 32);
 			ctx_target.fill();
-			ctx_target.stroke();
-			
-			ctx.fillStyle="#000000";
+		}
+	}
 
-			if (item_name == "pi")
+	ctx_target.globalAlpha = 1.0;
+
+	// display value
+	for (i = 0; i < game_board_size; i++) 
+	{ 
+		for (j = 0; j < game_board_size; j++)
+		{
+			item_val = target_boardArrary[i][j];
+
+			if (item_val == 0.0)
 			{
-				pi_val_cut = pi_val.toExponential(1);
-				pi_val_str = pi_val_cut.toString();					
-				pi_val_str_lines = pi_val_str.split("e")
-				ctx_target.textAlign="center"; 
-				ctx_target.fillText(pi_val_str_lines[0], blank + i * 32, blank - 1 + j * 32);
-				ctx_target.fillText("e" + pi_val_str_lines[1], blank + i * 32, blank + 9 + j * 32);
+				item_val_idx = 0;
 			}
 			else
 			{
-				pi_val_str = pi_val.toString();	
+				item_val_idx = parseInt((item_val - min_item_val) * 7.0 / (max_item_val - min_item_val));
+				item_val_idx = item_val_idx + 1;
+			}
+
+			if (item_val_idx == 0)
+			{
+				continue;
+			}
+			else if(item_val_idx < 6)
+			{
+				ctx_target.fillStyle="#333333";
+			}
+			else
+			{
+				ctx_target.fillStyle="#ffffff";
+			}
+
+			if (item_name == "p")
+			{
+				pi_val_cut = item_val * 100.0;
+				pi_val_cut = pi_val_cut.toFixed(2);
+				pi_val_str = pi_val_cut.toString();	
+				ctx_target.textAlign="center"; 
+				ctx_target.fillText(pi_val_str, blank + i * 32, blank + 4 + j * 32);
+			}
+			else
+			{
+				pi_val_str = item_val.toString();	
 				ctx_target.textAlign="center"; 
 				ctx_target.fillText(pi_val_str, blank + i * 32, blank + 4 + j * 32);
 			}
@@ -366,10 +501,24 @@ function renderVPlot()
         type: 'scatter',
         fill: 'tozeroy',
         name: 'enemy'
-    };
+	};
+	
+	var layout = {
+		title: 'Value Network',
+		xaxis: {
+			title: 'Step',
+			range: [0, 81],
+			autorange: false
+		},
+		yaxis: {
+			title: 'Value',
+			range: [0.0, 100],
+			autorange: false
+		}
+	};
 
     var data = [trace1, trace2];
-    Plotly.newPlot('v_monitoring', data);
+    Plotly.newPlot('v_monitoring', data, layout);
 }
 
 function reqPeriodicStatus()
@@ -439,4 +588,4 @@ renderBoard();
 renderVPlot();
 
 setInterval(reqPeriodicStatus, 500);
-setInterval(reqPromptStatus, 1);
+setInterval(reqPromptStatus, 100);

@@ -91,7 +91,7 @@ class ZeroAgent(object):
             if PRINT_MCTS:
                 sys.stdout.write('simulation: {}\r'.format(i + 1))
                 sys.stdout.flush()
-                self.message = 'AlphaZero simulation: {}\r'.format(i + 1)
+                self.message = 'simulation: {}\r'.format(i + 1)
 
             # selection
             leaf_id, win_index = self._selection(root_id)
@@ -315,7 +315,7 @@ class RZeroAgent(object):
             if PRINT_MCTS:
                 sys.stdout.write('simulation: {}\r'.format(i + 1))
                 sys.stdout.flush()
-                self.message = 'AlphaZero simulation: {}\r'.format(i + 1)
+                self.message = 'simulation: {}\r'.format(i + 1)
 
             # selection
             leaf_id, win_index = self._selection(root_id)

@@ -29,7 +29,7 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 100
+N_MCTS = 500
 #N_MATCH = 12 infinity loop in web
 
 use_cuda = torch.cuda.is_available()
@@ -199,14 +199,14 @@ class Evaluator(object):
         if self.player is None:
             return ''
 
-        return self.player.get_message()
+        return 'Player : ' + self.player.get_message()
 
     def get_enemy_message(self):
 
         if self.enemy is None:
             return ''
 
-        return self.enemy.get_message()
+        return 'Enemy : ' + self.enemy.get_message()
 
     def get_player_visit(self):
 
@@ -310,6 +310,7 @@ def main():
 
             # WebAPI
             gi.game_board = board
+            gi.action_index = int(action_index)
             gi.win_index = win_index
             gi.curr_turn = turn
 
@@ -324,10 +325,12 @@ def main():
             if turn == enemy_turn:
                 evaluator.enemy.del_parents(root_id)
                 player_agent_info.add_value(move, v)
+                player_agent_info.p = p
 
             else:
                 evaluator.player.del_parents(root_id)
                 enemy_agent_info.add_value(move, v)
+                enemy_agent_info.p = p
 
             # used for debugging
             if not check_valid_pos:
@@ -396,6 +399,7 @@ def periodic_status():
     data["game_board_size"] = gi.game_board.shape[0]
     data["game_board_values"] = gi.game_board.reshape(gi.game_board.size).astype(int).tolist()
     data["game_board_message"] = gi.message
+    data["action_index"] = gi.action_index
     data["win_index"] = gi.win_index
     data["curr_turn"] = gi.curr_turn
 
