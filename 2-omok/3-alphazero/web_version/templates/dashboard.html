@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <meta charset="utf-8">
+    <title>AlphaOmoc</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      .profile_photo {
+        width: 50px; height: 50px;
+        object-fit: cover;
+        border-radius: 50%;
+      }
+      #jb-container {
+        width: 1250px;
+        margin: 2px auto;
+        padding: 2px;
+      }
+      #jb-header {
+        padding: 2px;
+        margin-bottom: 2px;
+      }
+      #jb-content-top {
+        display: flex;
+        flex-flow: row nowrap; /* Align on the same line */
+        justify-content: space-between; /* Equal margin between the child elements */        
+      }
+      #jb-content-top-left {
+        width: 300px;
+        padding: 2px;
+        margin-bottom: 2px;
+      }
+      #jb-content-top-right {
+        width: 950px;
+        padding: 2px;
+        margin-bottom: 2px;
+      }
+      #jb-content-bottom {
+        display: flex;
+        flex-flow: row nowrap; /* Align on the same line */
+        justify-content: space-between; /* Equal margin between the child elements */        
+      }
+      #jb-content-bottom-first {
+        width: 300px;
+        padding: 2px;
+        margin-bottom: 2px;
+      }
+      #jb-content-bottom-second {
+        width: 300px;
+        padding: 2px;
+        margin-bottom: 2px;
+      }
+      #jb-content-bottom-third {
+        width: 300px;
+        padding: 2px;
+        margin-bottom: 2px;
+      }
+      #jb-content-bottom-fourth {
+        width: 300px;
+        padding: 2px;
+        margin-bottom: 2px;
+      }
+      #jb-footer {
+        padding: 10px;
+        margin-bottom: 2px;
+      }      
+      @media ( max-width: 480px ) {
+        #jb-container {
+          width: auto;
+        }
+        #jb-content {
+          float: none;
+          width: auto;
+        }
+        #jb-sidebar {
+          float: none;
+          width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="jb-container">
+      <div id="jb-header">
+        <table width=100%>
+          <td>
+              <h3>RLKorea 알파오목팀 (민규식, 김정대, 이웅원, 김태영)</h3>
+          </td>
+          <td valign=bottom align = 'right'>
+              <a href="https://www.facebook.com/kyushik.min"><img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/c49.49.618.618/s320x320/1003095_548203415239980_763534767_n.jpg?_nc_cat=0&oh=5c5af7939c5aae73c106a51ed1826220&oe=5C0E12C2"></a>  
+              <a href="https://www.facebook.com/kekmodel"><img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/c0.25.320.320/p320x320/21077395_1537713662941940_6762825154227344485_n.jpg?_nc_cat=0&oh=b9c5743602a07a2825ef6314685d3652&oe=5C05C424"></a>
+              <a href="https://www.facebook.com/dnddnjs"><img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/p320x320/27752164_1313116262167304_2042906934612955122_n.jpg?_nc_cat=0&oh=a74c81b85eda759d086ca40a55692e27&oe=5BF740A9"></a>
+              <a href="https://www.facebook.com/tykimo"><img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/p320x320/28467837_10213891419232363_5136845460214548858_n.jpg?_nc_cat=0&oh=f35063b545e0d66850585232a438092c&oe=5C101352"></a>
+          </td>
+        </table>
+      </div>
+      <div id="jb-content-top">
+          <div id="jb-content-top-left">
+              <h4><div id="board_message"></div></h4>
+              <div id="boardWraaper">
+                <canvas id="board" height=300></canvas>
+              </div>
+              <div id="player_message"></div>
+              <div id="enemy_message"></div>
+          </div>
+          <div id="jb-content-top-right">
+              <div id="v_monitoring"></div>
+          </div>
+      </div>
+      <div id="jb-content-bottom">
+          <div id="jb-content-bottom-first">
+              <h4>Player Policy Network</h4>
+              <div id="boardWraaper">
+                  <canvas id="player_agent_p" height=300></canvas>
+              </div>
+          </div>
+          <div id="jb-content-bottom-second">
+              <h4>Player MCTS Visit</h4>
+              <div id="boardWraaper">
+                  <canvas id="player_agent_visit" height=300></canvas>
+              </div>
+          </div>  
+          <div id="jb-content-bottom-third">
+              <h4>Enemy Policy Network</h4>
+              <div id="boardWraaper">
+                  <canvas id="enemy_agent_p" height=300></canvas>
+              </div>
+          </div>                      
+          <div id="jb-content-bottom-fourth">
+              <h4>Enemy MCTS Visit</h4>
+              <div id="boardWraaper">
+                  <canvas id="enemy_agent_visit" height=300></canvas>
+                </div>      
+          </div>            
+      </div>
+      <div id="jb-footer">
+          <table width=100%>
+            <td align=center><h3>Sponsored By</h3></td>
+            <td align=center><img src="{{url_for('static', filename='logo_inspace.png')}}" height = '40'></td>
+            <td align=center><img src="{{url_for('static', filename='logo_hpc.png')}}" height = '40'></td>
+          </table>
+      </div>                      
+    </div>
+  </body>
+
+  <script type="text/javascript" src="{{url_for('static', filename='dashboard.js')}}"></script>
+
+</html>

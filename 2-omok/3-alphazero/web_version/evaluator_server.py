@@ -15,9 +15,8 @@ import utils
 # WebAPI
 import flask
 import threading
-from info import GameInfo
-from info import AgentInfo
-
+from game_info import GameInfo
+from agent_info import AgentInfo
 
 BOARD_SIZE = game.Return_BoardParams()[0]
 
@@ -30,8 +29,8 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 3000
-N_MATCH = 12
+N_MCTS = 500
+#N_MATCH = 12 infinity loop in web
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -40,7 +39,8 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 app = flask.Flask(__name__)
 log = logging.getLogger('werkzeug')
 log.disabled = True
-app.logger.disabled = True
+#app.logger.disabled = True
+
 gi = GameInfo(BOARD_SIZE)
 player_agent_info = AgentInfo(BOARD_SIZE)
 enemy_agent_info = AgentInfo(BOARD_SIZE)
@@ -50,8 +50,8 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = './data/180803_12700_101600_step_model.pickle'
-enemy_model_path = './data/180803_12600_100800_step_model.pickle'
+player_model_path = './data/180804_13300_106400_step_model.pickle'
+enemy_model_path = './data/180804_13300_106400_step_model.pickle'
 
 # ===================================================================== #
 
@@ -156,12 +156,12 @@ class Evaluator(object):
             pi = self.player.get_pi(root_id, board, turn, tau=0.01)
             self.player_pi = pi
             self.player_visit = self.player.get_visit()
-            action, action_index = utils.get_action(pi)
+            action, action_index = utils.argmax_pi(pi)
         else:
             pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
             self.enemy_pi = pi
             self.enemy_visit = self.enemy.get_visit()
-            action, action_index = utils.get_action(pi)
+            action, action_index = utils.argmax_pi(pi)
 
         return action, action_index
 
@@ -199,28 +199,14 @@ class Evaluator(object):
         if self.player is None:
             return ''
 
-        return self.player.get_message()
+        return 'Player : ' + self.player.get_message()
 
     def get_enemy_message(self):
 
         if self.enemy is None:
             return ''
 
-        return self.enemy.get_message()
-
-    def get_player_pi(self):
-
-        if self.player_pi is None:
-            return None
-
-        return self.player_pi
-
-    def get_enemy_pi(self):
-
-        if self.enemy_pi is None:
-            return None
-
-        return self.enemy_pi
+        return 'Enemy : ' + self.enemy.get_message()
 
     def get_player_visit(self):
 
@@ -293,7 +279,9 @@ def main():
     print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
         player_elo, enemy_elo))
 
-    for i in range(N_MATCH):
+    i = 0
+
+    while True:
         board = np.zeros([BOARD_SIZE, BOARD_SIZE])
         root_id = (0,)
         win_index = 0
@@ -322,23 +310,27 @@ def main():
 
             # WebAPI
             gi.game_board = board
+            gi.action_index = int(action_index)
             gi.win_index = win_index
             gi.curr_turn = turn
 
             move = np.count_nonzero(board)
 
-            player_agent_info.pi = evaluator.get_player_pi()
-            enemy_agent_info.pi = evaluator.get_enemy_pi()
-            player_agent_info.visit = evaluator.get_player_visit()
-            enemy_agent_info.visit = evaluator.get_enemy_visit()
+            if evaluator.get_player_visit() is not None:
+                player_agent_info.visit = evaluator.get_player_visit()
+
+            if evaluator.get_enemy_visit() is not None:
+                enemy_agent_info.visit = evaluator.get_enemy_visit()
 
             if turn == enemy_turn:
                 evaluator.enemy.del_parents(root_id)
                 player_agent_info.add_value(move, v)
+                player_agent_info.p = p
 
             else:
                 evaluator.player.del_parents(root_id)
                 enemy_agent_info.add_value(move, v)
+                enemy_agent_info.p = p
 
             # used for debugging
             if not check_valid_pos:
@@ -387,6 +379,7 @@ def main():
                 print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
                     player_elo, enemy_elo))
                 evaluator.reset()
+        i = i + 1
 
 
 # WebAPI
@@ -394,100 +387,50 @@ def main():
 def home():
     return flask.render_template('index.html')
 
+@app.route('/dashboard')
+def dashboard():
+    return flask.render_template('dashboard.html')
 
-@app.route('/gameboard_view')
-def GameboardView():
-    return flask.render_template('gameboard_view.html')
-
-
-@app.route('/agent_view/<role>/<debug>')
-def AgentView(role, debug):
-    return flask.render_template('agent_view.html', role=role, debug=debug)
-
-
-@app.route('/monitoring_view')
-def MonitoringView():
-    return flask.render_template('monitoring_view.html')
-
-
-@app.route('/action')
-def action():
-
-    action_idx = int(flask.request.args.get("action_idx"))
-    data = {"success": False}
-    evaluator.put_action(action_idx, gi.curr_turn, gi.enemy_turn)
-
-    data["success"] = True
-
-    return flask.jsonify(data)
-
-
-@app.route('/gameboard')
-def gameboard():
-
-    gi.player_message = evaluator.get_player_message()
-    gi.enemy_message = evaluator.get_enemy_message()
-    # print('gi.player_message' + gi.player_message)
+@app.route('/periodic_status')
+def periodic_status():
 
     data = {"success": False}
+
     data["game_board_size"] = gi.game_board.shape[0]
-    game_board = gi.game_board.reshape(gi.game_board.size).astype(int)
-    data["game_board_values"] = game_board.tolist()
+    data["game_board_values"] = gi.game_board.reshape(gi.game_board.size).astype(int).tolist()
+    data["game_board_message"] = gi.message
+    data["action_index"] = gi.action_index
     data["win_index"] = gi.win_index
     data["curr_turn"] = gi.curr_turn
-    data["player_message"] = gi.player_message
-    data["enemy_message"] = gi.enemy_message
-    data["success"] = True
 
-    return flask.jsonify(data)
+    data["player_agent_p_size"] = player_agent_info.p_size
+    data["player_agent_p_values"] = player_agent_info.p.reshape(player_agent_info.p_size).astype(float).tolist()
+    data["player_agent_visit_size"] = player_agent_info.visit_size
+    data["player_agent_visit_values"] = player_agent_info.visit.reshape(player_agent_info.visit_size).astype(float).tolist()
 
+    data["enemy_agent_p_size"] = enemy_agent_info.p_size
+    data["enemy_agent_p_values"] = enemy_agent_info.p.reshape(enemy_agent_info.p_size).astype(float).tolist()
+    data["enemy_agent_visit_size"] = enemy_agent_info.visit_size
+    data["enemy_agent_visit_values"] = enemy_agent_info.visit.reshape(enemy_agent_info.visit_size).astype(float).tolist()
 
-@app.route('/agent')
-def agent():
-
-    role = flask.request.args.get("role")
-    debug = flask.request.args.get("debug")
-
-    data = {"success": False}
-
-    player_agent_info.message = evaluator.get_player_message()
-    enemy_agent_info.message = evaluator.get_enemy_message()
-
-    if role == 'player':
-        agent_info = player_agent_info
-    else:
-        agent_info = enemy_agent_info
-
-    if debug == 'pi':
-        debug_size = agent_info.pi_size
-        pi = agent_info.pi
-        debug_val = pi.reshape(pi.size).astype(float)
-    else:
-        debug_size = agent_info.visit_size
-        visit = agent_info.visit
-        debug_val = visit.reshape(visit.size).astype(float)
-
-    data["debug_size"] = debug_size
-    data["debug_values"] = debug_val.tolist()
-    data["message"] = agent_info.message
-
-    data["success"] = True
-
-    return flask.jsonify(data)
-
-
-@app.route('/monitoring')
-def monitoring():
-
-    data = {"success": False}
     data["player_agent_moves"] = player_agent_info.moves
     data["player_agent_values"] = player_agent_info.values
     data["enemy_agent_moves"] = enemy_agent_info.moves
     data["enemy_agent_values"] = enemy_agent_info.values
+
     data["success"] = True
 
     return flask.jsonify(data)
 
+@app.route('/prompt_status')
+def prompt_status():
+    data = {"success": False}
+
+    data["player_message"] = evaluator.get_player_message()
+    data["enemy_message"] = evaluator.get_enemy_message()
+    data["success"] = True
+
+    return flask.jsonify(data)
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
