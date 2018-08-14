@@ -391,6 +391,10 @@ def home():
 def dashboard():
     return flask.render_template('dashboard.html')
 
+@app.route('/test')
+def test():
+    return flask.render_template('test.html')
+
 @app.route('/periodic_status')
 def periodic_status():
 
