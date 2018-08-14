@@ -6,7 +6,7 @@ var ctx_eav = document.getElementById("enemy_agent_visit").getContext("2d");
 
 var game_board_size = 9
 var radius = 14;
-var blank = 20;
+var blank = 22;
 var turn = 1; // 1 black 2 white
 var width = (game_board_size - 1) * 32 + blank * 2;
 var height = (game_board_size - 1) * 32 + blank * 2;
@@ -235,25 +235,36 @@ function renderBoard(){
 		ctx.stroke();
 	}
 
+	ctx.shadowColor = 'black';
+
 	// board draw
 	for (i = 0; i < game_board_size; i++) { 
 		for (j = 0; j < game_board_size; j++) 
 		{
+			ctx.shadowBlur = 5;
+			ctx.shadowOffsetX = 2;
+			ctx.shadowOffsetY = 2;
+			ctx.shadowColor="#333333";
+
 			if (boardArray[i][j] == 1) {
 				ctx.beginPath();
 				ctx.strokeStyle="#000000";
 				ctx.fillStyle="#000000";
 				ctx.arc(blank + i * 32, blank + j * 32, radius, 0, 2*Math.PI);
 				ctx.fill();
-				ctx.stroke();
+				//ctx.stroke();
 			} else if (boardArray[i][j] == 2){
 				ctx.beginPath();
 				ctx.strokeStyle="#ffffff";
 				ctx.fillStyle="#ffffff";
 				ctx.arc(blank + i * 32, blank + j * 32, radius, 0, 2*Math.PI);
 				ctx.fill();
-				ctx.stroke();
+				//ctx.stroke();
 			}
+
+			ctx.shadowOffsetX = 0;
+			ctx.shadowOffsetY = 0;
+			ctx.shadowBlur = 0;
 			
 			ctx.lineWidth = 2;
 
@@ -402,7 +413,7 @@ function renderStatusBoard(agent, item_name)
 		{
 			item_val = target_boardArrary[i][j];
 
-			if (item_val == 0.0)
+			if (item_val < 0.001)
 			{
 				item_val_idx = 0;
 			}
@@ -444,7 +455,7 @@ function renderStatusBoard(agent, item_name)
 		{
 			item_val = target_boardArrary[i][j];
 
-			if (item_val == 0.0)
+			if (item_val < 0.001)
 			{
 				item_val_idx = 0;
 			}
@@ -506,12 +517,10 @@ function renderVPlot()
 	var layout = {
 		title: 'Value Network',
 		xaxis: {
-			title: 'Step',
 			range: [0, 81],
 			autorange: false
 		},
 		yaxis: {
-			title: 'Value',
 			range: [0.0, 100],
 			autorange: false
 		}
