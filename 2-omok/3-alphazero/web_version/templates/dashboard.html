@@ -17,9 +17,19 @@
         padding: 2px;
       }
       #jb-header {
+        display: flex;
+        flex-flow: row nowrap; /* Align on the same line */        
+        padding: 2px;
+        margin-bottom: 2px;
+      }      
+      #jb-header-left {
         padding: 2px;
         margin-bottom: 2px;
       }
+      #jb-header-right {
+        padding: 2px;
+        margin-bottom: 2px;
+      }      
       #jb-content-top {
         display: flex;
         flex-flow: row nowrap; /* Align on the same line */
@@ -68,31 +78,67 @@
         #jb-container {
           width: auto;
         }
-        #jb-content {
+        #jb-header {
+          width: auto;          
+        }      
+        #jb-header-left {
           float: none;
           width: auto;
         }
-        #jb-sidebar {
+        #jb-header-right {
+          float: none;
+          width: auto;
+        }      
+        #jb-content-top {
           float: none;
           width: auto;
         }
+        #jb-content-top-left {
+          float: none;
+          width: auto;
+        }
+        #jb-content-top-right {
+          float: none;
+          width: auto;
+        }
+        #jb-content-bottom {
+          width: auto;
+        }
+        #jb-content-bottom-first {
+          float: none;
+          width: auto;
+        }
+        #jb-content-bottom-second {
+          float: none;
+          width: auto;
+        }
+        #jb-content-bottom-third {
+          float: none;
+          width: auto;
+        }
+        #jb-content-bottom-fourth {
+          float: none;
+          width: auto;
+        }
+        #jb-footer {
+          float: none;
+          width: auto;
+        }              
       }
     </style>
   </head>
   <body>
     <div id="jb-container">
       <div id="jb-header">
-        <table width=100%>
-          <td>
-              <h3>RLKorea 알파오목팀 (민규식, 김정대, 이웅원, 김태영)</h3>
-          </td>
-          <td valign=bottom align = 'right'>
-              <a href="https://www.facebook.com/kyushik.min"><img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/c49.49.618.618/s320x320/1003095_548203415239980_763534767_n.jpg?_nc_cat=0&oh=5c5af7939c5aae73c106a51ed1826220&oe=5C0E12C2"></a>  
-              <a href="https://www.facebook.com/kekmodel"><img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/c0.25.320.320/p320x320/21077395_1537713662941940_6762825154227344485_n.jpg?_nc_cat=0&oh=b9c5743602a07a2825ef6314685d3652&oe=5C05C424"></a>
-              <a href="https://www.facebook.com/dnddnjs"><img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/p320x320/27752164_1313116262167304_2042906934612955122_n.jpg?_nc_cat=0&oh=a74c81b85eda759d086ca40a55692e27&oe=5BF740A9"></a>
-              <a href="https://www.facebook.com/tykimo"><img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/p320x320/28467837_10213891419232363_5136845460214548858_n.jpg?_nc_cat=0&oh=f35063b545e0d66850585232a438092c&oe=5C101352"></a>
-          </td>
-        </table>
+        <div id="jb-header-left">
+          <h3>RLKorea 알파오목팀</h3>
+        </div>
+        <div id="jb-header-right">
+          <a href="https://www.facebook.com/kyushik.min"><b>민규식</b> <img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/c49.49.618.618/s320x320/1003095_548203415239980_763534767_n.jpg?_nc_cat=0&oh=5c5af7939c5aae73c106a51ed1826220&oe=5C0E12C2"></a>  
+          <a href="https://www.facebook.com/kekmodel"><b>김정대</b> <img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/c0.25.320.320/p320x320/21077395_1537713662941940_6762825154227344485_n.jpg?_nc_cat=0&oh=b9c5743602a07a2825ef6314685d3652&oe=5C05C424"></a>
+          <a href="https://www.facebook.com/dnddnjs"><b>이웅원</b> <img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/p320x320/27752164_1313116262167304_2042906934612955122_n.jpg?_nc_cat=0&oh=a74c81b85eda759d086ca40a55692e27&oe=5BF740A9"></a>
+          <a href="https://www.facebook.com/tykimo"><b>김태영</b> <img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/p320x320/28467837_10213891419232363_5136845460214548858_n.jpg?_nc_cat=0&oh=f35063b545e0d66850585232a438092c&oe=5C101352"></a>
+        </div>
       </div>
       <div id="jb-content-top">
           <div id="jb-content-top-left">
@@ -134,11 +180,10 @@
           </div>            
       </div>
       <div id="jb-footer">
-          <table width=100%>
-            <td align=center><h3>Sponsored By</h3></td>
-            <td align=center><img src="{{url_for('static', filename='logo_inspace.png')}}" height = '40'></td>
-            <td align=center><img src="{{url_for('static', filename='logo_hpc.png')}}" height = '40'></td>
-          </table>
+            <h3>Sponsored By</h3>
+            <img src="{{url_for('static', filename='logo_inspace.png')}}" height = '40'>
+            <img src="{{url_for('static', filename='logo_hpc.png')}}" height = '40'>
+            <img src="{{url_for('static', filename='logo_aws.png')}}" height = '40'>
       </div>                      
     </div>
   </body>
