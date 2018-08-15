@@ -30,7 +30,7 @@ OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
 N_MCTS = 500
-#N_MATCH = 12 infinity loop in web
+# N_MATCH = 12 infinity loop in web
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -39,7 +39,7 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 app = flask.Flask(__name__)
 log = logging.getLogger('werkzeug')
 log.disabled = True
-#app.logger.disabled = True
+# app.logger.disabled = True
 
 gi = GameInfo(BOARD_SIZE)
 player_agent_info = AgentInfo(BOARD_SIZE)
@@ -387,13 +387,16 @@ def main():
 def home():
     return flask.render_template('index.html')
 
+
 @app.route('/dashboard')
 def dashboard():
     return flask.render_template('dashboard.html')
 
+
 @app.route('/test')
 def test():
     return flask.render_template('test.html')
+
 
 @app.route('/periodic_status')
 def periodic_status():
@@ -401,21 +404,26 @@ def periodic_status():
     data = {"success": False}
 
     data["game_board_size"] = gi.game_board.shape[0]
-    data["game_board_values"] = gi.game_board.reshape(gi.game_board.size).astype(int).tolist()
+    data["game_board_values"] = gi.game_board.reshape(
+        gi.game_board.size).astype(int).tolist()
     data["game_board_message"] = gi.message
     data["action_index"] = gi.action_index
     data["win_index"] = gi.win_index
     data["curr_turn"] = gi.curr_turn
 
     data["player_agent_p_size"] = player_agent_info.p_size
-    data["player_agent_p_values"] = player_agent_info.p.reshape(player_agent_info.p_size).astype(float).tolist()
+    data["player_agent_p_values"] = player_agent_info.p.reshape(
+        player_agent_info.p_size).astype(float).tolist()
     data["player_agent_visit_size"] = player_agent_info.visit_size
-    data["player_agent_visit_values"] = player_agent_info.visit.reshape(player_agent_info.visit_size).astype(float).tolist()
+    data["player_agent_visit_values"] = player_agent_info.visit.reshape(
+        player_agent_info.visit_size).astype(float).tolist()
 
     data["enemy_agent_p_size"] = enemy_agent_info.p_size
-    data["enemy_agent_p_values"] = enemy_agent_info.p.reshape(enemy_agent_info.p_size).astype(float).tolist()
+    data["enemy_agent_p_values"] = enemy_agent_info.p.reshape(
+        enemy_agent_info.p_size).astype(float).tolist()
     data["enemy_agent_visit_size"] = enemy_agent_info.visit_size
-    data["enemy_agent_visit_values"] = enemy_agent_info.visit.reshape(enemy_agent_info.visit_size).astype(float).tolist()
+    data["enemy_agent_visit_values"] = enemy_agent_info.visit.reshape(
+        enemy_agent_info.visit_size).astype(float).tolist()
 
     data["player_agent_moves"] = player_agent_info.moves
     data["player_agent_values"] = player_agent_info.values
@@ -426,6 +434,7 @@ def periodic_status():
 
     return flask.jsonify(data)
 
+
 @app.route('/prompt_status')
 def prompt_status():
     data = {"success": False}
@@ -435,6 +444,7 @@ def prompt_status():
     data["success"] = True
 
     return flask.jsonify(data)
+
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
