@@ -1,13 +1,14 @@
 import numpy as np
 
+
 class AgentInfo:
 
     def __init__(self, board_size):
 
         self.p = np.zeros([board_size, board_size])
-        self.p_size = board_size*board_size
+        self.p_size = board_size * board_size
         self.visit = np.zeros([board_size, board_size])
-        self.visit_size = board_size*board_size
+        self.visit_size = board_size * board_size
         self.moves = []
         self.values = []
         self.message = ''
