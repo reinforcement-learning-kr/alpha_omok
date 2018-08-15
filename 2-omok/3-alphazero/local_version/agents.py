@@ -40,10 +40,16 @@ class ZeroAgent(object):
             child_id = self.root_id + (action_index,)
             visit[action_index] = self.tree[child_id]['n']
 
-        if visit.max() > 1000:
-            tau = 0.1
-        pi = visit**(1 / tau)
-        pi /= pi.sum()
+        v_max = visit.max()
+        if v_max > 1200:
+            if v_max <= 1e6:
+                tau = 0.02
+            else:
+                tau = 0.03
+
+        visit_exp = visit**(1 / tau)
+        pi = visit_exp / visit_exp.sum()
+        assert not(np.isnan(pi).any())
 
         return pi
 
@@ -835,10 +841,10 @@ class HumanAgent(object):
         while True:
             action = 0
 
-            board, check_valid_pos, win_index, turn, action_index = self.env.step(
+            _, check_valid_pos, _, _, action_index = self.env.step(
                 action)
 
-            if check_valid_pos == True:
+            if check_valid_pos is True:
                 pi = np.zeros(self.board_size**2, 'float')
                 pi[action_index] = 1
                 break
