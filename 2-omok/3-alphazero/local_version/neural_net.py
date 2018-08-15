@@ -38,7 +38,7 @@ class PolicyHead(nn.Module):
         self.policy_bn = nn.BatchNorm2d(2)
         self.relu = nn.ReLU()
         self.policy_fc = nn.Linear(board_size**2 * 2, board_size**2)
-        self.log_softmax = nn.LogSoftmax(dim=1)
+        self.log_softmax = nn.LogSoftmax(dim=-1)
 
     def forward(self, x):
         out = self.policy_head(x)
