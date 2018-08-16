@@ -46,15 +46,16 @@ class ZeroAgent(object):
 
         self.visit = visit
 
-        v_max = visit.max()
-        if v_max > 1200:
-            if v_max <= 1e6:
-                tau = 0.02
-            else:
-                tau = 0.03
+        if tau != 1:
+            v_max = visit.max()
+            if v_max > 1200:
+                if v_max <= 1e6:
+                    tau = 0.02
+                else:
+                    tau = 0.03
 
-        pi = visit**(1 / tau)
-        pi /= pi.sum()
+        visit_exp = visit**(1 / tau)
+        pi = visit_exp / visit_exp.sum()
         assert not(np.isnan(pi).any())
 
         return pi
@@ -274,12 +275,17 @@ class RZeroAgent(object):
 
         self.visit = visit
 
-        if visit.max() > 1000:
-            tau = 0.1
-        pi = visit**(1 / tau)
-        pi /= pi.sum()
+        if tau != 1:
+            v_max = visit.max()
+            if v_max > 1200:
+                if v_max <= 1e6:
+                    tau = 0.02
+                else:
+                    tau = 0.03
 
-        return pi
+        visit_exp = visit**(1 / tau)
+        pi = visit_exp / visit_exp.sum()
+        assert not(np.isnan(pi).any())
 
     def get_visit(self):
         return self.visit

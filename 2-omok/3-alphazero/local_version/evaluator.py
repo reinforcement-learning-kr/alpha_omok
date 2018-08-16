@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 import agents
-from env import env_small as game
+from env import env_regular as game
 import neural_net
 import utils
 
@@ -21,7 +21,7 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 2400
+N_MCTS = 4000
 N_MATCH = 6
 
 use_cuda = torch.cuda.is_available()
@@ -32,8 +32,8 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = 'human'
-enemy_model_path = './data/180805_14300_114400_step_model.pickle'
+player_model_path = './data/180816_5600_100541_step_model.pickle'
+enemy_model_path = './data/180713_53_153659_step_model.pickle'
 
 # ===================================================================== #
 
@@ -107,10 +107,10 @@ class Evaluator(object):
             self.enemy = agents.WebAgent(BOARD_SIZE)
         elif model_path_b:
             print('load enemy model:', model_path_b)
-            self.enemy = agents.RZeroAgent(BOARD_SIZE,
-                                           N_MCTS,
-                                           IN_PLANES_ENEMY,
-                                           noise=False)
+            self.enemy = agents.ZeroAgent(BOARD_SIZE,
+                                          N_MCTS,
+                                          IN_PLANES_ENEMY,
+                                          noise=False)
             self.enemy.model = neural_net.PVNet(N_BLOCKS_ENEMY,
                                                 IN_PLANES_ENEMY,
                                                 OUT_PLANES_ENEMY,

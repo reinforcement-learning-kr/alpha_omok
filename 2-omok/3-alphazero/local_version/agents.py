@@ -40,12 +40,13 @@ class ZeroAgent(object):
             child_id = self.root_id + (action_index,)
             visit[action_index] = self.tree[child_id]['n']
 
-        v_max = visit.max()
-        if v_max > 1200:
-            if v_max <= 1e6:
-                tau = 0.02
-            else:
-                tau = 0.03
+        if tau != 1:
+            v_max = visit.max()
+            if v_max > 1200:
+                if v_max <= 1e6:
+                    tau = 0.02
+                else:
+                    tau = 0.03
 
         visit_exp = visit**(1 / tau)
         pi = visit_exp / visit_exp.sum()
@@ -254,10 +255,17 @@ class RZeroAgent(object):
             child_id = self.root_id + (action_index,)
             visit[action_index] = self.tree[child_id]['n']
 
-        if visit.max() > 1000:
-            tau = 0.1
-        pi = visit**(1 / tau)
-        pi /= pi.sum()
+        if tau != 1:
+            v_max = visit.max()
+            if v_max > 1200:
+                if v_max <= 1e6:
+                    tau = 0.02
+                else:
+                    tau = 0.03
+
+        visit_exp = visit**(1 / tau)
+        pi = visit_exp / visit_exp.sum()
+        assert not(np.isnan(pi).any())
 
         return pi
 
