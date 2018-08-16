@@ -50,8 +50,8 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = './data/180817_3300_62831_step_model.pickle'
-enemy_model_path = './data/180817_6100_110532_step_model.pickle'
+player_model_path = None
+enemy_model_path = None
 
 # ===================================================================== #
 

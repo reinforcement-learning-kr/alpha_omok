@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 import agents
-from env import env_regular as game
+from env import env_small as game
 import neural_net
 import utils
 
@@ -21,7 +21,7 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 4000
+N_MCTS = 2000
 N_MATCH = 6
 
 use_cuda = torch.cuda.is_available()
@@ -32,8 +32,8 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = './data/180816_5600_100541_step_model.pickle'
-enemy_model_path = './data/180713_53_153659_step_model.pickle'
+player_model_path = None
+enemy_model_path = None
 
 # ===================================================================== #
 
