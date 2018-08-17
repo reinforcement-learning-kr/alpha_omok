@@ -300,13 +300,13 @@ def self_play(n_selfplay):
 
                 while state_black or state_white:
                     if state_black:
-                        cur_memory.appendleft((state_black.pop(),
-                                               pi_black.pop(),
-                                               reward_black))
+                        cur_memory.append((state_black.pop(),
+                                           pi_black.pop(),
+                                           reward_black))
                     if state_white:
-                        cur_memory.appendleft((state_white.pop(),
-                                               pi_white.pop(),
-                                               reward_white))
+                        cur_memory.append((state_white.pop(),
+                                           pi_white.pop(),
+                                           reward_white))
 
             # =========================  result  =========================== #
 
