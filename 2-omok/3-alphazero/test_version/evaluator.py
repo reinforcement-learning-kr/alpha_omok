@@ -127,7 +127,7 @@ class Evaluator(object):
                                                 OUT_PLANES_ENEMY,
                                                 BOARD_SIZE).to(device)
 
-    def get_action(self, root_id, enemy_turn):
+    def get_action(self, root_id, turn, enemy_turn):
         if turn != enemy_turn:
             pi = self.player.get_pi(root_id)
             action, action_index = utils.get_argmax_pi(pi)
@@ -206,7 +206,9 @@ def main():
         while win_index == 0:
             utils.render_str(board, BOARD_SIZE, action_index)
 
-            action, action_index = evaluator.get_action(root_id, enemy_turn)
+            action, action_index = evaluator.get_action(root_id,
+                                                        turn,
+                                                        enemy_turn)
 
             if turn != enemy_turn:
                 # player turn
