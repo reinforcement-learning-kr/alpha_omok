@@ -43,7 +43,7 @@ class ZeroAgent(object):
         pi = visit / visit.sum()
 
         if tau == 0:
-            pi = utils.argmax_pi(pi)
+            pi, _ = utils.argmax_pi(pi)
 
         # assert not(np.isnan(pi).any())
         return pi
