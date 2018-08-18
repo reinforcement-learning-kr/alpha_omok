@@ -13,7 +13,7 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 
 
 class ZeroAgent(object):
-    def __init__(self, board_size, num_mcts, inplanes, noise=True):
+    def __init__(self, board_size, num_mcts, inplanes, async_flags, noise=True):
         self.board_size = board_size
         self.num_mcts = num_mcts
         self.inplanes = inplanes
@@ -28,6 +28,7 @@ class ZeroAgent(object):
         self.message = 'Hi, this is Zero.'
         self.visit = None
         self.is_real_root = True
+        self.async_flags = async_flags
 
     def reset(self):
         self.root_id = None
@@ -37,6 +38,9 @@ class ZeroAgent(object):
     def get_pi(self, root_id, board, turn, tau):
         self._init_mcts(root_id, board, turn)
         self._mcts(self.root_id)
+
+        if self.async_flags[0] == True:
+            return None
 
         visit = np.zeros(self.board_size**2, 'float')
 
@@ -94,6 +98,10 @@ class ZeroAgent(object):
             num_mcts = self.num_mcts
 
         for i in range(num_mcts):
+
+            if self.async_flags[0] == True:
+                return
+
             if PRINT_MCTS:
                 sys.stdout.write('simulation: {}\r'.format(i + 1))
                 sys.stdout.flush()

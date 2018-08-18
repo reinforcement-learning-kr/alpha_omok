@@ -10,3 +10,5 @@ class GameInfo:
         self.curr_turn = 0
         self.action_index = -1
         self.message = '오목'
+        self.player_agent_name = ''
+        self.enemy_agent_name = ''

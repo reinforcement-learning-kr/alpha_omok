@@ -1,3 +1,5 @@
+var baseurl = "http://127.0.0.1:5000/"
+
 var ctx = document.getElementById("board").getContext("2d");
 var ctx_pap = document.getElementById("player_agent_p").getContext("2d");
 var ctx_pav = document.getElementById("player_agent_visit").getContext("2d");
@@ -11,7 +13,9 @@ var turn = 1; // 1 black 2 white
 var width = (game_board_size - 1) * 32 + blank * 2;
 var height = (game_board_size - 1) * 32 + blank * 2;
 
-var board_message = document.getElementById("board_message");
+var select_player_agent_name = document.getElementById('select_player_agent_name').options[0];
+var select_enemy_agent_name = document.getElementById('select_enemy_agent_name').options[0];
+
 var player_message = document.getElementById("player_message");
 var enemy_message = document.getElementById("enemy_message");
 
@@ -539,8 +543,14 @@ function reqPeriodicStatus()
         if(xhr.status == 200) 
         {
             ret = JSON.parse(xhr.responseText);
-            
-            updateBoard(ret);
+			
+			select_player_agent_name.value = ret.player_agent_name;
+			select_player_agent_name.text = ret.player_agent_name;
+			select_enemy_agent_name.value = ret.enemy_agent_name;
+			select_enemy_agent_name.text = ret.enemy_agent_name;
+
+			updateBoard(ret);
+			
             updateStatusBoard("player", "p");
             updateStatusBoard("player", "visit");
             updateStatusBoard("enemy", "p");
@@ -558,7 +568,7 @@ function reqPeriodicStatus()
         }
     };
 
-    xhr.open('GET', 'http://127.0.0.1:5000/periodic_status', true);
+    xhr.open('GET', baseurl + 'periodic_status', true);
     xhr.send();
 }
 
@@ -577,7 +587,27 @@ function reqPromptStatus()
         }
     };
 
-    xhr.open('GET', 'http://127.0.0.1:5000/prompt_status', true);
+    xhr.open('GET', baseurl + 'prompt_status', true);
+    xhr.send();
+}
+
+function reqResetAgents()
+{
+	var xhr = new XMLHttpRequest();
+    
+    xhr.onload = function() 
+    {
+        if(xhr.status == 200) 
+        {
+			document.getElementById("select_player_agent_name").options[0].selected=true;
+			document.getElementById("select_enemy_agent_name").options[0].selected=true;	
+        }
+	};
+	
+	selected_player_agent_name = document.getElementById("select_player_agent_name").value;
+	selected_enemy_agent_name = document.getElementById("select_enemy_agent_name").value;
+
+    xhr.open('GET', baseurl + 'req_reset_agenets?player_agent='+selected_player_agent_name + '&enemy_agent='+selected_enemy_agent_name, true);
     xhr.send();
 }
 

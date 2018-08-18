@@ -45,19 +45,15 @@ gi = GameInfo(BOARD_SIZE)
 player_agent_info = AgentInfo(BOARD_SIZE)
 enemy_agent_info = AgentInfo(BOARD_SIZE)
 
-# =========================== input model path ======================== #
-#   'human': human play   'random': random     None: raw model MCTS     #
-#   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
-# ===================================================================== #
-
-player_model_path = './data/180804_13300_106400_step_model.pickle'
-enemy_model_path = './data/180804_13300_106400_step_model.pickle'
-
-# ===================================================================== #
-
+async_flags = [True, True]
 
 class Evaluator(object):
-    def __init__(self, model_path_a, model_path_b):
+
+    def __init__(self):
+        self.player = None
+        self.enemy = None
+
+    def set_agents(self, model_path_a, model_path_b):
         if model_path_a == 'random':
             print('load player model:', model_path_a)
             self.player = agents.RandomAgent(BOARD_SIZE)
@@ -78,6 +74,7 @@ class Evaluator(object):
             self.player = agents.ZeroAgent(BOARD_SIZE,
                                            N_MCTS,
                                            IN_PLANES_PLAYER,
+                                           async_flags,
                                            noise=False)
             self.player.model = neural_net.PVNet(N_BLOCKS_PLAYER,
                                                  IN_PLANES_PLAYER,
@@ -120,6 +117,7 @@ class Evaluator(object):
             self.enemy = agents.ZeroAgent(BOARD_SIZE,
                                           N_MCTS,
                                           IN_PLANES_ENEMY,
+                                          async_flags,
                                           noise=False)
             self.enemy.model = neural_net.PVNet(N_BLOCKS_ENEMY,
                                                 IN_PLANES_ENEMY,
@@ -154,11 +152,19 @@ class Evaluator(object):
 
         if turn != enemy_turn:
             pi = self.player.get_pi(root_id, board, turn, tau=0.01)
+
+            if async_flags[0] == True:
+                return None, None
+
             self.player_pi = pi
             self.player_visit = self.player.get_visit()
             action, action_index = utils.argmax_pi(pi)
         else:
             pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
+
+            if async_flags[0] == True:
+                return None, None
+                
             self.enemy_pi = pi
             self.enemy_visit = self.enemy.get_visit()
             action, action_index = utils.argmax_pi(pi)
@@ -185,6 +191,13 @@ class Evaluator(object):
         self.enemy.reset()
 
     # WebAPI
+
+    def get_player_agent_name(self):
+        return type(self.player).__name__ 
+
+    def get_enemy_agent_name(self):
+        return type(self.enemy).__name__ 
+
     def put_action(self, action_idx, turn, enemy_turn):
 
         if turn != enemy_turn:
@@ -260,13 +273,20 @@ def elo(player_elo, enemy_elo, p_winscore, e_winscore):
     return player_elo, enemy_elo
 
 
-evaluator = Evaluator(player_model_path, enemy_model_path)
+evaluator = Evaluator()
 
+# =========================== input model path ======================== #
+#   'human': human play   'random': random     None: raw model MCTS     #
+#   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
+# ===================================================================== #
+
+player_model_path = './data/180804_13300_106400_step_model.pickle'
+enemy_model_path = './data/180804_13300_106400_step_model.pickle'
 
 def main():
-    print('cuda:', use_cuda)
+    global main_loop_reset_flag
 
-    # g_evaluator = evaluator
+    print('cuda:', use_cuda)
 
     env = game.GameState('text')
     result = {'Player': 0, 'Enemy': 0, 'Draw': 0}
@@ -282,6 +302,20 @@ def main():
     i = 0
 
     while True:
+
+        async_flags[0] = False
+
+        print("### ###")
+        print(player_model_path)
+        print(enemy_model_path)
+        evaluator.set_agents(player_model_path, enemy_model_path)
+        gi.player_agent_name = evaluator.get_player_agent_name()
+        gi.enemy_agent_name = evaluator.get_enemy_agent_name()
+
+        print('##evaluator.set_agents##')
+        print(gi.player_agent_name)
+        print(gi.enemy_agent_name)
+
         board = np.zeros([BOARD_SIZE, BOARD_SIZE])
         root_id = (0,)
         win_index = 0
@@ -293,9 +327,13 @@ def main():
             print('Player Color: White')
 
         while win_index == 0:
+             
             utils.render_str(board, BOARD_SIZE, action_index)
-            action, action_index = evaluator.get_action(
-                root_id, board, turn, enemy_turn)
+            action, action_index = evaluator.get_action(root_id, board, turn, enemy_turn)
+
+            if async_flags[0] == True:
+                i = 0
+                break
 
             p, v = evaluator.get_pv(root_id, turn, enemy_turn)
 
@@ -397,6 +435,51 @@ def dashboard():
 def test():
     return flask.render_template('test.html')
 
+@app.route('/req_reset_agenets')
+def req_reset_agenets():
+    global player_model_path
+    global enemy_model_path
+
+    selected_player_agent_name = flask.request.args.get("player_agent")
+    selected_enemy_agent_name = flask.request.args.get("enemy_agent")
+    
+    data = {"success": False}
+
+    print('req_reset_agenets')
+    print(selected_player_agent_name)
+    print(selected_enemy_agent_name)
+
+    if selected_player_agent_name == "HumanAgent":
+        player_model_path = "human"
+    elif selected_player_agent_name == "ZeroAgent":
+        player_model_path = './data/180804_13300_106400_step_model.pickle'
+    elif selected_player_agent_name == "RZeroAgent":
+        player_model_path = 'RZeroAgent'
+    elif selected_player_agent_name == "PUCTAgent":
+        player_model_path = 'puct'
+    elif selected_player_agent_name == "UCTAgent":
+        player_model_path = 'uct'
+    elif selected_player_agent_name == "RandomAgent":
+        player_model_path = 'random'
+
+    if selected_enemy_agent_name == "HumanAgent":
+        enemy_model_path = "human"
+    elif selected_enemy_agent_name == "ZeroAgent":
+        enemy_model_path = './data/180804_13300_106400_step_model.pickle'
+    elif selected_enemy_agent_name == "RZeroAgent":
+        enemy_model_path = 'RZeroAgent'
+    elif selected_enemy_agent_name == "PUCTAgent":
+        enemy_model_path = 'puct'
+    elif selected_enemy_agent_name == "UCTAgent":
+        enemy_model_path = 'uct'
+    elif selected_enemy_agent_name == "RandomAgent":
+        enemy_model_path = 'random'
+
+    async_flags[0] = True
+
+    data["success"] = True
+
+    return flask.jsonify(data)
 
 @app.route('/periodic_status')
 def periodic_status():
@@ -410,6 +493,8 @@ def periodic_status():
     data["action_index"] = gi.action_index
     data["win_index"] = gi.win_index
     data["curr_turn"] = gi.curr_turn
+    data["player_agent_name"] = gi.player_agent_name
+    data["enemy_agent_name"] = gi.enemy_agent_name
 
     data["player_agent_p_size"] = player_agent_info.p_size
     data["player_agent_p_values"] = player_agent_info.p.reshape(
