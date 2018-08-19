@@ -195,16 +195,27 @@
                         <option value="RandomAgent">RandomAgent</option>
                     </select>
                 </td>
-                <td> <button onclick='reqResetAgents()'>Reset</button></td>
+                <td><button onclick='reqResetAgents()'>Reset</button></td>
               </tr>
             </table>
             <br>
-              <div id="boardWraaper">
-                <canvas id="board" height=300></canvas>
-              </div>
-              <div id="board_message"></div>
-              <div id="player_message"></div>
-              <div id="enemy_message"></div>
+            <div id="boardWraaper">
+              <canvas id="board" height=300></canvas>
+            </div>
+            <table>
+              <tr>
+                <td>
+
+                </td>
+                <td>
+
+                </td>
+                <td><button onclick='reqMove()'>Move</button></td>
+              </tr>
+            </table>
+            <div id="board_message"></div>
+            <div id="player_message"></div>
+            <div id="enemy_message"></div>
           </div>
           <div id="jb-content-top-right">
               <div id="v_monitoring"></div>

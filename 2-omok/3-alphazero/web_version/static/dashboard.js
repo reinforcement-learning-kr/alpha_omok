@@ -1,6 +1,7 @@
 var baseurl = "http://127.0.0.1:5000/"
 
-var ctx = document.getElementById("board").getContext("2d");
+var c = document.getElementById("board");
+var ctx = c.getContext("2d");
 var ctx_pap = document.getElementById("player_agent_p").getContext("2d");
 var ctx_pav = document.getElementById("player_agent_visit").getContext("2d");
 var ctx_eap = document.getElementById("enemy_agent_p").getContext("2d");
@@ -12,6 +13,9 @@ var blank = 22;
 var turn = 1; // 1 black 2 white
 var width = (game_board_size - 1) * 32 + blank * 2;
 var height = (game_board_size - 1) * 32 + blank * 2;
+
+var selected_board_row = -1
+var selected_board_col = -1
 
 var select_player_agent_name = document.getElementById('select_player_agent_name').options[0];
 var select_enemy_agent_name = document.getElementById('select_enemy_agent_name').options[0];
@@ -26,6 +30,40 @@ for (var i = 0; i < game_board_size; i++) {
 		boardArray[i][j] = 0;
 	}
 }
+
+
+/* Mouse Event */
+function getMousePos(canvas, evt) {
+	var rect = canvas.getBoundingClientRect();
+	return {
+	  x: evt.clientX - rect.left,
+	  y: evt.clientY - rect.top
+	};
+}
+
+c.addEventListener('mousemove', function(evt) {
+	alert('move');
+
+	var mousePos = getMousePos(ctx, evt);
+
+	selected_board_row = mousePos.x;
+	selected_board_col = mousePos.y;
+
+	alert('move');
+
+	renderBoard();
+
+}, false);
+
+c.addEventListener('mousedown', function(evt) {
+	var mousePos = getMousePos(ctx, evt);
+
+	selected_board_row = mousePos.x;
+	selected_board_col = mousePos.y;
+
+	renderBoard();
+
+}, false);
 
 var headmap_color_blues = [
 	"#f7fbff",
@@ -287,7 +325,29 @@ function renderBoard(){
 				}
 			}
 
-			ctx.lineWidth = 1;
+			if (i == selected_board_row && j == selected_board_col)
+			{
+				ctx.lineWidth = 1;
+
+				ctx.beginPath();
+				ctx.globalAlpha=0.8;
+
+				if (turn = 1) // 1 black
+				{
+					ctx.strokeStyle="#000000";
+					ctx.fillStyle="#000000";
+				}
+				else if (turn == 2) // 2 white
+				{
+					ctx.strokeStyle="#ffffff";
+					ctx.fillStyle="#ffffff";	
+				}
+
+				ctx.arc(blank + selected_board_col * 32, blank + selected_board_row * 32, radius, 0, 2*Math.PI);
+				ctx.fill();
+				ctx.stroke();
+				ctx.globalAlpha=1;
+			}
 		}
     }
     
@@ -609,6 +669,48 @@ function reqResetAgents()
 
     xhr.open('GET', baseurl + 'req_reset_agenets?player_agent='+selected_player_agent_name + '&enemy_agent='+selected_enemy_agent_name, true);
     xhr.send();
+}
+
+function getBoardPos(xPos, yPos){
+	var x = (xPos - blank) / 32;
+	var resultX = Math.round(x);
+	var y = (yPos - blank) / 32;
+	var resultY = Math.round(y);
+
+	return {
+		x: resultX,
+		y: resultY
+	};
+}
+
+function reqMove()
+{
+	if (selected_board_col >= 0 
+		&& selected_board_col < game_board_size 
+		&& selected_board_row >= 0
+		&& selected_board_row < game_board_size 
+		&& boardArray[selected_board_col][selected_board_row] == 0)
+	{
+		action_idx = selected_board_col + selected_board_row * game_board_size;
+
+		reqAction(action_idx)
+	}
+}
+
+function reqAction(action_idx)
+{
+	var xhr = new XMLHttpRequest();
+
+	xhr.onload = function() 
+	{
+		if(xhr.status == 200) 
+		{
+			
+		}
+	};
+
+	xhr.open('GET', baseurl +'action?action_idx=' + action_idx.toString(), true);
+	xhr.send();
 }
 
 function clearBoard()

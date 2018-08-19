@@ -201,10 +201,10 @@ class Evaluator(object):
     def put_action(self, action_idx, turn, enemy_turn):
 
         if turn != enemy_turn:
-            if type(self.player) is agents.WebAgent:
+            if type(self.player) is agents.HumanAgent:
                 self.player.put_action(action_idx)
         else:
-            if type(self.enemy) is agents.WebAgent:
+            if type(self.enemy) is agents.HumanAgent:
                 self.enemy.put_action(action_idx)
 
     def get_player_message(self):
@@ -530,6 +530,16 @@ def prompt_status():
 
     return flask.jsonify(data)
 
+@app.route('/action')
+def action():
+
+    action_idx = int(flask.request.args.get("action_idx"))
+    data = {"success": False}
+    evaluator.put_action(action_idx, gi.curr_turn, gi.enemy_turn)
+
+    data["success"] = True
+
+    return flask.jsonify(data)
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
