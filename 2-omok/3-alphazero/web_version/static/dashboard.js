@@ -7,15 +7,18 @@ var ctx_pav = document.getElementById("player_agent_visit").getContext("2d");
 var ctx_eap = document.getElementById("enemy_agent_p").getContext("2d");
 var ctx_eav = document.getElementById("enemy_agent_visit").getContext("2d");
 
-var game_board_size = 9
+var game_board_size = 9;
 var radius = 14;
 var blank = 22;
 var turn = 1; // 1 black 2 white
 var width = (game_board_size - 1) * 32 + blank * 2;
 var height = (game_board_size - 1) * 32 + blank * 2;
 
-var selected_board_row = -1
-var selected_board_col = -1
+var selecting_board_row = -1;
+var selecting_board_col = -1;
+
+var selected_board_row = -1;
+var selected_board_col = -1;
 
 var select_player_agent_name = document.getElementById('select_player_agent_name').options[0];
 var select_enemy_agent_name = document.getElementById('select_enemy_agent_name').options[0];
@@ -31,35 +34,43 @@ for (var i = 0; i < game_board_size; i++) {
 	}
 }
 
-
 /* Mouse Event */
-function getMousePos(canvas, evt) {
+function getBoardPos(canvas, evt) {
 	var rect = canvas.getBoundingClientRect();
+	
+	var xPos = evt.clientX - rect.left;
+	var yPos = evt.clientY - rect.top;
+
+
+	var xIdx = (xPos - blank) / 32;
+	var resultX = Math.round(xIdx);
+	var yIdx = (yPos - blank) / 32;
+	var resultY = Math.round(yIdx);
+
 	return {
-	  x: evt.clientX - rect.left,
-	  y: evt.clientY - rect.top
+		x: resultX,
+		y: resultY
 	};
 }
 
-c.addEventListener('mousemove', function(evt) {
-	alert('move');
+c.addEventListener('mousemove', function(evt) 
+{
 
-	var mousePos = getMousePos(ctx, evt);
+	var pos = getBoardPos(c, evt);
 
-	selected_board_row = mousePos.x;
-	selected_board_col = mousePos.y;
-
-	alert('move');
+	selecting_board_row = pos.x;
+	selecting_board_col = pos.y;
 
 	renderBoard();
 
 }, false);
 
-c.addEventListener('mousedown', function(evt) {
-	var mousePos = getMousePos(ctx, evt);
+c.addEventListener('mousedown', function(evt) 
+{
+	var pos = getBoardPos(c, evt);
 
-	selected_board_row = mousePos.x;
-	selected_board_col = mousePos.y;
+	selected_board_row = pos.x;
+	selected_board_col = pos.y;
 
 	renderBoard();
 
@@ -279,6 +290,8 @@ function renderBoard(){
 
 	ctx.shadowColor = 'black';
 
+	console.log('render : ' + turn);
+
 	// board draw
 	for (i = 0; i < game_board_size; i++) { 
 		for (j = 0; j < game_board_size; j++) 
@@ -325,14 +338,14 @@ function renderBoard(){
 				}
 			}
 
-			if (i == selected_board_row && j == selected_board_col)
+			if (i == selecting_board_col && j == selecting_board_row)
 			{
 				ctx.lineWidth = 1;
 
 				ctx.beginPath();
 				ctx.globalAlpha=0.8;
 
-				if (turn = 1) // 1 black
+				if (turn == 1) // 1 black
 				{
 					ctx.strokeStyle="#000000";
 					ctx.fillStyle="#000000";
@@ -343,10 +356,31 @@ function renderBoard(){
 					ctx.fillStyle="#ffffff";	
 				}
 
-				ctx.arc(blank + selected_board_col * 32, blank + selected_board_row * 32, radius, 0, 2*Math.PI);
+				ctx.arc(blank + selecting_board_row * 32, blank + selecting_board_col * 32, radius, 0, 2*Math.PI);
 				ctx.fill();
 				ctx.stroke();
 				ctx.globalAlpha=1;
+			}
+
+			if (i == selected_board_col && j == selected_board_row)
+			{
+				ctx.lineWidth = 5;
+
+				ctx.beginPath();
+
+				if (turn == 1) // 1 black
+				{
+					ctx.strokeStyle="#000000";
+					ctx.fillStyle="#aaaaaa";
+				}
+				else if (turn == 2) // 2 white
+				{
+					ctx.strokeStyle="#ffffff";
+					ctx.fillStyle="#aaaaaa";	
+				}
+
+				ctx.arc(blank + selected_board_row * 32, blank + selected_board_col * 32, radius - 2, 0, 2*Math.PI);
+				ctx.stroke();
 			}
 		}
     }
@@ -671,17 +705,7 @@ function reqResetAgents()
     xhr.send();
 }
 
-function getBoardPos(xPos, yPos){
-	var x = (xPos - blank) / 32;
-	var resultX = Math.round(x);
-	var y = (yPos - blank) / 32;
-	var resultY = Math.round(y);
 
-	return {
-		x: resultX,
-		y: resultY
-	};
-}
 
 function reqMove()
 {

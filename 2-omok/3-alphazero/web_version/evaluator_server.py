@@ -290,8 +290,8 @@ def main():
 
     env = game.GameState('text')
     result = {'Player': 0, 'Enemy': 0, 'Draw': 0}
-    turn = 0
-    enemy_turn = 1
+    turn = 0 # 0 black 1 white
+    enemy_turn = 1 # 0 black 1 white
     gi.enemy_turn = enemy_turn
     player_elo = 1500
     enemy_elo = 1500
@@ -344,13 +344,13 @@ def main():
                 # enemy turn
                 root_id = evaluator.enemy.root_id + (action_index,)
 
-            board, check_valid_pos, win_index, turn, _ = env.step(action)
+            board, check_valid_pos, win_index, turn, _ = env.step(action) # update turn 0 black 1 white
 
             # WebAPI
             gi.game_board = board
             gi.action_index = int(action_index)
             gi.win_index = win_index
-            gi.curr_turn = turn
+            gi.curr_turn = turn # 0 black 1 white
 
             move = np.count_nonzero(board)
 
@@ -401,6 +401,7 @@ def main():
                             player_elo, enemy_elo, 0, 1)
 
                 utils.render_str(board, BOARD_SIZE, action_index)
+
                 # Change turn
                 enemy_turn = abs(enemy_turn - 1)
                 gi.enemy_turn = enemy_turn
@@ -418,7 +419,6 @@ def main():
                     player_elo, enemy_elo))
                 evaluator.reset()
         i = i + 1
-
 
 # WebAPI
 @app.route('/')
