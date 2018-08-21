@@ -11,7 +11,6 @@ PRINT_MCTS = True
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
 
-
 class ZeroAgent(object):
     def __init__(self, board_size, num_mcts, inplanes, async_flags, noise=True):
         self.board_size = board_size

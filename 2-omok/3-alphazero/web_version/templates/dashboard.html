@@ -10,6 +10,10 @@
       { 
         text-decoration:none 
       }
+      button
+      {
+      width: 100%;
+      }
       .profile_photo {
         width: 50px; height: 50px;
         object-fit: cover;
@@ -202,17 +206,7 @@
             <div id="boardWraaper">
               <canvas id="board" height=300></canvas>
             </div>
-            <table>
-              <tr>
-                <td>
-
-                </td>
-                <td>
-
-                </td>
-                <td><button onclick='reqMove()'>Move</button></td>
-              </tr>
-            </table>
+            <button onclick='reqMove()'>Move</button>
             <div id="board_message"></div>
             <div id="player_message"></div>
             <div id="enemy_message"></div>

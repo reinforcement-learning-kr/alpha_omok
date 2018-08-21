@@ -58,8 +58,8 @@ c.addEventListener('mousemove', function(evt)
 
 	var pos = getBoardPos(c, evt);
 
-	selecting_board_row = pos.x;
-	selecting_board_col = pos.y;
+	selecting_board_row = pos.y;
+	selecting_board_col = pos.x;
 
 	renderBoard();
 
@@ -69,8 +69,8 @@ c.addEventListener('mousedown', function(evt)
 {
 	var pos = getBoardPos(c, evt);
 
-	selected_board_row = pos.x;
-	selected_board_col = pos.y;
+	selected_board_row = pos.y;
+	selected_board_col = pos.x;
 
 	renderBoard();
 
@@ -290,7 +290,7 @@ function renderBoard(){
 
 	ctx.shadowColor = 'black';
 
-	console.log('render : ' + turn);
+	// console.log('render : ' + turn);
 
 	// board draw
 	for (i = 0; i < game_board_size; i++) { 
@@ -338,7 +338,7 @@ function renderBoard(){
 				}
 			}
 
-			if (i == selecting_board_col && j == selecting_board_row)
+			if (i == selecting_board_row && j == selecting_board_col)
 			{
 				ctx.lineWidth = 1;
 
@@ -356,13 +356,13 @@ function renderBoard(){
 					ctx.fillStyle="#ffffff";	
 				}
 
-				ctx.arc(blank + selecting_board_row * 32, blank + selecting_board_col * 32, radius, 0, 2*Math.PI);
+				ctx.arc(blank + selecting_board_col * 32, blank + selecting_board_row * 32, radius, 0, 2*Math.PI);
 				ctx.fill();
 				ctx.stroke();
 				ctx.globalAlpha=1;
 			}
 
-			if (i == selected_board_col && j == selected_board_row)
+			if (i == selected_board_row && j == selected_board_col)
 			{
 				ctx.lineWidth = 5;
 
@@ -379,7 +379,7 @@ function renderBoard(){
 					ctx.fillStyle="#aaaaaa";	
 				}
 
-				ctx.arc(blank + selected_board_row * 32, blank + selected_board_col * 32, radius - 2, 0, 2*Math.PI);
+				ctx.arc(blank + selected_board_col * 32, blank + selected_board_row * 32, radius - 2, 0, 2*Math.PI);
 				ctx.stroke();
 			}
 		}

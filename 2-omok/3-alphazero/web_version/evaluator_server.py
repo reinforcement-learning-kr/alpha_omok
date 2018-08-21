@@ -53,22 +53,39 @@ class Evaluator(object):
         self.player = None
         self.enemy = None
 
-    def set_agents(self, model_path_a, model_path_b):
+    def set_agents(self, model_path_a, model_path_b, model_monitor_path_a, model_monitor_path_b):
         if model_path_a == 'random':
             print('load player model:', model_path_a)
             self.player = agents.RandomAgent(BOARD_SIZE)
+            self.player_monitor = self.player
         elif model_path_a == 'puct':
             print('load player model:', model_path_a)
             self.player = agents.PUCTAgent(BOARD_SIZE, N_MCTS)
+            self.player_monitor = self.player
         elif model_path_a == 'uct':
             print('load player model:', model_path_a)
             self.player = agents.UCTAgent(BOARD_SIZE, N_MCTS)
+            self.player_monitor = self.player
         elif model_path_a == 'human':
             print('load player model:', model_path_a)
             self.player = agents.HumanAgent(BOARD_SIZE)
-        elif model_path_a == 'web':
-            print('load player model:', model_path_a)
-            self.player = agents.WebAgent(BOARD_SIZE)
+            self.player_monitor = agents.ZeroAgent(BOARD_SIZE,
+                                           N_MCTS,
+                                           IN_PLANES_PLAYER,
+                                           async_flags,
+                                           noise=False)
+            self.player_monitor.model = neural_net.PVNet(N_BLOCKS_PLAYER,
+                                                 IN_PLANES_PLAYER,
+                                                 OUT_PLANES_PLAYER,
+                                                 BOARD_SIZE).to(device)
+            state_a = self.player_monitor.model.state_dict()
+            my_state_a = torch.load(
+                model_monitor_path_a, map_location='cuda:0' if use_cuda else 'cpu')
+            for k, v in my_state_a.items():
+                if k in state_a:
+                    state_a[k] = v
+            self.player_monitor.model.load_state_dict(state_a)
+
         elif model_path_a:
             print('load player model:', model_path_a)
             self.player = agents.ZeroAgent(BOARD_SIZE,
@@ -87,6 +104,8 @@ class Evaluator(object):
                 if k in state_a:
                     state_a[k] = v
             self.player.model.load_state_dict(state_a)
+            self.player_monitor = self.player
+
         else:
             print('load player model:', model_path_a)
             self.player = agents.ZeroAgent(BOARD_SIZE,
@@ -97,21 +116,41 @@ class Evaluator(object):
                                                  IN_PLANES_PLAYER,
                                                  OUT_PLANES_PLAYER,
                                                  BOARD_SIZE).to(device)
+            self.player_monitor = self.player
+
         if model_path_b == 'random':
             print('load enemy model:', model_path_b)
             self.enemy = agents.RandomAgent(BOARD_SIZE)
+            self.enemy_monitor = self.enemy
         elif model_path_b == 'puct':
             print('load enemy model:', model_path_b)
             self.enemy = agents.PUCTAgent(BOARD_SIZE, N_MCTS)
+            self.enemy_monitor = self.enemy
         elif model_path_b == 'uct':
             print('load enemy model:', model_path_b)
             self.enemy = agents.UCTAgent(BOARD_SIZE, N_MCTS)
+            self.enemy_monitor = self.enemy
         elif model_path_b == 'human':
             print('load enemy model:', model_path_b)
             self.enemy = agents.HumanAgent(BOARD_SIZE)
-        elif model_path_b == 'web':
-            print('load enemy model:', model_path_b)
-            self.enemy = agents.WebAgent(BOARD_SIZE)
+
+            self.enemy_monitor = agents.ZeroAgent(BOARD_SIZE,
+                                          N_MCTS,
+                                          IN_PLANES_ENEMY,
+                                          async_flags,
+                                          noise=False)
+            self.enemy_monitor.model = neural_net.PVNet(N_BLOCKS_ENEMY,
+                                                IN_PLANES_ENEMY,
+                                                OUT_PLANES_ENEMY,
+                                                BOARD_SIZE).to(device)
+            state_b = self.enemy_monitor.model.state_dict()
+            my_state_b = torch.load(
+                model_monitor_path_b, map_location='cuda:0' if use_cuda else 'cpu')
+            for k, v in my_state_b.items():
+                if k in state_b:
+                    state_b[k] = v
+            self.enemy_monitor.model.load_state_dict(state_b)
+
         elif model_path_b:
             print('load enemy model:', model_path_b)
             self.enemy = agents.ZeroAgent(BOARD_SIZE,
@@ -130,6 +169,7 @@ class Evaluator(object):
                 if k in state_b:
                     state_b[k] = v
             self.enemy.model.load_state_dict(state_b)
+            self.enemy_monitor = self.enemy
         else:
             print('load enemy model:', model_path_b)
             self.enemy = agents.ZeroAgent(BOARD_SIZE,
@@ -140,13 +180,12 @@ class Evaluator(object):
                                                 IN_PLANES_ENEMY,
                                                 OUT_PLANES_ENEMY,
                                                 BOARD_SIZE).to(device)
+            self.enemy_monitor = self.enemy
+
         self.player_pi = None
         self.enemy_pi = None
         self.player_visit = None
         self.enemy_visit = None
-
-        self.player_monitor = self.player
-        self.enemy_monitor = self.enemy
 
     def get_action(self, root_id, board, turn, enemy_turn):
 
@@ -282,6 +321,8 @@ evaluator = Evaluator()
 
 player_model_path = './data/180804_13300_106400_step_model.pickle'
 enemy_model_path = './data/180804_13300_106400_step_model.pickle'
+player_monitor_model_path = './data/180804_13300_106400_step_model.pickle'
+enemy_monitor_model_path = './data/180804_13300_106400_step_model.pickle'
 
 def main():
     global main_loop_reset_flag
@@ -308,7 +349,7 @@ def main():
         print("### ###")
         print(player_model_path)
         print(enemy_model_path)
-        evaluator.set_agents(player_model_path, enemy_model_path)
+        evaluator.set_agents(player_model_path, enemy_model_path, player_monitor_model_path, enemy_monitor_model_path)
         gi.player_agent_name = evaluator.get_player_agent_name()
         gi.enemy_agent_name = evaluator.get_enemy_agent_name()
 
@@ -451,6 +492,7 @@ def req_reset_agenets():
 
     if selected_player_agent_name == "HumanAgent":
         player_model_path = "human"
+        player_monitor_model_path = './data/180804_13300_106400_step_model.pickle'
     elif selected_player_agent_name == "ZeroAgent":
         player_model_path = './data/180804_13300_106400_step_model.pickle'
     elif selected_player_agent_name == "RZeroAgent":
@@ -464,6 +506,7 @@ def req_reset_agenets():
 
     if selected_enemy_agent_name == "HumanAgent":
         enemy_model_path = "human"
+        enemy_monitor_model_path = './data/180804_13300_106400_step_model.pickle'
     elif selected_enemy_agent_name == "ZeroAgent":
         enemy_model_path = './data/180804_13300_106400_step_model.pickle'
     elif selected_enemy_agent_name == "RZeroAgent":
