@@ -213,12 +213,12 @@ class Evaluator(object):
     def get_pv(self, root_id, turn, enemy_turn):
 
         if turn != enemy_turn:
-            if player_model_path != 'web':
+            if player_model_path != 'human':
                 p, v = self.player_monitor.get_pv(root_id)
             else:
                 p, v = self.enemy_monitor.get_pv(root_id)
         else:
-            if enemy_model_path != 'web':
+            if enemy_model_path != 'human':
                 p, v = self.enemy_monitor.get_pv(root_id)
             else:
                 p, v = self.player_monitor.get_pv(root_id)

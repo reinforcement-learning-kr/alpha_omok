@@ -11,6 +11,7 @@ var game_board_size = 9;
 var radius = 14;
 var blank = 22;
 var turn = 1; // 1 black 2 white
+var prev_turn = -1;
 var width = (game_board_size - 1) * 32 + blank * 2;
 var height = (game_board_size - 1) * 32 + blank * 2;
 
@@ -196,10 +197,21 @@ function updateBoard(ret)
     {
         turn = 2 // white
 	}
-	
-	action_index = ret.action_index
 
-    game_board_size = ret.game_board_size
+	// if turn change
+	if (prev_turn != turn)
+	{
+		selecting_board_row = -1;
+		selecting_board_col = -1;
+		selected_board_row = -1;
+		selected_board_col = -1;
+
+		prev_turn = turn;
+	}
+	
+	action_index = ret.action_index;
+
+    game_board_size = ret.game_board_size;
 
     for (var i = 0; i < game_board_size; i++) 
     {
