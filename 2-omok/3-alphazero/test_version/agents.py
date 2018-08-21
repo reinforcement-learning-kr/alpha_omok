@@ -45,7 +45,7 @@ class ZeroAgent(object):
         if tau == 0:
             pi, _ = utils.argmax_pi(pi)
 
-        assert not(np.isnan(pi).any())
+        # assert not(np.isnan(pi).any())
         return pi
 
     def _init_mcts(self, root_id):
