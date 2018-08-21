@@ -6,3 +6,4 @@ venv3
 runs
 *.txt
 models
+.vscode

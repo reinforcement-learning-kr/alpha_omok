@@ -29,8 +29,8 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 2000
-# N_MATCH = 12 infinity loop in web
+N_MCTS = 3000
+N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -50,8 +50,8 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = None
-enemy_model_path = None
+player_model_path = './data/180822_1000_19123_step_model.pickle'
+enemy_model_path = './data/180821_1000_16043_step_model.pickle'
 
 # ===================================================================== #
 
@@ -235,7 +235,7 @@ class OnlineEvaluator(Evaluator):
                     root_id, BOARD_SIZE, IN_PLANES_PLAYER)
                 state_input = torch.tensor([state]).to(device).float()
                 p, v = self.player.model(state_input)
-                p = p.data[0].cpu().numpy()
+                p = p.cpu().numpy()[0]
             action, action_index = utils.get_action_eval(p, board)
         else:
             self.enemy.model.eval()
@@ -244,7 +244,7 @@ class OnlineEvaluator(Evaluator):
                     root_id, BOARD_SIZE, IN_PLANES_ENEMY)
                 state_input = torch.tensor([state]).to(device).float()
                 p, v = self.enemy.model(state_input)
-                p = p.data[0].cpu().numpy()
+                p = p.cpu().numpy()[0]
             action, action_index = utils.get_action_eval(p, board)
 
         return action, action_index
@@ -279,9 +279,9 @@ def main():
     print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
         player_elo, enemy_elo))
 
-    i = 0
+    # i = 0
 
-    while True:
+    for i in range(N_MATCH):
         board = np.zeros([BOARD_SIZE, BOARD_SIZE])
         root_id = (0,)
         win_index = 0
@@ -379,7 +379,7 @@ def main():
                 print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
                     player_elo, enemy_elo))
                 evaluator.reset()
-        i = i + 1
+        # i = i + 1
 
 
 # WebAPI

@@ -37,11 +37,11 @@ OUT_PLANES = 128
 USE_TENSORBOARD = True
 N_SELFPLAY = 100
 TOTAL_ITER = 10000000
-MEMORY_SIZE = 150000
+MEMORY_SIZE = 30000
 N_EPOCHS = 1
 BATCH_SIZE = 32
-LR = 1e-4
-L2 = 1e-4
+LR = 1e-3
+L2 = 1e-7
 
 # Hyperparameter sharing
 agents.PRINT_MCTS = PRINT_SELFPLAY
@@ -154,9 +154,9 @@ def self_play(n_selfplay):
             # ====================== start MCTS ============================ #
 
             if time_steps < TAU_THRES:
-                tau = 1.
+                tau = 1
             else:
-                tau = 0.
+                tau = 0
 
             pi = Agent.get_pi(root_id, tau)
 
@@ -268,8 +268,10 @@ def self_play(n_selfplay):
                         resign_val.clear()
 
                     if PRINT_SELFPLAY:
-                        print('Resign win%: {:.2f}%'.format(
-                            (resign_v + 1) / 2 * 100))
+                        print(
+                            'Resign win%: {:.2f}%'.format(
+                                (resign_v + 1) / 2 * 100)
+                        )
 
             # ====================== store in memory ======================= #
 
@@ -288,10 +290,8 @@ def self_play(n_selfplay):
                 if PRINT_SELFPLAY:
                     utils.render_str(board, BOARD_SIZE, action_index)
 
-                bw, ww, dr, rs = result['Black'], result['White'], \
-                    result['Draw'], result['Resign']
-
-                if PRINT_SELFPLAY:
+                    bw, ww, dr, rs = result['Black'], result['White'], \
+                        result['Draw'], result['Resign']
                     print('')
                     print('=' * 20,
                           " {:3} Game End   ".format(episode + 1),
@@ -324,21 +324,22 @@ def train(lr, n_epochs, n_iter):
 
     train_memory = []
 
-    train_memory.extend(random.sample(
-        rep_memory, BATCH_SIZE * len(cur_memory)))
+    train_memory.extend(
+        random.sample(rep_memory, BATCH_SIZE * len(cur_memory))
+    )
 
-    optimizer = optim.Adam(Agent.model.parameters(),
-                           lr=lr,
-                           weight_decay=L2)
+    # optimizer = optim.Adam(Agent.model.parameters(),
+    #                        lr=lr,
+    #                        weight_decay=L2)
 
-    # optimizer = optim.SGD(Agent.model.parameters(),
-    #                       lr=lr,
-    #                       momentum=0.9,
-    #                       weight_decay=L2)
+    optimizer = optim.SGD(Agent.model.parameters(),
+                          lr=lr,
+                          momentum=0.9,
+                          weight_decay=L2)
 
     dataloader = DataLoader(train_memory,
                             batch_size=BATCH_SIZE,
-                            shuffle=True,
+                            shuffle=False,
                             pin_memory=use_cuda)
 
     print('=' * 58)

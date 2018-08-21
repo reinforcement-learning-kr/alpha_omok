@@ -21,8 +21,8 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 2000
-N_MATCH = 6
+N_MCTS = 3000
+N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -139,7 +139,7 @@ class Evaluator(object):
         else:
             pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
 
-        action, action_index = utils.get_action(pi)
+        action, action_index = utils.argmax_pi(pi)
 
         return action, action_index
 
@@ -163,7 +163,7 @@ class OnlineEvaluator(Evaluator):
                     root_id, BOARD_SIZE, IN_PLANES_PLAYER)
                 state_input = torch.tensor([state]).to(device).float()
                 p, v = self.player.model(state_input)
-                p = p.data[0].cpu().numpy()
+                p = p.cpu().numpy()[0]
             action, action_index = utils.get_action_eval(p, board)
         else:
             self.enemy.model.eval()
@@ -172,7 +172,7 @@ class OnlineEvaluator(Evaluator):
                     root_id, BOARD_SIZE, IN_PLANES_ENEMY)
                 state_input = torch.tensor([state]).to(device).float()
                 p, v = self.enemy.model(state_input)
-                p = p.data[0].cpu().numpy()
+                p = p.cpu().numpy()[0]
             action, action_index = utils.get_action_eval(p, board)
 
         return action, action_index
