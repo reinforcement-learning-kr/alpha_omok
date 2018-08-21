@@ -222,8 +222,8 @@ class GameState:
                              (MARGIN + BOARD_MARGIN + i * int(GRID_SIZE / (GAMEBOARD_SIZE - 1)), TOP_MARGIN + BOARD_MARGIN + GRID_SIZE), 1)
 
         # Draw center circle
-        pygame.draw.circle(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN + 4 * int(GRID_SIZE / (
-            GAMEBOARD_SIZE - 1)), TOP_MARGIN + BOARD_MARGIN + 4 * int(GRID_SIZE / (GAMEBOARD_SIZE - 1))), 5, 0)
+        pygame.draw.circle(DISPLAYSURF, BLACK, (MARGIN + BOARD_MARGIN + 7 * int(GRID_SIZE / (
+            GAMEBOARD_SIZE - 1)), TOP_MARGIN + BOARD_MARGIN + 7 * int(GRID_SIZE / (GAMEBOARD_SIZE - 1))), 5, 0)
 
         # Draw stones
         for i in range(self.gameboard.shape[0]):
