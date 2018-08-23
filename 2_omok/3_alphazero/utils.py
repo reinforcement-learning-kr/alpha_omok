@@ -27,13 +27,11 @@ def legal_actions(node_id, board_size):
     return list(actions)
 
 
-# Check win
 def check_win(board, win_mark):
     board = board.copy()
     num_mark = np.count_nonzero(board)
     board_size = len(board)
     current_grid = np.zeros([win_mark, win_mark])
-    # check win
     for row in range(board_size - win_mark + 1):
         for col in range(board_size - win_mark + 1):
             current_grid = board[row: row + win_mark, col: col + win_mark]
@@ -59,16 +57,6 @@ def check_win(board, win_mark):
         return 3
     # If No winner or no draw
     return 0
-
-
-def update_state(state, turn, x_idx, y_idx):
-    state[:, :, 1:16] = state[:, :, 0:15]
-    state[:, :, 0] = state[:, :, 2]
-    state[y_idx, x_idx, 0] = 1
-    state[:, :, 16] = turn
-    state = np.int8(state)
-
-    return state
 
 
 def render_str(board, board_size, action_index):
@@ -207,7 +195,7 @@ def get_action(pi):
     return action, action_index
 
 
-def argmax_pi(pi):
+def argmax_onehot(pi):
     action_size = len(pi)
     action = np.zeros(action_size)
     max_idx = np.argwhere(pi == pi.max())
@@ -233,24 +221,6 @@ def get_reward(win_index, leaf_id):
         reward = 0.
 
     return reward
-
-
-def get_action_eval(pi, board):
-    pi = pi.copy()
-    action_size = len(pi)
-    action = np.zeros(action_size)
-
-    valid_action = valid_actions(board)
-    valid_pi = np.zeros(action_size)
-    for a in valid_action:
-        a_idx = a[1]
-        valid_pi[a_idx] = pi[a_idx]
-
-    valid_pi /= valid_pi.sum()
-    action_index = np.random.choice(action_size, p=valid_pi)
-    action[action_index] = 1
-
-    return action, action_index
 
 
 def augment_dataset(memory, board_size):

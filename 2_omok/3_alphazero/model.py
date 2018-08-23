@@ -103,16 +103,3 @@ class PVNet(nn.Module):
         p = self.policy_head(x)
         v = self.value_head(x)
         return p, v
-
-
-if __name__ == '__main__':
-    # test
-    from torch.autograd import Variable
-    use_cuda = torch.cuda.is_available()
-    Tensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-    model = PVNet(20, 5, 64, 9)
-    state = np.ones((5, 9, 9))
-    state_input = Variable(torch.FloatTensor([state]))
-    p, v = model(state_input)
-    print('cuda:', use_cuda)
-    print('P: {}\nV: {}'.format(p, v))

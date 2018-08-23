@@ -1,20 +1,22 @@
-from collections import deque
-from datetime import datetime
 import logging
 import pickle
 import random
+from collections import deque
+from datetime import datetime
 
 import numpy as np
-from tensorboardX import SummaryWriter
 import torch
 import torch.optim as optim
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
-import agents
-from env import env_small as game
-import neural_net
+import agents.local as agents
+import model
 import utils
+
+# env_small: 9x9, env_regular: 15x15
+from env import env_small as game
+
 
 logging.basicConfig(
     filename='logs/log_{}.txt'.format(datetime.now().strftime('%y%m%d')),
@@ -34,14 +36,14 @@ IN_PLANES = 5  # history * 2 + 1
 OUT_PLANES = 128
 
 # Training
-USE_TENSORBOARD = True
+USE_TENSORBOARD = False
 N_SELFPLAY = 100
 TOTAL_ITER = 10000000
 MEMORY_SIZE = 30000
 N_EPOCHS = 1
 BATCH_SIZE = 32
-LR = 1e-3
-L2 = 1e-7
+LR = 1e-4
+L2 = 1e-4
 
 # Hyperparameter sharing
 agents.PRINT_MCTS = PRINT_SELFPLAY
@@ -69,15 +71,18 @@ start_iter = 0
 total_epoch = 0
 result = {'Black': 0, 'White': 0, 'Draw': 0, 'Resign': 0}
 if USE_TENSORBOARD:
+    from tensorboardX import SummaryWriter
     Writer = SummaryWriter()
 
 # Initialize agent & model
-Agent = agents.ZeroAgent(BOARD_SIZE, N_MCTS, IN_PLANES, noise=True)
-
-Agent.model = neural_net.PVNet(N_BLOCKS,
-                               IN_PLANES,
-                               OUT_PLANES,
-                               BOARD_SIZE).to(device)
+Agent = agents.ZeroAgent(BOARD_SIZE,
+                         N_MCTS,
+                         IN_PLANES,
+                         noise=True)
+Agent.model = model.PVNet(N_BLOCKS,
+                          IN_PLANES,
+                          OUT_PLANES,
+                          BOARD_SIZE).to(device)
 
 logging.warning(
     '\nCUDA: {}'
@@ -130,7 +135,7 @@ def self_play(n_selfplay):
         resign_val_white = []
         resign_val = []
         resign_v = -1.0
-        n_resign_thres = N_SELFPLAY // 10
+        n_resign_thres = N_SELFPLAY // 4
 
     for episode in range(n_selfplay):
         if (episode + 1) % 10 == 0:
@@ -321,21 +326,18 @@ def train(lr, n_epochs, n_iter):
     loss_all = []
     loss_v = []
     loss_p = []
-
     train_memory = []
-
     train_memory.extend(
         random.sample(rep_memory, BATCH_SIZE * len(cur_memory))
     )
+    optimizer = optim.Adam(Agent.model.parameters(),
+                           lr=lr,
+                           weight_decay=L2)
 
-    # optimizer = optim.Adam(Agent.model.parameters(),
-    #                        lr=lr,
-    #                        weight_decay=L2)
-
-    optimizer = optim.SGD(Agent.model.parameters(),
-                          lr=lr,
-                          momentum=0.9,
-                          weight_decay=L2)
+    # optimizer = optim.SGD(Agent.model.parameters(),
+    #                       lr=lr,
+    #                       momentum=0.9,
+    #                       weight_decay=L2)
 
     dataloader = DataLoader(train_memory,
                             batch_size=BATCH_SIZE,
@@ -369,9 +371,10 @@ def train(lr, n_epochs, n_iter):
             p_loss = -(pi_batch * (p_batch + 1e-8).log()).sum(dim=1).mean()
             loss = v_loss + p_loss
 
-            loss_v.append(v_loss.item())
-            loss_p.append(p_loss.item())
-            loss_all.append(loss.item())
+            if PRINT_SELFPLAY:
+                loss_v.append(v_loss.item())
+                loss_p.append(p_loss.item())
+                loss_all.append(loss.item())
 
             optimizer.zero_grad()
             loss.backward()
@@ -379,7 +382,6 @@ def train(lr, n_epochs, n_iter):
 
             step += 1
 
-            # tensorboad & print loss
             if USE_TENSORBOARD:
                 Writer.add_scalar('Loss', loss.item(), step)
                 Writer.add_scalar('Loss V', v_loss.item(), step)
