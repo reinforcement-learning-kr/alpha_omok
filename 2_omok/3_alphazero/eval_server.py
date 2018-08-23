@@ -1,22 +1,19 @@
-"""
-env_small: 9x9
-env_regular: 15x15
-"""
 import logging
 
 import numpy as np
 import torch
 
-import agents
-from env import env_small as game
-import neural_net
+import agents.server as agents
+import model
 import utils
-
-# WebAPI
 import flask
 import threading
-from game_info import GameInfo
-from agent_info import AgentInfo
+from info.game import GameInfo
+from info.agent import AgentInfo
+
+# env_small: 9x9, env_regular: 15x15
+from env import env_small as game
+
 
 BOARD_SIZE = game.Return_BoardParams()[0]
 
@@ -29,8 +26,8 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 500
-# N_MATCH = 12 infinity loop in web
+N_MCTS = 3000
+N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -50,8 +47,8 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = './data/180804_13300_106400_step_model.pickle'
-enemy_model_path = './data/180804_13300_106400_step_model.pickle'
+player_model_path = './data/180822_6000_142410_step_model.pickle'
+enemy_model_path = './data/180822_6000_142410_step_model.pickle'
 
 # ===================================================================== #
 
@@ -79,10 +76,10 @@ class Evaluator(object):
                                            N_MCTS,
                                            IN_PLANES_PLAYER,
                                            noise=False)
-            self.player.model = neural_net.PVNet(N_BLOCKS_PLAYER,
-                                                 IN_PLANES_PLAYER,
-                                                 OUT_PLANES_PLAYER,
-                                                 BOARD_SIZE).to(device)
+            self.player.model = model.PVNet(N_BLOCKS_PLAYER,
+                                            IN_PLANES_PLAYER,
+                                            OUT_PLANES_PLAYER,
+                                            BOARD_SIZE).to(device)
             state_a = self.player.model.state_dict()
             my_state_a = torch.load(
                 model_path_a, map_location='cuda:0' if use_cuda else 'cpu')
@@ -96,10 +93,10 @@ class Evaluator(object):
                                            N_MCTS,
                                            IN_PLANES_PLAYER,
                                            noise=False)
-            self.player.model = neural_net.PVNet(N_BLOCKS_PLAYER,
-                                                 IN_PLANES_PLAYER,
-                                                 OUT_PLANES_PLAYER,
-                                                 BOARD_SIZE).to(device)
+            self.player.model = model.PVNet(N_BLOCKS_PLAYER,
+                                            IN_PLANES_PLAYER,
+                                            OUT_PLANES_PLAYER,
+                                            BOARD_SIZE).to(device)
         if model_path_b == 'random':
             print('load enemy model:', model_path_b)
             self.enemy = agents.RandomAgent(BOARD_SIZE)
@@ -121,10 +118,10 @@ class Evaluator(object):
                                           N_MCTS,
                                           IN_PLANES_ENEMY,
                                           noise=False)
-            self.enemy.model = neural_net.PVNet(N_BLOCKS_ENEMY,
-                                                IN_PLANES_ENEMY,
-                                                OUT_PLANES_ENEMY,
-                                                BOARD_SIZE).to(device)
+            self.enemy.model = model.PVNet(N_BLOCKS_ENEMY,
+                                           IN_PLANES_ENEMY,
+                                           OUT_PLANES_ENEMY,
+                                           BOARD_SIZE).to(device)
             state_b = self.enemy.model.state_dict()
             my_state_b = torch.load(
                 model_path_b, map_location='cuda:0' if use_cuda else 'cpu')
@@ -138,10 +135,10 @@ class Evaluator(object):
                                           N_MCTS,
                                           IN_PLANES_ENEMY,
                                           noise=False)
-            self.enemy.model = neural_net.PVNet(N_BLOCKS_ENEMY,
-                                                IN_PLANES_ENEMY,
-                                                OUT_PLANES_ENEMY,
-                                                BOARD_SIZE).to(device)
+            self.enemy.model = model.PVNet(N_BLOCKS_ENEMY,
+                                           IN_PLANES_ENEMY,
+                                           OUT_PLANES_ENEMY,
+                                           BOARD_SIZE).to(device)
         self.player_pi = None
         self.enemy_pi = None
         self.player_visit = None
@@ -156,12 +153,12 @@ class Evaluator(object):
             pi = self.player.get_pi(root_id, board, turn, tau=0.01)
             self.player_pi = pi
             self.player_visit = self.player.get_visit()
-            action, action_index = utils.argmax_pi(pi)
+            action, action_index = utils.argmax_onehot(pi)
         else:
             pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
             self.enemy_pi = pi
             self.enemy_visit = self.enemy.get_visit()
-            action, action_index = utils.argmax_pi(pi)
+            action, action_index = utils.argmax_onehot(pi)
 
         return action, action_index
 
@@ -223,33 +220,6 @@ class Evaluator(object):
         return self.enemy_visit
 
 
-class OnlineEvaluator(Evaluator):
-    def __init__(self, model_path_a, model_path_b):
-        super().__init__(model_path_a, model_path_b)
-
-    def get_action(self, root_id, board, turn, enemy_turn):
-        if turn != enemy_turn:
-            self.player.model.eval()
-            with torch.no_grad():
-                state = utils.get_state_pt(
-                    root_id, BOARD_SIZE, IN_PLANES_PLAYER)
-                state_input = torch.tensor([state]).to(device).float()
-                p, v = self.player.model(state_input)
-                p = p.data[0].cpu().numpy()
-            action, action_index = utils.get_action_eval(p, board)
-        else:
-            self.enemy.model.eval()
-            with torch.no_grad():
-                state = utils.get_state_pt(
-                    root_id, BOARD_SIZE, IN_PLANES_ENEMY)
-                state_input = torch.tensor([state]).to(device).float()
-                p, v = self.enemy.model(state_input)
-                p = p.data[0].cpu().numpy()
-            action, action_index = utils.get_action_eval(p, board)
-
-        return action, action_index
-
-
 def elo(player_elo, enemy_elo, p_winscore, e_winscore):
     elo_diff = enemy_elo - player_elo
     ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -279,9 +249,9 @@ def main():
     print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
         player_elo, enemy_elo))
 
-    i = 0
+    # i = 0
 
-    while True:
+    for i in range(N_MATCH):
         board = np.zeros([BOARD_SIZE, BOARD_SIZE])
         root_id = (0,)
         win_index = 0
@@ -379,7 +349,7 @@ def main():
                 print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
                     player_elo, enemy_elo))
                 evaluator.reset()
-        i = i + 1
+        # i = i + 1
 
 
 # WebAPI
