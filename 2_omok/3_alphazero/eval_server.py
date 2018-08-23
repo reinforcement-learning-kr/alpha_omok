@@ -8,8 +8,8 @@ import model
 import utils
 import flask
 import threading
-from info.game import GameInfo
 from info.agent import AgentInfo
+from info.game import GameInfo
 
 # env_small: 9x9, env_regular: 15x15
 from env import env_small as game
