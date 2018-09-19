@@ -1,16 +1,24 @@
 # Alpha-Omok
 This is a project of [Reinforcement Learning KR group](https://www.facebook.com/groups/ReinforcementLearningKR/).
 
+AlphaZero is a Reinforcement Learning algorithm which is effectively combine [MCTS(Monte-Carlo Tree Search)](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search) with Actor-Critic. Alpha-Omok team wanted to apply [AlphaZero](https://deepmind.com/blog/alphago-zero-learning-scratch/) algorithm to famous board game [Omok (Gomoku)](https://en.wikipedia.org/wiki/Gomoku). Omok is a traditional game, which uses same gameboard with [Go](https://en.wikipedia.org/wiki/Go_(game)). Therefore we thought that it is proper game to apply AlphaZero algorithm.  For now, the algorithm is implemented by [Pytorch](https://pytorch.org/). [Tensorflow](https://www.tensorflow.org) version will be release soon!! 
+
+
+
+## Examples of Result
+
+|                Agent: Black vs Player: White                 |                Agent: White vs Player: Black                 |
+| :----------------------------------------------------------: | :----------------------------------------------------------: |
+| <img src="./image/AgentWin1_speed.gif" width="300" alt="Play Demo (Agent win)" /> | <img src="./image/Draw_Speed.gif" width="300" alt="Play Demo (Agent win)" /> |
+
 
 
 ## Project objective
-AlphaZero is Reinforcement Learning algorithm which is effectively combine [MCTS(Monte-Carlo Tree Search)](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search) with Actor-Critic. Our objective is to train [AlphaZero](https://deepmind.com/blog/alphago-zero-learning-scratch/) and apply it to [Omok (Gomoku)](https://en.wikipedia.org/wiki/Gomoku) 
-
 There are 4 objectives to achieve in this project  
 1. MCTS on Tic-Tac-Toe
 2. MCTS on Omok
 3. AlphaZero on Omok
-4. Upload AlphaGo Zero on web
+4. Upload AlphaZero on web
 
 
 
@@ -48,6 +56,26 @@ The description of the files in the folder is as follows. (files with **bold tex
 - **main**: main training code of Alpha Zero. 
 - model: Network model (PyTorch)
 - utils: functions for implementing algorithm. 
+
+
+
+## Documents
+
+- [ID-based implementation]()
+- [Description of the parameters]()
+- [How to change the environment]()
+- [How to load the saved model]()
+- [How to use eval_local]()
+- [How to use eval_web]()
+
+
+
+## Future Work
+
+- Apply parallel computation to improve computation speed
+- Make [Tensorflow](https://www.tensorflow.org) version of the code
+- Train the agent to solve 15x15 size Omok game
+- Apply [Renju Rule](https://en.wikipedia.org/wiki/Renju)
 
 
 
