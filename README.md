@@ -1,19 +1,24 @@
 # Alpha-Omok
+
 This is a project of [Reinforcement Learning KR group](https://www.facebook.com/groups/ReinforcementLearningKR/).
 
 AlphaZero is a Reinforcement Learning algorithm which is effectively combine [MCTS(Monte-Carlo Tree Search)](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search) with Actor-Critic. Alpha-Omok team wanted to apply [AlphaZero](https://deepmind.com/blog/alphago-zero-learning-scratch/) algorithm to famous board game [Omok (Gomoku)](https://en.wikipedia.org/wiki/Gomoku). Omok is a traditional game, which uses same gameboard with [Go](https://en.wikipedia.org/wiki/Go_(game)). Therefore we thought that it is proper game to apply AlphaZero algorithm.  For now, the algorithm is implemented by [Pytorch](https://pytorch.org/). [Tensorflow](https://www.tensorflow.org) version will be release soon!! 
 
 
 
-## Examples of Result
+## Training Result     
 
-|                Agent: Black vs Player: White                 |                Agent: White vs Player: Black                 |
-| :----------------------------------------------------------: | :----------------------------------------------------------: |
-| <img src="./image/AgentWin1_speed.gif" width="300" alt="Play Demo (Agent win)" /> | <img src="./image/Draw_Speed.gif" width="300" alt="Play Demo (Agent win)" /> |
+<div align="center">
+    <div class="row">  
+        <img src="./image/AgentWin1_speed.gif" width="35%" alt="Play Demo (Agent win)"/>
+        <img src="./image/Draw_Speed.gif" width="35%" alt="Play Demo (Agent win)"/>
+	</div>
+</div>
 
 
 
 ## Project objective
+
 There are 4 objectives to achieve in this project  
 1. MCTS on Tic-Tac-Toe
 2. MCTS on Omok
@@ -61,7 +66,7 @@ The description of the files in the folder is as follows. (files with **bold tex
 
 ## Documents
 
-- [ID-based implementation]()
+- [ID-based implementation](https://github.com/reinforcement-learning-kr/alpha_omok/blob/Q_developer/docs/ID_based.md)
 - [Description of the parameters]()
 - [How to change the environment]()
 - [How to load the saved model]()
