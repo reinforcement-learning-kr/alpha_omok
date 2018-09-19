@@ -1,4 +1,5 @@
-# Alpha-Omok
+Alpha-Omok
+
 This is a project of [Reinforcement Learning KR group](https://www.facebook.com/groups/ReinforcementLearningKR/).
 
 AlphaZero is a Reinforcement Learning algorithm which is effectively combine [MCTS(Monte-Carlo Tree Search)](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search) with Actor-Critic. Alpha-Omok team wanted to apply [AlphaZero](https://deepmind.com/blog/alphago-zero-learning-scratch/) algorithm to famous board game [Omok (Gomoku)](https://en.wikipedia.org/wiki/Gomoku). Omok is a traditional game, which uses same gameboard with [Go](https://en.wikipedia.org/wiki/Go_(game)). Therefore we thought that it is proper game to apply AlphaZero algorithm.  For now, the algorithm is implemented by [Pytorch](https://pytorch.org/). [Tensorflow](https://www.tensorflow.org) version will be release soon!! 
@@ -7,15 +8,17 @@ AlphaZero is a Reinforcement Learning algorithm which is effectively combine [MC
 
 ## Examples of Result
 
-<p align= "center">
+<div align="center">
+
 
 |                Agent: Black vs Player: White                 |                Agent: White vs Player: Black                 |
 | :----------------------------------------------------------: | :----------------------------------------------------------: |
 | <img src="./image/AgentWin1_speed.gif" width="300" alt="Play Demo (Agent win)" /> | <img src="./image/Draw_Speed.gif" width="300" alt="Play Demo (Agent win)" /> |
 
-</p>
+</div>
 
 ## Project objective
+
 There are 4 objectives to achieve in this project  
 1. MCTS on Tic-Tac-Toe
 2. MCTS on Omok
