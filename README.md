@@ -7,11 +7,13 @@ AlphaZero is a Reinforcement Learning algorithm which is effectively combine [MC
 
 ## Examples of Result
 
+<p align= "center">
+
 |                Agent: Black vs Player: White                 |                Agent: White vs Player: Black                 |
 | :----------------------------------------------------------: | :----------------------------------------------------------: |
 | <img src="./image/AgentWin1_speed.gif" width="300" alt="Play Demo (Agent win)" /> | <img src="./image/Draw_Speed.gif" width="300" alt="Play Demo (Agent win)" /> |
 
-
+</p>
 
 ## Project objective
 There are 4 objectives to achieve in this project  
