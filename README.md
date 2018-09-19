@@ -6,20 +6,22 @@ AlphaZero is a Reinforcement Learning algorithm which is effectively combine [MC
 
 
 
-## Examples of Result    
+## Examples of Result​    
 
-<p align= "center">
-    <table style="width:80%" align="center">
-        <tr>
-            <th><center>Agent: Black vs Player: White</center></th>
-            <th><center>Agent: White vs Player: Black</center></th>
-        </tr>
-        <tr>
-            <th><img src="./image/AgentWin1_speed.gif" width="100%" alt="Play Demo (Agent win)" /></th>
-            <th><img src="./image/Draw_Speed.gif" width="100%" alt="Play Demo (Agent win)" /></th>
-        </tr>
-    </table>
-</p>
+<div align="center">
+    <p align= "center">
+        <table style="width:80%" align="center">
+            <tr>
+                <th><center>Agent: Black vs Player: White</center></th>
+                <th><center>Agent: White vs Player: Black</center></th>
+            </tr>
+            <tr>
+                <th><img src="./image/AgentWin1_speed.gif" width="100%" alt="Play Demo (Agent win)" /></th>
+                <th><img src="./image/Draw_Speed.gif" width="100%" alt="Play Demo (Agent win)" /></th>
+            </tr>
+        </table>
+    </p>
+</div>
 
 
 ## Project objective
@@ -71,7 +73,7 @@ The description of the files in the folder is as follows. (files with **bold tex
 
 ## Documents
 
-- [ID-based implementation]()
+- [ID-based implementation](https://github.com/reinforcement-learning-kr/alpha_omok/blob/Q_developer/docs/ID_based.md)
 - [Description of the parameters]()
 - [How to change the environment]()
 - [How to load the saved model]()
