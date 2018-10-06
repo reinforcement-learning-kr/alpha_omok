@@ -12,7 +12,7 @@ AlphaZero is a Reinforcement Learning algorithm which is effectively combine [MC
     <div class="row">  
         <img src="./image/AgentWin1_speed.gif" width="35%" alt="Play Demo (Agent win)"/>
         <img src="./image/Draw_Speed.gif" width="35%" alt="Play Demo (Agent win)"/>
-	</div>
+    </div>
 </div>
 
 
@@ -66,12 +66,12 @@ The description of the files in the folder is as follows. (files with **bold tex
 
 ## Documents
 
-- [ID-based implementation](https://github.com/reinforcement-learning-kr/alpha_omok/blob/Q_developer/docs/ID_based.md)
-- [Description of the parameters]()
-- [How to change the environment]()
-- [How to load the saved model]()
-- [How to use eval_local]()
-- [How to use eval_web]()
+- [ID-based implementation](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/1_ID_based.md)
+- [Description of the parameters](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/2_Parameters.md)
+- [How to change the environment](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/3_How_to_change_env.md)
+- [How to load the saved model](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/4_How_to_load_model.md)
+- [How to use eval_local](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/5_How_to_use_eval_local.md)
+- [How to use eval_web](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/6_How_to_use_eval_web.md)
 
 
 
