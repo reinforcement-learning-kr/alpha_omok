@@ -26,7 +26,7 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 3000
+N_MCTS = 400
 N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
@@ -47,8 +47,8 @@ enemy_agent_info = AgentInfo(BOARD_SIZE)
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = './data/180822_6000_142410_step_model.pickle'
-enemy_model_path = './data/180822_6000_142410_step_model.pickle'
+player_model_path = './data/180927_9400_297233_step_model.pickle'
+enemy_model_path = './data/180927_9400_297233_step_model.pickle'
 
 # ===================================================================== #
 

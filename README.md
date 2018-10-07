@@ -4,7 +4,9 @@ This is a project of [Reinforcement Learning KR group](https://www.facebook.com/
 
 AlphaZero is a Reinforcement Learning algorithm which is effectively combine [MCTS(Monte-Carlo Tree Search)](https://en.wikipedia.org/wiki/Monte_Carlo_tree_search) with Actor-Critic. Alpha-Omok team wanted to apply [AlphaZero](https://deepmind.com/blog/alphago-zero-learning-scratch/) algorithm to famous board game [Omok (Gomoku)](https://en.wikipedia.org/wiki/Gomoku). Omok is a traditional game, which uses same gameboard with [Go](https://en.wikipedia.org/wiki/Go_(game)). Therefore we thought that it is proper game to apply AlphaZero algorithm.  For now, the algorithm is implemented by [Pytorch](https://pytorch.org/). [Tensorflow](https://www.tensorflow.org) version will be release soon!! 
 
+**All the environments are implemented by [pygame](https://www.pygame.org/news), so you should install pygame to run the codes in this repository!!**
 
+<br>
 
 ## Training Result     
 
@@ -15,7 +17,7 @@ AlphaZero is a Reinforcement Learning algorithm which is effectively combine [MC
     </div>
 </div>
 
-
+<br>
 
 ## Project objective
 
@@ -25,6 +27,8 @@ There are 4 objectives to achieve in this project
 3. AlphaZero on Omok
 4. Upload AlphaZero on web
 
+
+<br>
 
 
 ## Description of the Folders
@@ -45,6 +49,8 @@ The description of the files in the folder is as follows. (files with **bold tex
 - utils: functions for implementing algorithm. 
 
 
+<br>
+
 
 ### 2_AlphaOmok
 
@@ -63,6 +69,8 @@ The description of the files in the folder is as follows. (files with **bold tex
 - utils: functions for implementing algorithm. 
 
 
+<br>
+
 
 ## Documents
 
@@ -71,8 +79,10 @@ The description of the files in the folder is as follows. (files with **bold tex
 - [How to change the environment](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/3_How_to_change_env.md)
 - [How to load the saved model](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/4_How_to_load_model.md)
 - [How to use eval_local](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/5_How_to_use_eval_local.md)
-- [How to use eval_web](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/6_How_to_use_eval_web.md)
+- [How to use eval_server](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/6_How_to_use_eval_server.md)
 
+
+<br>
 
 
 ## Future Work
@@ -83,12 +93,16 @@ The description of the files in the folder is as follows. (files with **bold tex
 - Apply [Renju Rule](https://en.wikipedia.org/wiki/Renju)
 
 
+<br>
+
 
 ## Reference
 
 1. [Mastering the Game of Go with Deep Neural Networks and Tree Search](https://storage.googleapis.com/deepmind-media/alphago/AlphaGoNaturePaper.pdf)
 2. [Mastering the Game of Go without Human Knowledge](https://www.nature.com/articles/nature24270)
 
+
+<br>
 
 
 ## AlphaOmok Team
