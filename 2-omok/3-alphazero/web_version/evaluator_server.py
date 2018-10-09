@@ -319,10 +319,10 @@ evaluator = Evaluator()
 #   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
 # ===================================================================== #
 
-player_model_path = './data/180804_13300_106400_step_model.pickle'
-enemy_model_path = './data/180804_13300_106400_step_model.pickle'
-player_monitor_model_path = './data/180804_13300_106400_step_model.pickle'
-enemy_monitor_model_path = './data/180804_13300_106400_step_model.pickle'
+player_model_path = './data/180824_6900_181769_step_model.pickle'
+enemy_model_path = './data/180824_6900_181769_step_model.pickle'
+player_monitor_model_path = './data/180824_6900_181769_step_model.pickle'
+enemy_monitor_model_path = './data/180824_6900_181769_step_model.pickle'
 
 def main():
     global main_loop_reset_flag
@@ -492,9 +492,9 @@ def req_reset_agenets():
 
     if selected_player_agent_name == "HumanAgent":
         player_model_path = "human"
-        player_monitor_model_path = './data/180804_13300_106400_step_model.pickle'
+        player_monitor_model_path = './data/180824_6900_181769_step_model.pickle'
     elif selected_player_agent_name == "ZeroAgent":
-        player_model_path = './data/180804_13300_106400_step_model.pickle'
+        player_model_path = './data/180824_6900_181769_step_model.pickle'
     elif selected_player_agent_name == "RZeroAgent":
         player_model_path = 'RZeroAgent'
     elif selected_player_agent_name == "PUCTAgent":
@@ -506,9 +506,9 @@ def req_reset_agenets():
 
     if selected_enemy_agent_name == "HumanAgent":
         enemy_model_path = "human"
-        enemy_monitor_model_path = './data/180804_13300_106400_step_model.pickle'
+        enemy_monitor_model_path = './data/180824_6900_181769_step_model.pickle'
     elif selected_enemy_agent_name == "ZeroAgent":
-        enemy_model_path = './data/180804_13300_106400_step_model.pickle'
+        enemy_model_path = './data/180824_6900_181769_step_model.pickle'
     elif selected_enemy_agent_name == "RZeroAgent":
         enemy_model_path = 'RZeroAgent'
     elif selected_enemy_agent_name == "PUCTAgent":

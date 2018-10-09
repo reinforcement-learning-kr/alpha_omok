@@ -207,7 +207,6 @@
               <canvas id="board" height=300></canvas>
             </div>
             <button onclick='reqMove()'>Move</button>
-            <div id="board_message"></div>
             <div id="player_message"></div>
             <div id="enemy_message"></div>
           </div>
@@ -229,16 +228,16 @@
               </div>
           </div>  
           <div id="jb-content-bottom-third">
+              <h4>Enemy MCTS Visit</h4>
+              <div id="boardWraaper">
+                  <canvas id="enemy_agent_visit" height=300></canvas>
+              </div>
+          </div>                      
+          <div id="jb-content-bottom-fourth">  
               <h4>Enemy Policy Network</h4>
               <div id="boardWraaper">
                   <canvas id="enemy_agent_p" height=300></canvas>
               </div>
-          </div>                      
-          <div id="jb-content-bottom-fourth">
-              <h4>Enemy MCTS Visit</h4>
-              <div id="boardWraaper">
-                  <canvas id="enemy_agent_visit" height=300></canvas>
-                </div>      
           </div>            
       </div>
     </div>
