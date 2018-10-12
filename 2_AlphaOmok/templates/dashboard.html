@@ -10,6 +10,10 @@
       { 
         text-decoration:none 
       }
+      button
+      {
+      width: 100%;
+      }
       .profile_photo {
         width: 50px; height: 50px;
         object-fit: cover;
@@ -166,12 +170,45 @@
       </div>
       <div id="jb-content-top">
           <div id="jb-content-top-left">
-              <h4><div id="board_message"></div></h4>
-              <div id="boardWraaper">
-                <canvas id="board" height=300></canvas>
-              </div>
-              <div id="player_message"></div>
-              <div id="enemy_message"></div>
+            <table>
+              <tr>
+                <td>Player</td>
+                <td>Enemy</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <select name="player_agent" id ="select_player_agent_name">
+                      <option value="Current">Current</option>
+                      <option value="HumanAgent">HumanAgent</option>
+                      <option value="ZeroAgent">ZeroAgent</option>
+                      <option value="RZeroAgent">RZeroAgent</option>
+                      <option value="PUCTAgent">PUCTAgent</option>
+                      <option value="UCTAgent">UCTAgent</option>
+                      <option value="RandomAgent">RandomAgent</option>
+                  </select>
+                </td>
+                <td>
+                    <select name="enemy_agent" id ="select_enemy_agent_name">
+                        <option value="Current">Current</option>
+                        <option value="HumanAgent">HumanAgent</option>
+                        <option value="ZeroAgent">ZeroAgent</option>
+                        <option value="RZeroAgent">RZeroAgent</option>
+                        <option value="PUCTAgent">PUCTAgent</option>
+                        <option value="UCTAgent">UCTAgent</option>
+                        <option value="RandomAgent">RandomAgent</option>
+                    </select>
+                </td>
+                <td><button onclick='reqResetAgents()'>Reset</button></td>
+              </tr>
+            </table>
+            <br>
+            <div id="boardWraaper">
+              <canvas id="board" height=300></canvas>
+            </div>
+            <button onclick='reqMove()'>Move</button>
+            <div id="player_message"></div>
+            <div id="enemy_message"></div>
           </div>
           <div id="jb-content-top-right">
               <div id="v_monitoring"></div>
@@ -191,16 +228,16 @@
               </div>
           </div>  
           <div id="jb-content-bottom-third">
+              <h4>Enemy MCTS Visit</h4>
+              <div id="boardWraaper">
+                  <canvas id="enemy_agent_visit" height=300></canvas>
+              </div>
+          </div>                      
+          <div id="jb-content-bottom-fourth">  
               <h4>Enemy Policy Network</h4>
               <div id="boardWraaper">
                   <canvas id="enemy_agent_p" height=300></canvas>
               </div>
-          </div>                      
-          <div id="jb-content-bottom-fourth">
-              <h4>Enemy MCTS Visit</h4>
-              <div id="boardWraaper">
-                  <canvas id="enemy_agent_visit" height=300></canvas>
-                </div>      
           </div>            
       </div>
     </div>

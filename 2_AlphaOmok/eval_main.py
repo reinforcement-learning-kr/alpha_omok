@@ -1,19 +1,23 @@
-import logging
-
 import numpy as np
 import torch
 
-import agents.server as agents
+import agents
 import model
 import utils
-import flask
-import threading
-from info.agent import AgentInfo
-from info.game import GameInfo
 
 # env_small: 9x9, env_regular: 15x15
 from env import env_small as game
 
+#WebAPI
+import logging
+import threading
+import flask
+from WebAPI import web_api
+from WebAPI import game_info
+from WebAPI import player_agent_info
+from WebAPI import enemy_agent_info
+from info.agent_info import AgentInfo
+from info.game_info import GameInfo
 
 BOARD_SIZE = game.Return_BoardParams()[0]
 
@@ -26,35 +30,38 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 3000
-N_MATCH = 12
+N_MCTS = 30
+N_MATCH = 3
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
 
-# WebAPI
-app = flask.Flask(__name__)
-log = logging.getLogger('werkzeug')
-log.disabled = True
-# app.logger.disabled = True
-
-gi = GameInfo(BOARD_SIZE)
-player_agent_info = AgentInfo(BOARD_SIZE)
-enemy_agent_info = AgentInfo(BOARD_SIZE)
-
-# =========================== input model path ======================== #
-#   'human': human play   'random': random     None: raw model MCTS     #
-#   'puct': PUCT MCTS     'uct': UCT MCTS     'web': human web player   #
-# ===================================================================== #
-
-player_model_path = './data/180822_6000_142410_step_model.pickle'
-enemy_model_path = './data/180822_6000_142410_step_model.pickle'
-
-# ===================================================================== #
-
+# ==================== input model path ================= #
+#       'human': human play       'puct': PUCB MCTS       #
+#       'uct': UCB MCTS           'random': random        #
+#       'web': web play                                   #
+# ======================================================= #
+# example)
+player_model_path = 'web'
+enemy_model_path = './data/180822_5800_134306_step_model.pickle'
+monitor_model_path = './data/180822_5800_134306_step_model.pickle'
 
 class Evaluator(object):
-    def __init__(self, model_path_a, model_path_b):
+    def __init__(self):
+        self.player = None
+        self.enemy = None
+        self.monitor = None
+        pass
+
+    def set_agents(self, model_path_a, model_path_b, model_path_m):
+
+        if model_path_a == 'human' or model_path_b == 'human':
+            game_mode = 'pygame'
+        else:
+            game_mode = 'text'
+
+        self.env = game.GameState(game_mode)
+
         if model_path_a == 'random':
             print('load player model:', model_path_a)
             self.player = agents.RandomAgent(BOARD_SIZE)
@@ -66,11 +73,12 @@ class Evaluator(object):
             self.player = agents.UCTAgent(BOARD_SIZE, N_MCTS)
         elif model_path_a == 'human':
             print('load player model:', model_path_a)
-            self.player = agents.HumanAgent(BOARD_SIZE)
+            self.player = agents.HumanAgent(BOARD_SIZE, self.env)
         elif model_path_a == 'web':
             print('load player model:', model_path_a)
             self.player = agents.WebAgent(BOARD_SIZE)
-        elif model_path_a:
+            print(self.player)
+        else:
             print('load player model:', model_path_a)
             self.player = agents.ZeroAgent(BOARD_SIZE,
                                            N_MCTS,
@@ -87,16 +95,7 @@ class Evaluator(object):
                 if k in state_a:
                     state_a[k] = v
             self.player.model.load_state_dict(state_a)
-        else:
-            print('load player model:', model_path_a)
-            self.player = agents.ZeroAgent(BOARD_SIZE,
-                                           N_MCTS,
-                                           IN_PLANES_PLAYER,
-                                           noise=False)
-            self.player.model = model.PVNet(N_BLOCKS_PLAYER,
-                                            IN_PLANES_PLAYER,
-                                            OUT_PLANES_PLAYER,
-                                            BOARD_SIZE).to(device)
+
         if model_path_b == 'random':
             print('load enemy model:', model_path_b)
             self.enemy = agents.RandomAgent(BOARD_SIZE)
@@ -108,11 +107,11 @@ class Evaluator(object):
             self.enemy = agents.UCTAgent(BOARD_SIZE, N_MCTS)
         elif model_path_b == 'human':
             print('load enemy model:', model_path_b)
-            self.enemy = agents.HumanAgent(BOARD_SIZE)
+            self.enemy = agents.HumanAgent(BOARD_SIZE, self.env)
         elif model_path_b == 'web':
             print('load enemy model:', model_path_b)
             self.enemy = agents.WebAgent(BOARD_SIZE)
-        elif model_path_b:
+        else:
             print('load enemy model:', model_path_b)
             self.enemy = agents.ZeroAgent(BOARD_SIZE,
                                           N_MCTS,
@@ -129,60 +128,50 @@ class Evaluator(object):
                 if k in state_b:
                     state_b[k] = v
             self.enemy.model.load_state_dict(state_b)
-        else:
-            print('load enemy model:', model_path_b)
-            self.enemy = agents.ZeroAgent(BOARD_SIZE,
-                                          N_MCTS,
-                                          IN_PLANES_ENEMY,
-                                          noise=False)
-            self.enemy.model = model.PVNet(N_BLOCKS_ENEMY,
-                                           IN_PLANES_ENEMY,
-                                           OUT_PLANES_ENEMY,
-                                           BOARD_SIZE).to(device)
-        self.player_pi = None
-        self.enemy_pi = None
-        self.player_visit = None
-        self.enemy_visit = None
 
-        self.player_monitor = self.player
-        self.enemy_monitor = self.enemy
+        #monitor agent
+        self.monitor = agents.ZeroAgent(BOARD_SIZE,
+                                        N_MCTS,
+                                        IN_PLANES_ENEMY,
+                                        noise=False)
+        self.monitor.model = model.PVNet(N_BLOCKS_ENEMY,
+                                        IN_PLANES_ENEMY,
+                                        OUT_PLANES_ENEMY,
+                                        BOARD_SIZE).to(device)
+        state_b = self.monitor.model.state_dict()
+        my_state_b = torch.load(
+            model_path_m, map_location='cuda:0' if use_cuda else 'cpu')
+        for k, v in my_state_b.items():
+            if k in state_b:
+                state_b[k] = v
+        self.monitor.model.load_state_dict(state_b)            
 
     def get_action(self, root_id, board, turn, enemy_turn):
-
         if turn != enemy_turn:
-            pi = self.player.get_pi(root_id, board, turn, tau=0.01)
-            self.player_pi = pi
-            self.player_visit = self.player.get_visit()
-            action, action_index = utils.argmax_onehot(pi)
+            if isinstance(self.player, agents.ZeroAgent):
+                pi = self.player.get_pi(root_id, tau=0)
+            else:
+                pi = self.player.get_pi(root_id, board, turn, tau=0)
         else:
-            pi = self.enemy.get_pi(root_id, board, turn, tau=0.01)
-            self.enemy_pi = pi
-            self.enemy_visit = self.enemy.get_visit()
-            action, action_index = utils.argmax_onehot(pi)
+            if isinstance(self.enemy, agents.ZeroAgent):
+                pi = self.enemy.get_pi(root_id, tau=0)
+            else:
+                pi = self.enemy.get_pi(root_id, board, turn, tau=0)
+
+        action, action_index = utils.argmax_onehot(pi)
 
         return action, action_index
 
-    def get_pv(self, root_id, turn, enemy_turn):
-
-        if turn != enemy_turn:
-            if player_model_path != 'web':
-                p, v = self.player_monitor.get_pv(root_id)
-            else:
-                p, v = self.enemy_monitor.get_pv(root_id)
-        else:
-            if enemy_model_path != 'web':
-                p, v = self.enemy_monitor.get_pv(root_id)
-            else:
-                p, v = self.player_monitor.get_pv(root_id)
-
-        return p, v
+    def return_env(self):
+        return self.env
 
     def reset(self):
         self.player.reset()
         self.enemy.reset()
 
-    # WebAPI
     def put_action(self, action_idx, turn, enemy_turn):
+        
+        print(self.player)
 
         if turn != enemy_turn:
             if type(self.player) is agents.WebAgent:
@@ -190,34 +179,6 @@ class Evaluator(object):
         else:
             if type(self.enemy) is agents.WebAgent:
                 self.enemy.put_action(action_idx)
-
-    def get_player_message(self):
-
-        if self.player is None:
-            return ''
-
-        return 'Player : ' + self.player.get_message()
-
-    def get_enemy_message(self):
-
-        if self.enemy is None:
-            return ''
-
-        return 'Enemy : ' + self.enemy.get_message()
-
-    def get_player_visit(self):
-
-        if self.player_visit is None:
-            return None
-
-        return self.player_visit
-
-    def get_enemy_visit(self):
-
-        if self.enemy_visit is None:
-            return None
-
-        return self.enemy_visit
 
 
 def elo(player_elo, enemy_elo, p_winscore, e_winscore):
@@ -229,27 +190,24 @@ def elo(player_elo, enemy_elo, p_winscore, e_winscore):
 
     return player_elo, enemy_elo
 
-
-evaluator = Evaluator(player_model_path, enemy_model_path)
-
+evaluator = Evaluator()
 
 def main():
-    print('cuda:', use_cuda)
+    evaluator.set_agents(player_model_path, enemy_model_path, monitor_model_path)
 
-    # g_evaluator = evaluator
+    env = evaluator.return_env()
 
-    env = game.GameState('text')
     result = {'Player': 0, 'Enemy': 0, 'Draw': 0}
     turn = 0
     enemy_turn = 1
-    gi.enemy_turn = enemy_turn
     player_elo = 1500
     enemy_elo = 1500
 
+    game_info.enemy_turn = enemy_turn
+    game_info.game_status = 0
+
     print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
         player_elo, enemy_elo))
-
-    # i = 0
 
     for i in range(N_MATCH):
         board = np.zeros([BOARD_SIZE, BOARD_SIZE])
@@ -257,17 +215,21 @@ def main():
         win_index = 0
         action_index = None
 
+        game_info.game_board = board
+
         if i % 2 == 0:
             print('Player Color: Black')
         else:
             print('Player Color: White')
 
+        game_info.game_status = 0 #0:Running 1:Player Win, 2: Enemy Win 3: Draw
+
         while win_index == 0:
             utils.render_str(board, BOARD_SIZE, action_index)
-            action, action_index = evaluator.get_action(
-                root_id, board, turn, enemy_turn)
-
-            p, v = evaluator.get_pv(root_id, turn, enemy_turn)
+            action, action_index = evaluator.get_action(root_id,
+                                                        board,
+                                                        turn,
+                                                        enemy_turn)
 
             if turn != enemy_turn:
                 # player turn
@@ -278,37 +240,32 @@ def main():
 
             board, check_valid_pos, win_index, turn, _ = env.step(action)
 
-            # WebAPI
-            gi.game_board = board
-            gi.action_index = int(action_index)
-            gi.win_index = win_index
-            gi.curr_turn = turn
-
+            game_info.game_board = board
+            game_info.action_index = int(action_index)
+            game_info.win_index = win_index
+            game_info.curr_turn = turn # 0 black 1 white  
+            
             move = np.count_nonzero(board)
-
-            if evaluator.get_player_visit() is not None:
-                player_agent_info.visit = evaluator.get_player_visit()
-
-            if evaluator.get_enemy_visit() is not None:
-                enemy_agent_info.visit = evaluator.get_enemy_visit()
+            p, v = evaluator.monitor.get_pv(root_id)
 
             if turn == enemy_turn:
+                player_agent_info.visit = evaluator.player.get_visit()
+                player_agent_info.p = evaluator.player.get_policy()   
+                player_agent_info.add_value(move, v)                         
                 evaluator.enemy.del_parents(root_id)
-                player_agent_info.add_value(move, v)
-                player_agent_info.p = p
 
             else:
-                evaluator.player.del_parents(root_id)
-                enemy_agent_info.add_value(move, v)
-                enemy_agent_info.p = p
-
-            # used for debugging
-            if not check_valid_pos:
-                raise ValueError('no legal move!')
+                enemy_agent_info.visit = evaluator.enemy.get_visit()
+                enemy_agent_info.p = evaluator.enemy.get_policy()
+                enemy_agent_info.add_value(move, v)                
+                evaluator.player.del_parents(root_id)                
 
             if win_index != 0:
                 player_agent_info.clear_values()
                 enemy_agent_info.clear_values()
+
+                game_info.game_status = win_index # 0:Running 1:Player Win, 2: Enemy Win 3: Draw
+
                 if turn == enemy_turn:
                     if win_index == 3:
                         result['Draw'] += 1
@@ -335,7 +292,7 @@ def main():
                 utils.render_str(board, BOARD_SIZE, action_index)
                 # Change turn
                 enemy_turn = abs(enemy_turn - 1)
-                gi.enemy_turn = enemy_turn
+                game_info.enemy_turn = enemy_turn
                 turn = 0
                 pw, ew, dr = result['Player'], result['Enemy'], result['Draw']
                 winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
@@ -349,78 +306,28 @@ def main():
                 print('Player ELO: {:.0f}, Enemy ELO: {:.0f}'.format(
                     player_elo, enemy_elo))
                 evaluator.reset()
-        # i = i + 1
-
 
 # WebAPI
-@app.route('/')
-def home():
-    return flask.render_template('index.html')
+app = flask.Flask(__name__)
+app.register_blueprint(web_api)
+log = logging.getLogger('werkzeug')
+log.disabled = True
 
+@app.route('/action')
+def action():
 
-@app.route('/dashboard')
-def dashboard():
-    return flask.render_template('dashboard.html')
-
-
-@app.route('/test')
-def test():
-    return flask.render_template('test.html')
-
-
-@app.route('/periodic_status')
-def periodic_status():
-
+    action_idx = int(flask.request.args.get("action_idx"))
     data = {"success": False}
-
-    data["game_board_size"] = gi.game_board.shape[0]
-    data["game_board_values"] = gi.game_board.reshape(
-        gi.game_board.size).astype(int).tolist()
-    data["game_board_message"] = gi.message
-    data["action_index"] = gi.action_index
-    data["win_index"] = gi.win_index
-    data["curr_turn"] = gi.curr_turn
-
-    data["player_agent_p_size"] = player_agent_info.p_size
-    data["player_agent_p_values"] = player_agent_info.p.reshape(
-        player_agent_info.p_size).astype(float).tolist()
-    data["player_agent_visit_size"] = player_agent_info.visit_size
-    data["player_agent_visit_values"] = player_agent_info.visit.reshape(
-        player_agent_info.visit_size).astype(float).tolist()
-
-    data["enemy_agent_p_size"] = enemy_agent_info.p_size
-    data["enemy_agent_p_values"] = enemy_agent_info.p.reshape(
-        enemy_agent_info.p_size).astype(float).tolist()
-    data["enemy_agent_visit_size"] = enemy_agent_info.visit_size
-    data["enemy_agent_visit_values"] = enemy_agent_info.visit.reshape(
-        enemy_agent_info.visit_size).astype(float).tolist()
-
-    data["player_agent_moves"] = player_agent_info.moves
-    data["player_agent_values"] = player_agent_info.values
-    data["enemy_agent_moves"] = enemy_agent_info.moves
-    data["enemy_agent_values"] = enemy_agent_info.values
-
+    evaluator.put_action(action_idx, game_info.curr_turn, game_info.enemy_turn)
     data["success"] = True
 
     return flask.jsonify(data)
-
-
-@app.route('/prompt_status')
-def prompt_status():
-    data = {"success": False}
-
-    data["player_message"] = evaluator.get_player_message()
-    data["enemy_message"] = evaluator.get_enemy_message()
-    data["success"] = True
-
-    return flask.jsonify(data)
-
 
 if __name__ == '__main__':
+    print('cuda:', use_cuda)
     np.set_printoptions(suppress=True)
     np.random.seed(0)
     torch.manual_seed(0)
-
     if use_cuda:
         torch.cuda.manual_seed_all(0)
 
@@ -430,3 +337,5 @@ if __name__ == '__main__':
                               kwargs={"host": "0.0.0.0", "port": 5000})
     app_th.start()
     main()
+
+
