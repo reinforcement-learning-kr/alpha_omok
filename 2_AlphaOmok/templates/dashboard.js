@@ -1,4 +1,4 @@
-var baseurl = "http://127.0.0.1:5000/"
+var baseurl = "http://pub.inspace.co.kr:10200/"
 
 var c = document.getElementById("board");
 var ctx = c.getContext("2d");
