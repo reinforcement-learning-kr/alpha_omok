@@ -80,6 +80,7 @@ The description of the files in the folder is as follows. (files with **bold tex
 - [How to load the saved model](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/4_How_to_load_model.md)
 - [How to use eval_local](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/5_How_to_use_eval_local.md)
 - [How to use eval_server](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/6_How_to_use_eval_server.md)
+- [Log file](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/7_Log_file.md)
 
 
 <br>

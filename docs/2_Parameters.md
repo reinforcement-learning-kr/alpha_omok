@@ -3,7 +3,7 @@
 If you open the `main.py` code, you can find these parameters. 
 
 <p align= "center">
-  <img src="./image/parameters.png" width="400" alt="simple board example" />
+  <img src="./image/Parameters.png" width="400" alt="simple board example" />
 </p>
 
 The description of the parameters are as follows. 
