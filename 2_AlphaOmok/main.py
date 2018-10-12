@@ -27,7 +27,6 @@ BOARD_SIZE = game.Return_BoardParams()[0]
 N_MCTS = 400
 TAU_THRES = 6
 SEED = 0
-RESIGN_MODE = False
 PRINT_SELFPLAY = True
 
 # Net
@@ -69,7 +68,7 @@ cur_memory = deque()
 step = 0
 start_iter = 0
 total_epoch = 0
-result = {'Black': 0, 'White': 0, 'Draw': 0, 'Resign': 0}
+result = {'Black': 0, 'White': 0, 'Draw': 0}
 if USE_TENSORBOARD:
     from tensorboardX import SummaryWriter
     Writer = SummaryWriter()
@@ -92,7 +91,6 @@ logging.warning(
     '\nBOARD_SIZE: {}'
     '\nN_MCTS: {}'
     '\nTAU_THRES: {}'
-    '\nRESIGN_MODE: {}'
     '\nN_BLOCKS: {}'
     '\nIN_PLANES: {}'
     '\nOUT_PLANES: {}'
@@ -109,7 +107,6 @@ logging.warning(
         BOARD_SIZE,
         N_MCTS,
         TAU_THRES,
-        RESIGN_MODE,
         N_BLOCKS,
         IN_PLANES,
         OUT_PLANES,
@@ -125,17 +122,11 @@ def self_play(n_selfplay):
     global cur_memory, rep_memory
     global Agent
 
+    Agent.model.eval()
     state_black = deque()
     state_white = deque()
     pi_black = deque()
     pi_white = deque()
-
-    if RESIGN_MODE:
-        resign_val_balck = []
-        resign_val_white = []
-        resign_val = []
-        resign_v = -1.0
-        n_resign_thres = N_SELFPLAY // 4
 
     for episode in range(n_selfplay):
         if (episode + 1) % 10 == 0:
@@ -148,9 +139,6 @@ def self_play(n_selfplay):
         win_index = 0
         time_steps = 0
         action_index = None
-
-        if RESIGN_MODE:
-            resign_index = 0
 
         while win_index == 0:
             if PRINT_SELFPLAY:
@@ -184,7 +172,6 @@ def self_play(n_selfplay):
             # ====================== print evaluation ====================== #
 
             if PRINT_SELFPLAY:
-                Agent.model.eval()
                 with torch.no_grad():
                     state_input = torch.tensor([state]).to(device).float()
                     p, v = Agent.model(state_input)
@@ -200,22 +187,8 @@ def self_play(n_selfplay):
 
                 if turn == 0:
                     print("\nBlack's win%: {:.2f}%".format((v + 1) / 2 * 100))
-                    if RESIGN_MODE:
-                        if episode < n_resign_thres:
-                            resign_val_balck.append(v)
-                        elif v < resign_v:
-                            resign_index = 2
-                            if PRINT_SELFPLAY:
-                                print('"Black Resign!"')
                 else:
                     print("\nWhite's win%: {:.2f}%".format((v + 1) / 2 * 100))
-                    if RESIGN_MODE:
-                        if episode < n_resign_thres:
-                            resign_val_white.append(v)
-                        elif v < resign_v:
-                            resign_index = 1
-                            if PRINT_SELFPLAY:
-                                print('"White Resign!"')
 
             # =========================== step ============================= #
 
@@ -224,59 +197,21 @@ def self_play(n_selfplay):
 
             # ========================== result ============================ #
 
-            if RESIGN_MODE:
-                if resign_index != 0:
-                    win_index = resign_index
-                    result['Resign'] += 1
-
             if win_index != 0:
                 if win_index == 1:
                     reward_black = 1.
                     reward_white = -1.
                     result['Black'] += 1
 
-                    if RESIGN_MODE:
-                        if episode < n_resign_thres:
-                            for val in resign_val_balck:
-                                resign_val.append(val)
-                            resign_val_balck.clear()
-                            resign_val_white.clear()
-
                 elif win_index == 2:
                     reward_black = -1.
                     reward_white = 1.
                     result['White'] += 1
 
-                    if RESIGN_MODE:
-                        if episode < n_resign_thres:
-                            for val in resign_val_white:
-                                resign_val.append(val)
-                            resign_val_white.clear()
-                            resign_val_balck.clear()
                 else:
                     reward_black = 0.
                     reward_white = 0.
                     result['Draw'] += 1
-
-                    if RESIGN_MODE:
-                        if episode < n_resign_thres:
-                            for val in resign_val_balck:
-                                resign_val.append(val)
-                            for val in resign_val_white:
-                                resign_val.append(val)
-                            resign_val_balck.clear()
-                            resign_val_white.clear()
-
-                if RESIGN_MODE:
-                    if episode + 1 == n_resign_thres:
-                        resign_v = min(resign_val)
-                        resign_val.clear()
-
-                    if PRINT_SELFPLAY:
-                        print(
-                            'Resign win%: {:.2f}%'.format(
-                                (resign_v + 1) / 2 * 100)
-                        )
 
             # ====================== store in memory ======================= #
 
@@ -295,8 +230,8 @@ def self_play(n_selfplay):
                 if PRINT_SELFPLAY:
                     utils.render_str(board, BOARD_SIZE, action_index)
 
-                    bw, ww, dr, rs = result['Black'], result['White'], \
-                        result['Draw'], result['Resign']
+                    bw, ww, dr = result['Black'], result['White'], \
+                        result['Draw']
                     print('')
                     print('=' * 20,
                           " {:3} Game End   ".format(episode + 1),
@@ -304,11 +239,9 @@ def self_play(n_selfplay):
                     print('Black Win: {:3}   '
                           'White Win: {:3}   '
                           'Draw: {:2}   '
-                          'Win%: {:.2f}%'
-                          '\nResign: {:2}'.format(
+                          'Win%: {:.2f}%'.format(
                               bw, ww, dr,
-                              (bw + 0.5 * dr) / (bw + ww + dr) * 100,
-                              rs))
+                              (bw + 0.5 * dr) / (bw + ww + dr) * 100))
                     print('current memory size:', len(cur_memory))
 
                 Agent.reset()
@@ -322,22 +255,15 @@ def train(lr, n_epochs, n_iter):
     global rep_memory, cur_memory
 
     Agent.model.train()
-
     loss_all = []
     loss_v = []
     loss_p = []
     train_memory = []
     train_memory.extend(
-        random.sample(rep_memory, BATCH_SIZE * len(cur_memory))
-    )
+        random.sample(rep_memory, BATCH_SIZE * len(cur_memory)))
     optimizer = optim.Adam(Agent.model.parameters(),
                            lr=lr,
                            weight_decay=L2)
-
-    # optimizer = optim.SGD(Agent.model.parameters(),
-    #                       lr=lr,
-    #                       momentum=0.9,
-    #                       weight_decay=L2)
 
     dataloader = DataLoader(train_memory,
                             batch_size=BATCH_SIZE,
@@ -446,7 +372,6 @@ def reset_iter(result, cur_memory):
     result['Black'] = 0
     result['White'] = 0
     result['Draw'] = 0
-    result['Resign'] = 0
     total_epoch = 0
     cur_memory.clear()
 
