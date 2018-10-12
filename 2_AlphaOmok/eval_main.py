@@ -30,11 +30,7 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-<<<<<<< HEAD:2_AlphaOmok/eval_main.py
-N_MCTS = 30
-=======
 N_MCTS = 400
->>>>>>> 90bf371171b042edf5dd65f52fe91e5be407192a:2_AlphaOmok/eval_local.py
 N_MATCH = 3
 
 use_cuda = torch.cuda.is_available()
@@ -46,15 +42,10 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 #       'web': web play                                   #
 # ======================================================= #
 # example)
-<<<<<<< HEAD:2_AlphaOmok/eval_main.py
-player_model_path = 'web'
-enemy_model_path = './data/180822_5800_134306_step_model.pickle'
-monitor_model_path = './data/180822_5800_134306_step_model.pickle'
-=======
-player_model_path = 'human'
-enemy_model_path = './data/180927_9400_297233_step_model.pickle'
 
->>>>>>> 90bf371171b042edf5dd65f52fe91e5be407192a:2_AlphaOmok/eval_local.py
+player_model_path = 'web'
+enemy_model_path = './data/180927_9400_297233_step_model.pickle'
+monitor_model_path = './data/180927_9400_297233_step_model.pickle'
 
 class Evaluator(object):
     def __init__(self):
