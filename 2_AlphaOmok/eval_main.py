@@ -12,10 +12,10 @@ from env import env_small as game
 import logging
 import threading
 import flask
-from webapi import web_api
-from webapi import game_info
-from webapi import player_agent_info
-from webapi import enemy_agent_info
+from WebAPI import web_api
+from WebAPI import game_info
+from WebAPI import player_agent_info
+from WebAPI import enemy_agent_info
 from info.agent_info import AgentInfo
 from info.game_info import GameInfo
 
@@ -30,7 +30,7 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 10
+N_MCTS = 400
 N_MATCH = 3
 
 use_cuda = torch.cuda.is_available()
@@ -292,11 +292,8 @@ def main():
                 utils.render_str(board, BOARD_SIZE, action_index)
                 # Change turn
                 enemy_turn = abs(enemy_turn - 1)
-                turn = 0
-
                 game_info.enemy_turn = enemy_turn
-                game_info.curr_turn = turn # 0 black 1 white  
-
+                turn = 0
                 pw, ew, dr = result['Player'], result['Enemy'], result['Draw']
                 winrate = (pw + 0.5 * dr) / (pw + ew + dr) * 100
                 print('')
