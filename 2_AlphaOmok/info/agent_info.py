@@ -1,5 +1,5 @@
 import numpy as np
-
+from agents import Agent
 
 class AgentInfo:
 
@@ -11,7 +11,7 @@ class AgentInfo:
         self.visit_size = board_size * board_size
         self.moves = []
         self.values = []
-        self.message = ''
+        self.agent = Agent(board_size)
 
     def add_value(self, move, value):
 

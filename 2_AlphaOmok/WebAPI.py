@@ -65,8 +65,8 @@ def periodic_status():
 def prompt_status():
     data = {"success": False}
 
-    data["player_message"] = player_agent_info.message
-    data["enemy_message"] = enemy_agent_info.message
+    data["player_message"] = player_agent_info.agent.get_message()
+    data["enemy_message"] = enemy_agent_info.agent.get_message()
     data["success"] = True
 
     return flask.jsonify(data)

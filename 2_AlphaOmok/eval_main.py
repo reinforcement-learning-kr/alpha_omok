@@ -180,7 +180,6 @@ class Evaluator(object):
             if type(self.enemy) is agents.WebAgent:
                 self.enemy.put_action(action_idx)
 
-
 def elo(player_elo, enemy_elo, p_winscore, e_winscore):
     elo_diff = enemy_elo - player_elo
     ex_pw = 1 / (1 + 10**(elo_diff / 400))
@@ -194,6 +193,9 @@ evaluator = Evaluator()
 
 def main():
     evaluator.set_agents(player_model_path, enemy_model_path, monitor_model_path)
+ 
+    player_agent_info.agent = evaluator.player
+    enemy_agent_info.agent = evaluator.enemy
 
     env = evaluator.return_env()
 

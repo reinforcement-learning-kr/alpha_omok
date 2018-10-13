@@ -17,7 +17,7 @@ class Agent(object):
 
         self.policy = np.zeros(board_size**2, 'float')
         self.visit = np.zeros(board_size**2, 'float')
-        self.message = ''
+        self.message = 'Test'
 
     def get_policy(self):
         return self.policy        
