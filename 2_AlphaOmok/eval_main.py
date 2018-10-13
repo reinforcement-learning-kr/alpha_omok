@@ -78,7 +78,6 @@ class Evaluator(object):
         elif model_path_a == 'web':
             print('load player model:', model_path_a)
             self.player = agents.WebAgent(BOARD_SIZE)
-            print(self.player)
         else:
             print('load player model:', model_path_a)
             self.player = agents.ZeroAgent(BOARD_SIZE,

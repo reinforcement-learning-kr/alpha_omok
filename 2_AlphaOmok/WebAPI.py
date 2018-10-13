@@ -14,8 +14,6 @@ game_info = GameInfo(BOARD_SIZE)
 player_agent_info = AgentInfo(BOARD_SIZE)
 enemy_agent_info = AgentInfo(BOARD_SIZE)
 
-import eval_main
-
 @web_api.route('/gameboard')
 def gameboard():
     return flask.render_template('gameboard.html')
