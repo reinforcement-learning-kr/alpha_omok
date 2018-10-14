@@ -131,7 +131,7 @@ class Evaluator(object):
 
         #monitor agent
         self.monitor = agents.ZeroAgent(BOARD_SIZE,
-                                        N_MCTS,
+                                        10, #N_MCTS
                                         IN_PLANES_ENEMY,
                                         noise=False)
         self.monitor.model = model.PVNet(N_BLOCKS_ENEMY,
@@ -152,6 +152,9 @@ class Evaluator(object):
                 pi = self.player.get_pi(root_id, tau=0)
             else:
                 pi = self.player.get_pi(root_id, board, turn, tau=0)
+
+                # for monitor
+                self.monitor.get_pi(root_id, tau=0)
         else:
             if isinstance(self.enemy, agents.ZeroAgent):
                 pi = self.enemy.get_pi(root_id, tau=0)
@@ -228,6 +231,9 @@ def main():
 
         while win_index == 0:
             utils.render_str(board, BOARD_SIZE, action_index)
+
+            p, v = evaluator.monitor.get_pv(root_id)
+
             action, action_index = evaluator.get_action(root_id,
                                                         board,
                                                         turn,
@@ -248,11 +254,16 @@ def main():
             game_info.curr_turn = turn # 0 black 1 white  
             
             move = np.count_nonzero(board)
-            p, v = evaluator.monitor.get_pv(root_id)
 
             if turn == enemy_turn:
-                player_agent_info.visit = evaluator.player.get_visit()
-                player_agent_info.p = evaluator.player.get_policy()   
+                
+                if isinstance(evaluator.player, agents.HumanAgent) or isinstance(evaluator.player, agents.WebAgent):
+                    player_agent_info.visit = evaluator.monitor.get_visit()
+                    player_agent_info.p = evaluator.monitor.get_policy()
+                else:
+                    player_agent_info.visit = evaluator.player.get_visit()
+                    player_agent_info.p = evaluator.player.get_policy()   
+
                 player_agent_info.add_value(move, v)                         
                 evaluator.enemy.del_parents(root_id)
 

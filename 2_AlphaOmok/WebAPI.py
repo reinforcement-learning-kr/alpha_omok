@@ -35,8 +35,8 @@ def periodic_status():
     data["win_index"] = game_info.win_index
     data["curr_turn"] = game_info.curr_turn
     data["enemy_turn"] = game_info.enemy_turn    
-    data["player_agent_name"] = game_info.player_agent_name
-    data["enemy_agent_name"] = game_info.enemy_agent_name
+    data["player_agent_name"] = player_agent_info.agent.get_name()
+    data["enemy_agent_name"] = enemy_agent_info.agent.get_name()
 
     data["player_agent_p_size"] = player_agent_info.p_size
     data["player_agent_p_values"] = player_agent_info.p.reshape(

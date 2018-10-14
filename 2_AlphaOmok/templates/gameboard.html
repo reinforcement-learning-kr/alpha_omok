@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <meta charset="utf-8">
+    <title>AlphaOmoc</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      a 
+      { 
+        text-decoration:none 
+      }
+      button
+      {
+      width: 100%;
+      }
+      .profile_photo {
+        width: 50px; height: 50px;
+        object-fit: cover;
+        border-radius: 50%;
+        vertical-align : middle;
+      }
+      #jb-container {
+        width: 1250px;
+        margin: 2px auto;
+        padding: 2px;
+      }
+      #jb-header {
+        display: flex;
+        flex-flow: row nowrap; /* Align on the same line */    
+        justify-content:space-between;    
+        padding: 2px;
+        margin-bottom: 2px;
+        width:100%;
+      }      
+      #jb-header-left {
+        padding: 2px;
+        margin-bottom: 2px;
+        float: left;
+      }
+      #jb-header-right {
+        padding: 2px;
+        margin-bottom: 2px;
+        float: right;
+        width: 500px;
+      }      
+      #jb-content-top {
+        display: flex;
+        flex-flow: row nowrap; /* Align on the same line */
+        justify-content: space-between; /* Equal margin between the child elements */        
+      }
+      #jb-content-top-left {
+        width: 300px;
+        padding: 2px;
+        margin-bottom: 2px;
+      }
+      #jb-content-top-right {
+        width: 950px;
+        padding: 2px;
+        margin-bottom: 2px;
+      }
+      #jb-footer {
+        padding: 10px;
+        margin-bottom: 2px;
+      }      
+      @media ( max-width: 480px ) {
+
+        #jb-container {
+          width: auto;
+        }
+        #jb-header {
+          display: block;
+          width: auto;          
+        }      
+        #jb-header-left {
+          float: none;
+          width: auto;
+        }
+        #jb-header-right {
+          float: none;
+          width: auto;
+        }      
+        #jb-content-top {
+          display: block;
+          float: none;
+          width: auto;
+        }
+        #jb-content-top-left {
+          float: none;
+          width: auto;
+        }
+        #jb-content-top-right {
+          float: none;
+          width: auto;
+        }
+        #jb-footer {
+          float: none;
+          width: auto;
+        }              
+      }
+    </style>
+  </head>
+  <body>
+    <div id="jb-container">
+      <div id="jb-header">
+        <div id="jb-header-left">
+          <h2>RLKorea 알파오목팀</h2>
+        </div>
+        <div id="jb-header-center" class = '.profile_box'>
+            <b>Made By</b>
+            <table>
+            <td align='center'><h3></h3></td>
+            <td align='center'><a href="https://www.facebook.com/kyushik.min"><img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/c49.49.618.618/s320x320/1003095_548203415239980_763534767_n.jpg?_nc_cat=0&oh=5c5af7939c5aae73c106a51ed1826220&oe=5C0E12C2"><br><b>민규식</b></a></td>
+            <td align='center'><a href="https://www.facebook.com/kekmodel"><img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/c0.25.320.320/p320x320/21077395_1537713662941940_6762825154227344485_n.jpg?_nc_cat=0&oh=b9c5743602a07a2825ef6314685d3652&oe=5C05C424"><br><b>김정대</b></a></td>
+            <td align='center'><a href="https://www.facebook.com/dnddnjs"><img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/p320x320/27752164_1313116262167304_2042906934612955122_n.jpg?_nc_cat=0&oh=a74c81b85eda759d086ca40a55692e27&oe=5BF740A9"><br><b>이웅원</b></a></td>
+            <td align='center'><a href="https://www.facebook.com/tykimo"><img class = 'profile_photo' height = '50' src = "https://scontent-hkg3-1.xx.fbcdn.net/v/t1.0-1/p320x320/28467837_10213891419232363_5136845460214548858_n.jpg?_nc_cat=0&oh=f35063b545e0d66850585232a438092c&oe=5C101352"><br><b>김태영</b></a></td>
+        </tr></table>
+        </div>
+        <div id="jb-header-right">
+            <b>Sponsored By</b><br>
+            <img src="{{url_for('static', filename='logo_inspace.png')}}" height = '30'>&emsp;
+            <img src="{{url_for('static', filename='logo_hpc.png')}}" height = '30'>&emsp;
+            <img src="{{url_for('static', filename='logo_aws.png')}}" height = '30'>&emsp;
+      </div>                      
+      </div>
+      <div id="jb-content-top">
+          <div id="jb-content-top-left">
+            <table>
+              <tr>
+                <td>Player</td>
+                <td>Enemy</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>
+                  <select name="player_agent" id ="select_player_agent_name">
+                      <option value="Current">Current</option>
+                      <option value="HumanAgent">HumanAgent</option>
+                      <option value="ZeroAgent">ZeroAgent</option>
+                      <option value="RZeroAgent">RZeroAgent</option>
+                      <option value="PUCTAgent">PUCTAgent</option>
+                      <option value="UCTAgent">UCTAgent</option>
+                      <option value="RandomAgent">RandomAgent</option>
+                  </select>
+                </td>
+                <td>
+                    <select name="enemy_agent" id ="select_enemy_agent_name">
+                        <option value="Current">Current</option>
+                        <option value="HumanAgent">HumanAgent</option>
+                        <option value="ZeroAgent">ZeroAgent</option>
+                        <option value="RZeroAgent">RZeroAgent</option>
+                        <option value="PUCTAgent">PUCTAgent</option>
+                        <option value="UCTAgent">UCTAgent</option>
+                        <option value="RandomAgent">RandomAgent</option>
+                    </select>
+                </td>
+                <td><button onclick='reqResetAgents()'>Reset</button></td>
+              </tr>
+            </table>
+            <br>
+            <div id="boardWraaper">
+              <canvas id="board" height=300></canvas>
+            </div>
+            <button onclick='reqMove()'>Move</button>
+            <div id="player_message"></div>
+            <div id="enemy_message"></div>
+          </div>
+          <div id="jb-content-top-right">
+              <div id="v_monitoring"></div>
+          </div>
+      </div>
+    </div>
+  </body>
+
+  <script type="text/javascript" src="{{url_for('static', filename='gameboard.js')}}"></script>
+
+</html>

@@ -691,8 +691,8 @@ function reqPromptStatus()
         {
             ret = JSON.parse(xhr.responseText);
 
-            player_message.innerHTML = ret.player_message;
-            enemy_message.innerHTML = ret.enemy_message;	
+            player_message.innerHTML = 'player : ' + ret.player_message;
+            enemy_message.innerHTML = 'enemy : ' + ret.enemy_message;	
         }
     };
 
