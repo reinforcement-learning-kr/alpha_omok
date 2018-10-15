@@ -44,8 +44,8 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 # example)
 
 player_model_path = 'web'
-enemy_model_path = './data/180927_9400_297233_step_model.pickle'
-monitor_model_path = './data/180927_9400_297233_step_model.pickle'
+enemy_model_path = './data/180828_8300_235156_step_model.pickle'
+monitor_model_path = './data/180828_8300_235156_step_model.pickle'
 
 class Evaluator(object):
     def __init__(self):
