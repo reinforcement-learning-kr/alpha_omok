@@ -35,9 +35,8 @@ There are 4 objectives to achieve in this project
 - [Description of the parameters](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/2_Parameters.md)
 - [How to change the environment](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/3_How_to_change_env.md)
 - [How to load the saved model](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/4_How_to_load_model.md)
-- [How to use eval_local](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/5_How_to_use_eval_local.md)
-- [How to use eval_server](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/6_How_to_use_eval_server.md)
-- [Log file](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/7_Log_file.md)
+- [How to use eval_main](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/5_How_to_use_eval_main.md)
+- [Log file](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/6_Log_file.md)
 
 <br>
 
