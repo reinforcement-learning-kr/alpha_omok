@@ -59,31 +59,6 @@
         padding: 2px;
         margin-bottom: 2px;
       }
-      #jb-content-bottom {
-        display: flex;
-        flex-flow: row nowrap; /* Align on the same line */
-        justify-content: space-between; /* Equal margin between the child elements */        
-      }
-      #jb-content-bottom-first {
-        width: 300px;
-        padding: 2px;
-        margin-bottom: 2px;
-      }
-      #jb-content-bottom-second {
-        width: 300px;
-        padding: 2px;
-        margin-bottom: 2px;
-      }
-      #jb-content-bottom-third {
-        width: 300px;
-        padding: 2px;
-        margin-bottom: 2px;
-      }
-      #jb-content-bottom-fourth {
-        width: 300px;
-        padding: 2px;
-        margin-bottom: 2px;
-      }
       #jb-footer {
         padding: 10px;
         margin-bottom: 2px;
@@ -115,26 +90,6 @@
           width: auto;
         }
         #jb-content-top-right {
-          float: none;
-          width: auto;
-        }
-        #jb-content-bottom {
-          display: block;
-          width: auto;
-        }
-        #jb-content-bottom-first {
-          float: none;
-          width: auto;
-        }
-        #jb-content-bottom-second {
-          float: none;
-          width: auto;
-        }
-        #jb-content-bottom-third {
-          float: none;
-          width: auto;
-        }
-        #jb-content-bottom-fourth {
           float: none;
           width: auto;
         }
@@ -214,35 +169,9 @@
               <div id="v_monitoring"></div>
           </div>
       </div>
-      <div id="jb-content-bottom">
-          <div id="jb-content-bottom-first">
-              <h4>Player Policy Network</h4>
-              <div id="boardWraaper">
-                  <canvas id="player_agent_p" height=300></canvas>
-              </div>
-          </div>
-          <div id="jb-content-bottom-second">
-              <h4>Player MCTS Visit</h4>
-              <div id="boardWraaper">
-                  <canvas id="player_agent_visit" height=300></canvas>
-              </div>
-          </div>  
-          <div id="jb-content-bottom-third">
-              <h4>Enemy MCTS Visit</h4>
-              <div id="boardWraaper">
-                  <canvas id="enemy_agent_visit" height=300></canvas>
-              </div>
-          </div>                      
-          <div id="jb-content-bottom-fourth">  
-              <h4>Enemy Policy Network</h4>
-              <div id="boardWraaper">
-                  <canvas id="enemy_agent_p" height=300></canvas>
-              </div>
-          </div>            
-      </div>
     </div>
   </body>
 
-  <script type="text/javascript" src="{{url_for('static', filename='dashboard.js')}}"></script>
+  <script type="text/javascript" src="{{url_for('static', filename='gameboard.js')}}"></script>
 
 </html>

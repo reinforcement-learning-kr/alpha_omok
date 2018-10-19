@@ -27,9 +27,18 @@ There are 4 objectives to achieve in this project
 3. AlphaZero on Omok
 4. Upload AlphaZero on web
 
-
 <br>
 
+## Documents
+
+- [ID-based implementation](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/1_ID_based.md)
+- [Description of the parameters](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/2_Parameters.md)
+- [How to change the environment](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/3_How_to_change_env.md)
+- [How to load the saved model](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/4_How_to_load_model.md)
+- [How to use eval_main](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/5_How_to_use_eval_main.md)
+- [Log file](https://github.com/reinforcement-learning-kr/alpha_omok/blob/developer/docs/6_Log_file.md)
+
+<br>
 
 ## Description of the Folders
 
@@ -62,25 +71,20 @@ The description of the files in the folder is as follows. (files with **bold tex
 
  The description of the files in the folder is as follows. (files with **bold text** are codes for implementation)
 
-- **eval_local**: code for evaluating the algorithm on local PC
-- **eval_server**: code for evaluating the algorithm on web
-- **main**: main training code of Alpha Zero. 
+- **eval_main**: code for evaluating the algorithm on both local PC and web
+- **main**: main training code of Alpha Zero
 - model: Network model (PyTorch)
-- utils: functions for implementing algorithm. 
+- agents: Agent and MCTS algorithm 
+- utils: functions for implementing algorithm 
+- WebAPI: Implementation of web API
 
 
-<br>
 
+#### Sample Image of Web Demo
 
-## Documents
-
-- [ID-based implementation](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/1_ID_based.md)
-- [Description of the parameters](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/2_Parameters.md)
-- [How to change the environment](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/3_How_to_change_env.md)
-- [How to load the saved model](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/4_How_to_load_model.md)
-- [How to use eval_local](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/5_How_to_use_eval_local.md)
-- [How to use eval_server](https://github.com/reinforcement-learning-kr/alpha_omok/blob/master/docs/6_How_to_use_eval_server.md)
-
+ <p align= "center">
+  <img src="./image/web_demo.png" width="800" alt="simple board example" />
+</p>
 
 <br>
 

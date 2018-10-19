@@ -6,13 +6,37 @@ import torch
 
 import utils
 
+import threading
+
 PRINT_MCTS = True
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
 
+class Agent(object):
+    def __init__(self, board_size):
 
-class ZeroAgent(object):
+        self.policy = np.zeros(board_size**2, 'float')
+        self.visit = np.zeros(board_size**2, 'float')
+        self.message = 'Hello'
+
+    def get_policy(self):
+        return self.policy        
+
+    def get_visit(self):
+        return self.visit  
+
+    def get_name(self):
+        return  type(self).__name__
+
+    def get_message(self):
+        return self.message
+
+    def get_pv(self, root_id):
+        return None, None      
+
+class ZeroAgent(Agent):
     def __init__(self, board_size, num_mcts, inplanes, noise=True):
+        super(ZeroAgent, self).__init__(board_size)
         self.board_size = board_size
         self.num_mcts = num_mcts
         self.inplanes = inplanes
@@ -36,9 +60,15 @@ class ZeroAgent(object):
         self._mcts(self.root_id)
 
         visit = np.zeros(self.board_size**2, 'float')
+        policy = np.zeros(self.board_size**2, 'float')
+
         for action_index in self.tree[self.root_id]['child']:
             child_id = self.root_id + (action_index,)
             visit[action_index] = self.tree[child_id]['n']
+            policy[action_index] = self.tree[child_id]['p']
+
+        self.visit = visit
+        self.policy = policy
 
         pi = visit / visit.sum()
 
@@ -79,9 +109,12 @@ class ZeroAgent(object):
             num_mcts = self.num_mcts
 
         for i in range(num_mcts):
+
             if PRINT_MCTS:
                 sys.stdout.write('simulation: {}\r'.format(i + 1))
                 sys.stdout.flush()
+
+            self.message = 'simulation: {}\r'.format(i + 1)            
 
             # selection
             leaf_id, win_index = self._selection(root_id)
@@ -214,9 +247,19 @@ class ZeroAgent(object):
         print('tree size:', len(self.tree))
         print('tree depth:', 0 if max_len <= 0 else max_len - 1)
 
+    def get_pv(self, root_id):
+        state = utils.get_state_pt(root_id, self.board_size, self.inplanes)
+        self.model.eval()
+        with torch.no_grad():
+            state_input = torch.tensor([state]).to(device).float()
+            policy, value = self.model(state_input)
+            p = policy.data.cpu().numpy()[0]
+            v = value.data.cpu().numpy()[0]
+        return p, v
 
-class PUCTAgent(object):
+class PUCTAgent(Agent):
     def __init__(self, board_size, num_mcts):
+        super(PUCTAgent, self).__init__(board_size)    
         self.board_size = board_size
         self.num_mcts = num_mcts
         # tictactoe and omok
@@ -394,8 +437,9 @@ class PUCTAgent(object):
         print('tree depth:', 0 if max_len <= 0 else max_len - 1)
 
 
-class UCTAgent(object):
+class UCTAgent(Agent):
     def __init__(self, board_size, num_mcts):
+        super(UCTAgent, self).__init__(board_size)   
         self.board_size = board_size
         self.num_mcts = num_mcts
         # tictactoe and omok
@@ -452,6 +496,9 @@ class UCTAgent(object):
             num_mcts = self.num_mcts
 
         for i in range(num_mcts):
+
+            mcts_count = i
+
             sys.stdout.write('simulation: {}\r'.format(i + 1))
             sys.stdout.flush()
             leaf_id, win_index = self._selection(root_id)
@@ -584,8 +631,9 @@ class UCTAgent(object):
         print('tree depth:', 0 if max_len <= 0 else max_len - 1)
 
 
-class RandomAgent(object):
+class RandomAgent(Agent):
     def __init__(self, board_size):
+        super(RandomAgent, self).__init__(board_size)
         self.board_size = board_size
 
     def get_pi(self, root_id, board, turn, tau):
@@ -606,7 +654,7 @@ class RandomAgent(object):
         return
 
 
-class HumanAgent(object):
+class HumanAgent(Agent):
     COLUMN = {"a": 0, "b": 1, "c": 2,
               "d": 3, "e": 4, "f": 5,
               "g": 6, "h": 7, "i": 8,
@@ -614,6 +662,7 @@ class HumanAgent(object):
               "m": 12, "n": 13, "o": 14}
 
     def __init__(self, board_size, env):
+        super(HumanAgent, self).__init__(board_size)
         self.board_size = board_size
         self._init_board_label()
         self.root_id = (0,)
@@ -649,6 +698,48 @@ class HumanAgent(object):
         col = self.COLUMN[action_coord[1]]
         action_index = row * self.board_size + col
         return action_index
+
+    def reset(self):
+        self.root_id = None
+
+    def del_parents(self, root_id):
+        return
+
+class WebAgent(Agent):
+
+    def __init__(self, board_size):
+        super(WebAgent, self).__init__(board_size)
+        self.board_size = board_size
+        self.root_id = (0,)
+        self.wait_action_idx = -1
+        self.cv = threading.Condition()
+
+    def get_pi(self, root_id, board, turn, tau):
+        self.root_id = root_id
+
+        self.cv.acquire()
+        while self.wait_action_idx == -1:
+            self.cv.wait()
+
+        action_index = self.wait_action_idx
+        self.wait_action_idx = -1
+
+        self.cv.release()
+
+        pi = np.zeros(self.board_size**2, 'float')
+        pi[action_index] = 1
+
+        return pi
+
+    def put_action(self, action_idx):
+
+        if action_idx < 0 and action_idx >= self.board_size**2:
+            return
+
+        self.cv.acquire()
+        self.wait_action_idx = action_idx
+        self.cv.notifyAll()
+        self.cv.release()
 
     def reset(self):
         self.root_id = None
