@@ -1,6 +1,7 @@
 import numpy as np
 from agents import Agent
 
+
 class AgentInfo:
 
     def __init__(self, board_size):

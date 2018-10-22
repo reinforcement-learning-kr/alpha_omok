@@ -23,10 +23,10 @@ var select_enemy_agent_name = document.getElementById('select_enemy_agent_name')
 var player_message = document.getElementById("player_message");
 var enemy_message = document.getElementById("enemy_message");
 
-var boardArray = new Array(game_board_size); 
+var boardArray = new Array(game_board_size);
 for (var i = 0; i < game_board_size; i++) {
-    boardArray[i] = new Array(game_board_size);
-    for (j = 0; j < game_board_size; j++) { 
+	boardArray[i] = new Array(game_board_size);
+	for (j = 0; j < game_board_size; j++) {
 		boardArray[i][j] = 0;
 	}
 }
@@ -34,7 +34,7 @@ for (var i = 0; i < game_board_size; i++) {
 /* Mouse Event */
 function getBoardPos(canvas, evt) {
 	var rect = canvas.getBoundingClientRect();
-	
+
 	var xPos = evt.clientX - rect.left;
 	var yPos = evt.clientY - rect.top;
 
@@ -50,8 +50,7 @@ function getBoardPos(canvas, evt) {
 	};
 }
 
-c.addEventListener('mousemove', function(evt) 
-{
+c.addEventListener('mousemove', function (evt) {
 
 	var pos = getBoardPos(c, evt);
 
@@ -62,15 +61,13 @@ c.addEventListener('mousemove', function(evt)
 
 }, false);
 
-c.addEventListener('mousedown', function(evt) 
-{
+c.addEventListener('mousedown', function (evt) {
 	var pos = getBoardPos(c, evt);
 
-    if (boardArray[pos.x][pos.y] == 0)
-    {
-        selected_board_row = pos.y;
-        selected_board_col = pos.x;
-    }
+	if (boardArray[pos.x][pos.y] == 0) {
+		selected_board_row = pos.y;
+		selected_board_col = pos.x;
+	}
 
 	renderBoard();
 
@@ -155,20 +152,17 @@ var enemy_value = [];
 
 var action_index = -1;
 
-function updateBoard(ret)
-{
-    if (ret.curr_turn == 0) // black turn: 0, white turn: 1
-    {
-        turn = 1 // black
-    }
-    else 
-    {
-        turn = 2 // white
+function updateBoard(ret) {
+	if (ret.curr_turn == 0) // black turn: 0, white turn: 1
+	{
+		turn = 1 // black
+	}
+	else {
+		turn = 2 // white
 	}
 
 	// if turn change
-	if (prev_turn != turn)
-	{
+	if (prev_turn != turn) {
 		selecting_board_row = -1;
 		selecting_board_col = -1;
 		selected_board_row = -1;
@@ -176,52 +170,48 @@ function updateBoard(ret)
 
 		prev_turn = turn;
 	}
-	
+
 	action_index = ret.action_index;
 
-    game_board_size = ret.game_board_size;
+	game_board_size = ret.game_board_size;
 
-    for (var i = 0; i < game_board_size; i++) 
-    {
-        for (j = 0; j < game_board_size; j++) 
-        { 
-            idx = i + j * game_board_size;
+	for (var i = 0; i < game_board_size; i++) {
+		for (j = 0; j < game_board_size; j++) {
+			idx = i + j * game_board_size;
 
-            switch (ret.game_board_values[idx])
-            {
-                case 1:
-                    boardArray[i][j] = 1;
-                    break;
-                case -1:
-                    boardArray[i][j] = 2;
-                    break;		
-                case 0:
-                    boardArray[i][j] = 0;
-                    break;		
-            }
-        }
-    }
+			switch (ret.game_board_values[idx]) {
+				case 1:
+					boardArray[i][j] = 1;
+					break;
+				case -1:
+					boardArray[i][j] = 2;
+					break;
+				case 0:
+					boardArray[i][j] = 0;
+					break;
+			}
+		}
+	}
 }
 
-function updateVPlot(ret)
-{
-    player_move = ret.player_agent_moves;
-    player_value = ret.player_agent_values;
-    enemy_move = ret.enemy_agent_moves;
-    enemy_value = ret.enemy_agent_values;
+function updateVPlot(ret) {
+	player_move = ret.player_agent_moves;
+	player_value = ret.player_agent_values;
+	enemy_move = ret.enemy_agent_moves;
+	enemy_value = ret.enemy_agent_values;
 }
 
-function renderBoard(){
+function renderBoard() {
 
 	// board fill color
-	ctx.fillStyle="#ffcc66";
+	ctx.fillStyle = "#ffcc66";
 	ctx.fillRect(0, 0, width, height);
 
 	// board draw line
 	ctx.strokeStyle = 'black';
-	ctx.fillStyle="#FF0000";
+	ctx.fillStyle = "#FF0000";
 	ctx.lineWidth = 1
-	for (i = 0; i < game_board_size; i++) { 
+	for (i = 0; i < game_board_size; i++) {
 		// horizontal line draw
 		ctx.beginPath();
 		ctx.moveTo(blank + i * 32 + 0.5, blank);
@@ -240,26 +230,25 @@ function renderBoard(){
 	// console.log('render : ' + turn);
 
 	// board draw
-	for (i = 0; i < game_board_size; i++) { 
-		for (j = 0; j < game_board_size; j++) 
-		{
+	for (i = 0; i < game_board_size; i++) {
+		for (j = 0; j < game_board_size; j++) {
 			ctx.shadowBlur = 5;
 			ctx.shadowOffsetX = 2;
 			ctx.shadowOffsetY = 2;
-			ctx.shadowColor="#333333";
+			ctx.shadowColor = "#333333";
 
 			if (boardArray[i][j] == 1) {
 				ctx.beginPath();
-				ctx.strokeStyle="#000000";
-				ctx.fillStyle="#000000";
-				ctx.arc(blank + i * 32, blank + j * 32, radius, 0, 2*Math.PI);
+				ctx.strokeStyle = "#000000";
+				ctx.fillStyle = "#000000";
+				ctx.arc(blank + i * 32, blank + j * 32, radius, 0, 2 * Math.PI);
 				ctx.fill();
 				//ctx.stroke();
-			} else if (boardArray[i][j] == 2){
+			} else if (boardArray[i][j] == 2) {
 				ctx.beginPath();
-				ctx.strokeStyle="#ffffff";
-				ctx.fillStyle="#ffffff";
-				ctx.arc(blank + i * 32, blank + j * 32, radius, 0, 2*Math.PI);
+				ctx.strokeStyle = "#ffffff";
+				ctx.fillStyle = "#ffffff";
+				ctx.arc(blank + i * 32, blank + j * 32, radius, 0, 2 * Math.PI);
 				ctx.fill();
 				//ctx.stroke();
 			}
@@ -267,92 +256,88 @@ function renderBoard(){
 			ctx.shadowOffsetX = 0;
 			ctx.shadowOffsetY = 0;
 			ctx.shadowBlur = 0;
-			
+
 			ctx.lineWidth = 2;
 
-			if(action_index == (j * game_board_size + i))
-			{
+			if (action_index == (j * game_board_size + i)) {
 				if (boardArray[i][j] == 1) {
 					ctx.beginPath();
-					ctx.strokeStyle="#ffffff";
-					ctx.arc(blank + i * 32, blank + j * 32, radius / 2.0, 0, 2*Math.PI);
+					ctx.strokeStyle = "#ffffff";
+					ctx.arc(blank + i * 32, blank + j * 32, radius / 2.0, 0, 2 * Math.PI);
 					ctx.stroke();
-				} else if (boardArray[i][j] == 2){
+				} else if (boardArray[i][j] == 2) {
 					ctx.beginPath();
-					ctx.strokeStyle="#000000";
-					ctx.arc(blank + i * 32, blank + j * 32, radius / 2.0, 0, 2*Math.PI);
+					ctx.strokeStyle = "#000000";
+					ctx.arc(blank + i * 32, blank + j * 32, radius / 2.0, 0, 2 * Math.PI);
 					ctx.stroke();
 				}
 			}
 
-			if (i == selecting_board_row && j == selecting_board_col)
-			{
+			if (i == selecting_board_row && j == selecting_board_col) {
 				ctx.lineWidth = 1;
 
 				ctx.beginPath();
-				ctx.globalAlpha=0.8;
+				ctx.globalAlpha = 0.8;
 
 				if (turn == 1) // 1 black
 				{
-					ctx.strokeStyle="#000000";
-					ctx.fillStyle="#000000";
+					ctx.strokeStyle = "#000000";
+					ctx.fillStyle = "#000000";
 				}
 				else if (turn == 2) // 2 white
 				{
-					ctx.strokeStyle="#ffffff";
-					ctx.fillStyle="#ffffff";	
+					ctx.strokeStyle = "#ffffff";
+					ctx.fillStyle = "#ffffff";
 				}
 
-				ctx.arc(blank + selecting_board_col * 32, blank + selecting_board_row * 32, radius, 0, 2*Math.PI);
+				ctx.arc(blank + selecting_board_col * 32, blank + selecting_board_row * 32, radius, 0, 2 * Math.PI);
 				ctx.fill();
 				ctx.stroke();
-				ctx.globalAlpha=1;
+				ctx.globalAlpha = 1;
 			}
 
-			if (i == selected_board_row && j == selected_board_col)
-			{
+			if (i == selected_board_row && j == selected_board_col) {
 				ctx.lineWidth = 5;
 
 				ctx.beginPath();
 
 				if (turn == 1) // 1 black
 				{
-					ctx.strokeStyle="#000000";
-					ctx.fillStyle="#aaaaaa";
+					ctx.strokeStyle = "#000000";
+					ctx.fillStyle = "#aaaaaa";
 				}
 				else if (turn == 2) // 2 white
 				{
-					ctx.strokeStyle="#ffffff";
-					ctx.fillStyle="#aaaaaa";	
+					ctx.strokeStyle = "#ffffff";
+					ctx.fillStyle = "#aaaaaa";
 				}
 
-				ctx.arc(blank + selected_board_col * 32, blank + selected_board_row * 32, radius - 2, 0, 2*Math.PI);
+				ctx.arc(blank + selected_board_col * 32, blank + selected_board_row * 32, radius - 2, 0, 2 * Math.PI);
 				ctx.stroke();
 			}
 		}
-    }
-    
-    // board_message.innerHTML = "AlphaOmoc vs AlphaOmoc";
+	}
+
+	// board_message.innerHTML = "AlphaOmoc vs AlphaOmoc";
 }
 
-function renderVPlot()
-{
-    var trace1 = {
-        x: player_move, 
-        y: player_value, 
-        type: 'scatter',
-        fill: 'tozeroy',
-        name: 'player'
-    };
-    
-    var trace2 = {
-        x: enemy_move, 
-        y: enemy_value, 
-        type: 'scatter',
-        fill: 'tozeroy',
-        name: 'enemy'
+function renderVPlot() {
+	var trace1 = {
+		x: player_move,
+		y: player_value,
+		type: 'scatter',
+		fill: 'tozeroy',
+		name: 'player'
 	};
-	
+
+	var trace2 = {
+		x: enemy_move,
+		y: enemy_value,
+		type: 'scatter',
+		fill: 'tozeroy',
+		name: 'enemy'
+	};
+
 	var layout = {
 		title: 'Value Network',
 		xaxis: {
@@ -365,112 +350,95 @@ function renderVPlot()
 		}
 	};
 
-    var data = [trace1, trace2];
-    Plotly.newPlot('v_monitoring', data, layout);
+	var data = [trace1, trace2];
+	Plotly.newPlot('v_monitoring', data, layout);
 }
 
-function reqPeriodicStatus()
-{
-    var xhr = new XMLHttpRequest();
-    
-    xhr.onload = function() 
-    {
-        if(xhr.status == 200) 
-        {
-            ret = JSON.parse(xhr.responseText);
-			
+function reqPeriodicStatus() {
+	var xhr = new XMLHttpRequest();
+
+	xhr.onload = function () {
+		if (xhr.status == 200) {
+			ret = JSON.parse(xhr.responseText);
+
 			select_player_agent_name.value = ret.player_agent_name;
 			select_player_agent_name.text = ret.player_agent_name;
 			select_enemy_agent_name.value = ret.enemy_agent_name;
 			select_enemy_agent_name.text = ret.enemy_agent_name;
 
 			updateBoard(ret);
-            updateVPlot(ret);
+			updateVPlot(ret);
 
-            renderBoard();
-            renderVPlot();
-        }
-    };
-
-    xhr.open('GET', baseurl + 'periodic_status', true);
-    xhr.send();
-}
-
-function reqPromptStatus()
-{
-    var xhr = new XMLHttpRequest();
-    
-    xhr.onload = function() 
-    {
-        if(xhr.status == 200) 
-        {
-            ret = JSON.parse(xhr.responseText);
-
-            player_message.innerHTML = 'player : ' + ret.player_message;
-            enemy_message.innerHTML = 'enemy : ' + ret.enemy_message;	
-        }
-    };
-
-    xhr.open('GET', baseurl + 'prompt_status', true);
-    xhr.send();
-}
-
-function reqResetAgents()
-{
-	var xhr = new XMLHttpRequest();
-    
-    xhr.onload = function() 
-    {
-        if(xhr.status == 200) 
-        {
-			document.getElementById("select_player_agent_name").options[0].selected=true;
-			document.getElementById("select_enemy_agent_name").options[0].selected=true;	
-        }
+			renderBoard();
+			renderVPlot();
+		}
 	};
-	
+
+	xhr.open('GET', baseurl + 'periodic_status', true);
+	xhr.send();
+}
+
+function reqPromptStatus() {
+	var xhr = new XMLHttpRequest();
+
+	xhr.onload = function () {
+		if (xhr.status == 200) {
+			ret = JSON.parse(xhr.responseText);
+
+			player_message.innerHTML = 'player : ' + ret.player_message;
+			enemy_message.innerHTML = 'enemy : ' + ret.enemy_message;
+		}
+	};
+
+	xhr.open('GET', baseurl + 'prompt_status', true);
+	xhr.send();
+}
+
+function reqResetAgents() {
+	var xhr = new XMLHttpRequest();
+
+	xhr.onload = function () {
+		if (xhr.status == 200) {
+			document.getElementById("select_player_agent_name").options[0].selected = true;
+			document.getElementById("select_enemy_agent_name").options[0].selected = true;
+		}
+	};
+
 	selected_player_agent_name = document.getElementById("select_player_agent_name").value;
 	selected_enemy_agent_name = document.getElementById("select_enemy_agent_name").value;
 
-    xhr.open('GET', baseurl + 'req_reset_agenets?player_agent='+selected_player_agent_name + '&enemy_agent='+selected_enemy_agent_name, true);
-    xhr.send();
+	xhr.open('GET', baseurl + 'req_reset_agenets?player_agent=' + selected_player_agent_name + '&enemy_agent=' + selected_enemy_agent_name, true);
+	xhr.send();
 }
 
-function reqMove()
-{
-	if (selected_board_col >= 0 
-		&& selected_board_col < game_board_size 
+function reqMove() {
+	if (selected_board_col >= 0
+		&& selected_board_col < game_board_size
 		&& selected_board_row >= 0
-		&& selected_board_row < game_board_size 
-		&& boardArray[selected_board_col][selected_board_row] == 0)
-	{
+		&& selected_board_row < game_board_size
+		&& boardArray[selected_board_col][selected_board_row] == 0) {
 		action_idx = selected_board_col + selected_board_row * game_board_size;
 
 		reqAction(action_idx)
 	}
 }
 
-function reqAction(action_idx)
-{
+function reqAction(action_idx) {
 	var xhr = new XMLHttpRequest();
 
-	xhr.onload = function() 
-	{
-		if(xhr.status == 200) 
-		{
-			
+	xhr.onload = function () {
+		if (xhr.status == 200) {
+
 		}
 	};
 
-	xhr.open('GET', baseurl +'action?action_idx=' + action_idx.toString(), true);
+	xhr.open('GET', baseurl + 'action?action_idx=' + action_idx.toString(), true);
 	xhr.send();
 }
 
-function clearBoard()
-{
-	for (var i = 0; i < game_board_size; i++) 
-	{
-		for (j = 0; j < game_board_size; j++) 
-		{ 
+function clearBoard() {
+	for (var i = 0; i < game_board_size; i++) {
+		for (j = 0; j < game_board_size; j++) {
 			boardArray[i][j] = 0;
 		}
 	}

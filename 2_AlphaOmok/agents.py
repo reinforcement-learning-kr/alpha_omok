@@ -12,6 +12,7 @@ PRINT_MCTS = True
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
 
+
 class Agent(object):
     def __init__(self, board_size):
 
@@ -20,19 +21,20 @@ class Agent(object):
         self.message = 'Hello'
 
     def get_policy(self):
-        return self.policy        
+        return self.policy
 
     def get_visit(self):
-        return self.visit  
+        return self.visit
 
     def get_name(self):
-        return  type(self).__name__
+        return type(self).__name__
 
     def get_message(self):
         return self.message
 
     def get_pv(self, root_id):
-        return None, None      
+        return None, None
+
 
 class ZeroAgent(Agent):
     def __init__(self, board_size, num_mcts, inplanes, noise=True):
@@ -114,7 +116,7 @@ class ZeroAgent(Agent):
                 sys.stdout.write('simulation: {}\r'.format(i + 1))
                 sys.stdout.flush()
 
-            self.message = 'simulation: {}\r'.format(i + 1)            
+            self.message = 'simulation: {}\r'.format(i + 1)
 
             # selection
             leaf_id, win_index = self._selection(root_id)
@@ -257,9 +259,10 @@ class ZeroAgent(Agent):
             v = value.data.cpu().numpy()[0]
         return p, v
 
+
 class PUCTAgent(Agent):
     def __init__(self, board_size, num_mcts):
-        super(PUCTAgent, self).__init__(board_size)    
+        super(PUCTAgent, self).__init__(board_size)
         self.board_size = board_size
         self.num_mcts = num_mcts
         # tictactoe and omok
@@ -439,7 +442,7 @@ class PUCTAgent(Agent):
 
 class UCTAgent(Agent):
     def __init__(self, board_size, num_mcts):
-        super(UCTAgent, self).__init__(board_size)   
+        super(UCTAgent, self).__init__(board_size)
         self.board_size = board_size
         self.num_mcts = num_mcts
         # tictactoe and omok
@@ -704,6 +707,7 @@ class HumanAgent(Agent):
 
     def del_parents(self, root_id):
         return
+
 
 class WebAgent(Agent):
 

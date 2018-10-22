@@ -8,7 +8,7 @@ import utils
 # env_small: 9x9, env_regular: 15x15
 from env import env_small as game
 
-#WebAPI
+# Web API
 import logging
 import threading
 import flask
@@ -30,7 +30,10 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS = 400
+N_MCTS_PLAYER = 400
+N_MCTS_ENEMY = 400
+N_MCTS_MONITOR = 100
+
 N_MATCH = 3
 
 use_cuda = torch.cuda.is_available()
@@ -44,8 +47,9 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 # example)
 
 player_model_path = 'web'
-enemy_model_path = './data/180828_8300_235156_step_model.pickle'
-monitor_model_path = './data/180828_8300_235156_step_model.pickle'
+enemy_model_path = './data/180927_9400_297233_step_model.pickle'
+monitor_model_path = './data/180927_9400_297233_step_model.pickle'
+
 
 class Evaluator(object):
     def __init__(self):
@@ -68,10 +72,10 @@ class Evaluator(object):
             self.player = agents.RandomAgent(BOARD_SIZE)
         elif model_path_a == 'puct':
             print('load player model:', model_path_a)
-            self.player = agents.PUCTAgent(BOARD_SIZE, N_MCTS)
+            self.player = agents.PUCTAgent(BOARD_SIZE, N_MCTS_PLAYER)
         elif model_path_a == 'uct':
             print('load player model:', model_path_a)
-            self.player = agents.UCTAgent(BOARD_SIZE, N_MCTS)
+            self.player = agents.UCTAgent(BOARD_SIZE, N_MCTS_PLAYER)
         elif model_path_a == 'human':
             print('load player model:', model_path_a)
             self.player = agents.HumanAgent(BOARD_SIZE, self.env)
@@ -81,7 +85,7 @@ class Evaluator(object):
         else:
             print('load player model:', model_path_a)
             self.player = agents.ZeroAgent(BOARD_SIZE,
-                                           N_MCTS,
+                                           N_MCTS_PLAYER,
                                            IN_PLANES_PLAYER,
                                            noise=False)
             self.player.model = model.PVNet(N_BLOCKS_PLAYER,
@@ -101,10 +105,10 @@ class Evaluator(object):
             self.enemy = agents.RandomAgent(BOARD_SIZE)
         elif model_path_b == 'puct':
             print('load enemy model:', model_path_b)
-            self.enemy = agents.PUCTAgent(BOARD_SIZE, N_MCTS)
+            self.enemy = agents.PUCTAgent(BOARD_SIZE, N_MCTS_ENEMY)
         elif model_path_b == 'uct':
             print('load enemy model:', model_path_b)
-            self.enemy = agents.UCTAgent(BOARD_SIZE, N_MCTS)
+            self.enemy = agents.UCTAgent(BOARD_SIZE, N_MCTS_ENEMY)
         elif model_path_b == 'human':
             print('load enemy model:', model_path_b)
             self.enemy = agents.HumanAgent(BOARD_SIZE, self.env)
@@ -114,7 +118,7 @@ class Evaluator(object):
         else:
             print('load enemy model:', model_path_b)
             self.enemy = agents.ZeroAgent(BOARD_SIZE,
-                                          N_MCTS,
+                                          N_MCTS_ENEMY,
                                           IN_PLANES_ENEMY,
                                           noise=False)
             self.enemy.model = model.PVNet(N_BLOCKS_ENEMY,
@@ -129,22 +133,22 @@ class Evaluator(object):
                     state_b[k] = v
             self.enemy.model.load_state_dict(state_b)
 
-        #monitor agent
+        # monitor agent
         self.monitor = agents.ZeroAgent(BOARD_SIZE,
-                                        10, #N_MCTS
+                                        N_MCTS_MONITOR,
                                         IN_PLANES_ENEMY,
                                         noise=False)
         self.monitor.model = model.PVNet(N_BLOCKS_ENEMY,
-                                        IN_PLANES_ENEMY,
-                                        OUT_PLANES_ENEMY,
-                                        BOARD_SIZE).to(device)
+                                         IN_PLANES_ENEMY,
+                                         OUT_PLANES_ENEMY,
+                                         BOARD_SIZE).to(device)
         state_b = self.monitor.model.state_dict()
         my_state_b = torch.load(
             model_path_m, map_location='cuda:0' if use_cuda else 'cpu')
         for k, v in my_state_b.items():
             if k in state_b:
                 state_b[k] = v
-        self.monitor.model.load_state_dict(state_b)            
+        self.monitor.model.load_state_dict(state_b)
 
     def get_action(self, root_id, board, turn, enemy_turn):
         if turn != enemy_turn:
@@ -173,7 +177,7 @@ class Evaluator(object):
         self.enemy.reset()
 
     def put_action(self, action_idx, turn, enemy_turn):
-        
+
         print(self.player)
 
         if turn != enemy_turn:
@@ -182,6 +186,7 @@ class Evaluator(object):
         else:
             if type(self.enemy) is agents.WebAgent:
                 self.enemy.put_action(action_idx)
+
 
 def elo(player_elo, enemy_elo, p_winscore, e_winscore):
     elo_diff = enemy_elo - player_elo
@@ -192,11 +197,14 @@ def elo(player_elo, enemy_elo, p_winscore, e_winscore):
 
     return player_elo, enemy_elo
 
+
 evaluator = Evaluator()
 
+
 def main():
-    evaluator.set_agents(player_model_path, enemy_model_path, monitor_model_path)
- 
+    evaluator.set_agents(
+        player_model_path, enemy_model_path, monitor_model_path)
+
     player_agent_info.agent = evaluator.player
     enemy_agent_info.agent = evaluator.enemy
 
@@ -226,8 +234,8 @@ def main():
             print('Player Color: Black')
         else:
             print('Player Color: White')
-
-        game_info.game_status = 0 #0:Running 1:Player Win, 2: Enemy Win 3: Draw
+        # 0:Running 1:Player Win, 2: Enemy Win 3: Draw
+        game_info.game_status = 0
 
         while win_index == 0:
             utils.render_str(board, BOARD_SIZE, action_index)
@@ -251,33 +259,34 @@ def main():
             game_info.game_board = board
             game_info.action_index = int(action_index)
             game_info.win_index = win_index
-            game_info.curr_turn = turn # 0 black 1 white  
-            
+            game_info.curr_turn = turn  # 0 black 1 white
+
             move = np.count_nonzero(board)
 
             if turn == enemy_turn:
-                
-                if isinstance(evaluator.player, agents.HumanAgent) or isinstance(evaluator.player, agents.WebAgent):
+
+                if isinstance(evaluator.player, agents.HumanAgent) or \
+                        isinstance(evaluator.player, agents.WebAgent):
                     player_agent_info.visit = evaluator.monitor.get_visit()
                     player_agent_info.p = evaluator.monitor.get_policy()
                 else:
                     player_agent_info.visit = evaluator.player.get_visit()
-                    player_agent_info.p = evaluator.player.get_policy()   
+                    player_agent_info.p = evaluator.player.get_policy()
 
-                player_agent_info.add_value(move, v)                         
+                player_agent_info.add_value(move, v)
                 evaluator.enemy.del_parents(root_id)
 
             else:
                 enemy_agent_info.visit = evaluator.enemy.get_visit()
                 enemy_agent_info.p = evaluator.enemy.get_policy()
-                enemy_agent_info.add_value(move, v)                
-                evaluator.player.del_parents(root_id)                
+                enemy_agent_info.add_value(move, v)
+                evaluator.player.del_parents(root_id)
 
             if win_index != 0:
                 player_agent_info.clear_values()
                 enemy_agent_info.clear_values()
-
-                game_info.game_status = win_index # 0:Running 1:Player Win, 2: Enemy Win 3: Draw
+                # 0:Running 1:Player Win, 2: Enemy Win 3: Draw
+                game_info.game_status = win_index
 
                 if turn == enemy_turn:
                     if win_index == 3:
@@ -323,11 +332,13 @@ def main():
                     player_elo, enemy_elo))
                 evaluator.reset()
 
-# WebAPI
+
+# Web API
 app = flask.Flask(__name__)
 app.register_blueprint(web_api)
 log = logging.getLogger('werkzeug')
 log.disabled = True
+
 
 @app.route('/action')
 def action():
@@ -339,6 +350,7 @@ def action():
 
     return flask.jsonify(data)
 
+
 if __name__ == '__main__':
     print('cuda:', use_cuda)
     np.set_printoptions(suppress=True)
@@ -347,11 +359,9 @@ if __name__ == '__main__':
     if use_cuda:
         torch.cuda.manual_seed_all(0)
 
-    # WebAPI
-    print("Activate WebAPI...")
+    # Web API
+    print("Activate Web API...")
     app_th = threading.Thread(target=app.run,
                               kwargs={"host": "0.0.0.0", "port": 5000})
     app_th.start()
     main()
-
-
