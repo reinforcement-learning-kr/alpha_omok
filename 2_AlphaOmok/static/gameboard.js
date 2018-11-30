@@ -1,4 +1,4 @@
-var baseurl = "http://127.0.0.1:5000/"
+var baseurl = "http://220.83.128.81:5000/"
 
 var c = document.getElementById("board");
 var ctx = c.getContext("2d");

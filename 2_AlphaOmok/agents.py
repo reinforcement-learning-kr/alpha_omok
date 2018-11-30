@@ -1,12 +1,12 @@
 import sys
 import time
+import threading
 
 import numpy as np
 import torch
 
 import utils
 
-import threading
 
 PRINT_MCTS = True
 use_cuda = torch.cuda.is_available()
@@ -192,7 +192,7 @@ class ZeroAgent(Agent):
                 # root node noise
                 if leaf_id == self.root_id:
                     noise_probs = np.random.dirichlet(
-                        self.alpha * np.ones(len(actions)))
+                        self.alpha * np.ones(len(actions)))                    
 
             for i, action_index in enumerate(actions):
                 child_id = leaf_id + (action_index,)
@@ -260,7 +260,7 @@ class ZeroAgent(Agent):
         return p, v
 
 
-class PUCTAgent(Agent):
+class PUCTAgent(Agent):                                                        
     def __init__(self, board_size, num_mcts):
         super(PUCTAgent, self).__init__(board_size)
         self.board_size = board_size

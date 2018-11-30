@@ -30,11 +30,11 @@ IN_PLANES_ENEMY = 5
 OUT_PLANES_PLAYER = 128
 OUT_PLANES_ENEMY = 128
 
-N_MCTS_PLAYER = 400
-N_MCTS_ENEMY = 400
-N_MCTS_MONITOR = 100
+N_MCTS_PLAYER = 800
+N_MCTS_ENEMY = 800
+N_MCTS_MONITOR = 400
 
-N_MATCH = 3
+N_MATCH = 12
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
@@ -46,9 +46,9 @@ device = torch.device('cuda' if use_cuda else 'cpu')
 # ======================================================= #
 # example)
 
-player_model_path = 'web'
-enemy_model_path = './data/180927_9400_297233_step_model.pickle'
-monitor_model_path = './data/180927_9400_297233_step_model.pickle'
+player_model_path = './data/800/181130_920_177885_step_model.pickle'
+enemy_model_path = './data/best/180828_8300_235156_step_model.pickle'
+monitor_model_path = './data/800/181130_920_177885_step_model.pickle'
 
 
 class Evaluator(object):
