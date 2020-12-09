@@ -15,7 +15,7 @@ class ResBlock(nn.Module):
         super(ResBlock, self).__init__()
         self.conv1 = conv3x3(inplanes, planes)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(True)
         self.conv2 = conv3x3(planes, planes)
         self.bn2 = nn.BatchNorm2d(planes)
 
@@ -34,11 +34,11 @@ class ResBlock(nn.Module):
 class PolicyHead(nn.Module):
     def __init__(self, planes, board_size):
         super(PolicyHead, self).__init__()
-        self.policy_head = nn.Conv2d(planes, 2, kernel_size=1, bias=False)
+        self.policy_head = nn.Conv2d(planes, 2, kernel_size=1, bias=True)
         self.policy_bn = nn.BatchNorm2d(2)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(True)
         self.policy_fc = nn.Linear(board_size**2 * 2, board_size**2)
-        self.log_softmax = nn.LogSoftmax(dim=-1)
+        self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x):
         out = self.policy_head(x)
@@ -46,17 +46,16 @@ class PolicyHead(nn.Module):
         out = self.relu(out)
         out = out.view(out.size(0), -1)
         out = self.policy_fc(out)
-        out = self.log_softmax(out)
-        out = out.exp()
+        out = self.softmax(out)
         return out
 
 
 class ValueHead(nn.Module):
     def __init__(self, planes, board_size):
         super(ValueHead, self).__init__()
-        self.value_head = nn.Conv2d(planes, 1, kernel_size=1, bias=False)
+        self.value_head = nn.Conv2d(planes, 1, kernel_size=1, bias=True)
         self.value_bn = nn.BatchNorm2d(1)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(True)
         self.value_fc1 = nn.Linear(board_size**2, planes)
         self.value_fc2 = nn.Linear(planes, 1)
         self.tanh = nn.Tanh()
@@ -79,7 +78,7 @@ class PVNet(nn.Module):
         super(PVNet, self).__init__()
         self.conv1 = conv3x3(inplanes, planes)
         self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(True)
         self.layers = self._make_layer(ResBlock, planes, n_block)
         self.policy_head = PolicyHead(planes, board_size)
         self.value_head = ValueHead(planes, board_size)
