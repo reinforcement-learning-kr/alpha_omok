@@ -10,9 +10,9 @@ import torch.optim as optim
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
-import agents.local as agents
 import model
 import utils
+import agents
 
 # env_small: 9x9, env_regular: 15x15
 from env import env_small as game
@@ -41,8 +41,8 @@ TOTAL_ITER = 10000000
 MEMORY_SIZE = 30000
 N_EPOCHS = 1
 BATCH_SIZE = 32
-LR = 1e-4
-L2 = 1e-4
+LR = 3e-4
+L2 = 1e-2
 
 # Hyperparameter sharing
 agents.PRINT_MCTS = PRINT_SELFPLAY
@@ -82,6 +82,17 @@ Agent.model = model.PVNet(N_BLOCKS,
                           IN_PLANES,
                           OUT_PLANES,
                           BOARD_SIZE).to(device)
+
+no_decay = ['bias', 'bn']
+grouped_parameters = [
+    {'params': [p for n, p in model.named_parameters() if not any(
+        nd in n for nd in no_decay)], 'weight_decay': L2},
+    {'params': [p for n, p in model.named_parameters() if any(
+        nd in n for nd in no_decay)], 'weight_decay': 0.0}
+]
+optimizer = optim.AdamW(Agent.model.parameters(),
+                        lr=LR,
+                        eps=1e-6)
 
 logging.warning(
     '\nCUDA: {}'
@@ -249,9 +260,9 @@ def self_play(n_selfplay):
     rep_memory.extend(utils.augment_dataset(cur_memory, BOARD_SIZE))
 
 
-def train(lr, n_epochs, n_iter):
+def train(n_epochs, n_iter):
     global step, total_epoch
-    global Agent, Writer
+    global Agent, optimizer, Writer
     global rep_memory, cur_memory
 
     Agent.model.train()
@@ -261,9 +272,6 @@ def train(lr, n_epochs, n_iter):
     train_memory = []
     train_memory.extend(
         random.sample(rep_memory, BATCH_SIZE * len(cur_memory)))
-    optimizer = optim.Adam(Agent.model.parameters(),
-                           lr=lr,
-                           weight_decay=L2)
 
     dataloader = DataLoader(train_memory,
                             batch_size=BATCH_SIZE,
@@ -293,8 +301,8 @@ def train(lr, n_epochs, n_iter):
 
             p_batch, v_batch = Agent.model(s_batch)
 
-            v_loss = F.mse_loss(v_batch, z_batch)
-            p_loss = -(pi_batch * (p_batch + 1e-8).log()).sum(dim=1).mean()
+            v_loss = (v_batch - z_batch).pow(2).mean()
+            p_loss = -(pi_batch * p_batch.log()).sum(dim=-1).mean()
             loss = v_loss + p_loss
 
             if PRINT_SELFPLAY:
@@ -399,7 +407,7 @@ if __name__ == '__main__':
         if n_iter > 0:
             N_SELFPLAY = 1
             self_play(N_SELFPLAY)
-            train(LR, N_EPOCHS, n_iter)
+            train(N_EPOCHS, n_iter)
         else:
             self_play(N_SELFPLAY)
 
