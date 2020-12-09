@@ -232,7 +232,7 @@ def augment_dataset(memory, board_size):
             pi_flat = pi_rot.flatten().copy()
             aug_dataset.append((s_rot, pi_flat, z))
 
-            s_flip = np.fliplr(s_rot).copy()
+            s_flip = np.flip(s_rot, 2).copy()
             pi_flip = np.fliplr(pi_rot).flatten().copy()
             aug_dataset.append((s_flip, pi_flip, z))
 

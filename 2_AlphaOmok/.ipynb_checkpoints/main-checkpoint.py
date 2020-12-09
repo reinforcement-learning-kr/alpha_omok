@@ -15,7 +15,7 @@ import utils
 import agents
 
 # env_small: 9x9, env_regular: 15x15
-from env import env_small as game
+from env import env_regular as game
 
 
 logging.basicConfig(
@@ -30,17 +30,17 @@ SEED = 0
 PRINT_SELFPLAY = True
 
 # Net
-N_BLOCKS = 10
+N_BLOCKS = 20
 IN_PLANES = 5  # history * 2 + 1
-OUT_PLANES = 128
+OUT_PLANES = 256
 
 # Training
-USE_TENSORBOARD = False
+USE_TENSORBOARD = True
 N_SELFPLAY = 100
-TOTAL_ITER = 10000000
-MEMORY_SIZE = 30000
+TOTAL_ITER = 100000
+MEMORY_SIZE = 100000
 N_EPOCHS = 1
-BATCH_SIZE = 32
+BATCH_SIZE = 100
 LR = 3e-4
 L2 = 1e-2
 
@@ -70,7 +70,7 @@ start_iter = 0
 total_epoch = 0
 result = {'Black': 0, 'White': 0, 'Draw': 0}
 if USE_TENSORBOARD:
-    from tensorboardX import SummaryWriter
+    from torch.utils.tensorboard import SummaryWriter
     Writer = SummaryWriter()
 
 # Initialize agent & model
@@ -82,14 +82,10 @@ Agent.model = model.PVNet(N_BLOCKS,
                           IN_PLANES,
                           OUT_PLANES,
                           BOARD_SIZE).to(device)
-no_decay = ['bias', 'bn']
-parameters = [
-    {'params': [p for n, p in Agent.model.named_parameters() if not any(
-        nd in n for nd in no_decay)], 'weight_decay': L2},
-    {'params': [p for n, p in Agent.model.named_parameters() if any(
-        nd in n for nd in no_decay)], 'weight_decay': 0.0}
-]
-optimizer = optim.AdamW(parameters, lr=LR, eps=1e-6)
+optimizer = optim.AdamW(Agent.model.parameters(),
+                           lr=LR,
+                           weight_decay=L2,
+                           eps=1e-6)
 
 logging.warning(
     '\nCUDA: {}'
