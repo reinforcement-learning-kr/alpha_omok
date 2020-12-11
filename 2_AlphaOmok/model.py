@@ -34,7 +34,7 @@ class ResBlock(nn.Module):
 class PolicyHead(nn.Module):
     def __init__(self, planes, board_size):
         super(PolicyHead, self).__init__()
-        self.policy_head = nn.Conv2d(planes, 2, kernel_size=1, bias=True)
+        self.policy_head = nn.Conv2d(planes, 2, kernel_size=1, bias=False)
         self.policy_bn = nn.BatchNorm2d(2)
         self.relu = nn.ReLU(True)
         self.policy_fc = nn.Linear(board_size**2 * 2, board_size**2)
@@ -53,7 +53,7 @@ class PolicyHead(nn.Module):
 class ValueHead(nn.Module):
     def __init__(self, planes, board_size):
         super(ValueHead, self).__init__()
-        self.value_head = nn.Conv2d(planes, 1, kernel_size=1, bias=True)
+        self.value_head = nn.Conv2d(planes, 1, kernel_size=1, bias=False)
         self.value_bn = nn.BatchNorm2d(1)
         self.relu = nn.ReLU(True)
         self.value_fc1 = nn.Linear(board_size**2, planes)
