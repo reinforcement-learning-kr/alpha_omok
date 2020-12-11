@@ -41,8 +41,8 @@ TOTAL_ITER = 10000000
 MEMORY_SIZE = 30000
 N_EPOCHS = 1
 BATCH_SIZE = 32
-LR = 3e-4
-L2 = 1e-2
+LR = 2e-4
+L2 = 0
 
 # Hyperparameter sharing
 agents.PRINT_MCTS = PRINT_SELFPLAY
@@ -82,14 +82,7 @@ Agent.model = model.PVNet(N_BLOCKS,
                           IN_PLANES,
                           OUT_PLANES,
                           BOARD_SIZE).to(device)
-no_decay = ['bias', 'bn']
-parameters = [
-    {'params': [p for n, p in Agent.model.named_parameters() if not any(
-        nd in n for nd in no_decay)], 'weight_decay': L2},
-    {'params': [p for n, p in Agent.model.named_parameters() if any(
-        nd in n for nd in no_decay)], 'weight_decay': 0.0}
-]
-optimizer = optim.AdamW(parameters, lr=LR, eps=1e-6)
+optimizer = optim.Adam(Agent.model.parameters(), lr=LR, weight_decay=L2, eps=1e-6)
 
 logging.warning(
     '\nCUDA: {}'
@@ -336,8 +329,8 @@ def train(n_epochs, n_iter):
                                           np.mean(loss_v),
                                           np.mean(loss_p)))
         logging.warning('{:2} Epoch Loss: {:.4f}   '
-                        'Loss V: {:.4f}   '
-                        'Loss P: {:.4f}'.format(total_epoch,
+                        'Loss_V: {:.4f}   '
+                        'Loss_P: {:.4f}'.format(total_epoch,
                                                 np.mean(loss_all),
                                                 np.mean(loss_v),
                                                 np.mean(loss_p)))
